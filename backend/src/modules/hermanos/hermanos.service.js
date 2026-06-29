@@ -75,7 +75,11 @@ export const historialHermano = async (equipoId, id) => {
 export const actualizarHermano = async (equipoId, id, body) => {
   const existe = await prisma.hermano.findFirst({ where: { id, comunidad: { equipoId } } })
   if (!existe) throw { status: 404, message: 'Hermano no encontrado', code: 'HERMANO_NO_ENCONTRADO' }
-  return prisma.hermano.update({ where: { id }, data: body })
+  const { nombre, apellido, telefono, email, comunidadId, activo, notas } = body
+  return prisma.hermano.update({
+    where: { id },
+    data: { nombre, apellido, telefono, email, comunidadId: comunidadId ? parseInt(comunidadId) : undefined, activo, notas }
+  })
 }
 
 export const eliminarHermano = async (equipoId, id) => {

@@ -61,6 +61,8 @@ model MiembroEquipo {
   comunidades             Comunidad[]
   edicionesCoordinadas    EdicionTaller[]
   equipoApoyoEdiciones    EquipoApoyoEdicion[]
+  temasMesExpuestos       TemaMes[]          @relation("TemaMesExpositor")
+  reunionesAsistidas      ReunionAsistente[]
 
   @@unique([usuarioId, equipoId])
   @@map("MiembroEquipo")
@@ -149,7 +151,6 @@ model Hermano {
   inscripciones      Inscripcion[]
   asistencias        Asistencia[]
   serviciosAsignados ServicioAsignado[]
-  temasMes           TemaMes[]          @relation("TemaMesExpositor")
 
   @@map("Hermano")
 }
@@ -243,7 +244,7 @@ model TemaMes {
   anio         Int
   titulo       String?
   expositorId  Int?
-  expositor    Hermano?      @relation("TemaMesExpositor", fields: [expositorId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  expositor    MiembroEquipo? @relation("TemaMesExpositor", fields: [expositorId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   notas        String?
   documentoUrl String?
   createdAt    DateTime      @default(now())
@@ -373,11 +374,13 @@ model Reunion {
   redactorId    Int
   redactor      Usuario     @relation(fields: [redactorId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   participantes String?
+  notas         String?
   textoGenerado String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  acuerdos Acuerdo[]
+  acuerdos   Acuerdo[]
+  asistentes ReunionAsistente[]
 
   @@map("Reunion")
 }
@@ -393,4 +396,15 @@ model Acuerdo {
   orden       Int
 
   @@map("Acuerdo")
+}
+
+model ReunionAsistente {
+  id        Int           @id @default(autoincrement())
+  reunionId Int
+  reunion   Reunion       @relation(fields: [reunionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  miembroId Int
+  miembro   MiembroEquipo @relation(fields: [miembroId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([reunionId, miembroId])
+  @@map("ReunionAsistente")
 }

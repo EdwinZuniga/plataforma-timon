@@ -10,6 +10,7 @@ import { PageSpinner } from '@/components/ui/spinner'
 import { Card, CardContent } from '@/components/ui/card'
 import { HermanoModal } from './HermanoModal'
 import { VincularTallerModal } from './VincularTallerModal'
+import { TallerResumenModal } from './TallerResumenModal'
 import { useToast } from '@/components/ui/toast'
 import { ArrowLeft, Edit, CheckCircle, XCircle, PlusCircle, Trash2, BookOpen, BookCheck } from 'lucide-react'
 import { formatCalendarDate } from '@/utils/dates'
@@ -22,20 +23,23 @@ function RangoFecha({ inicio, fin }) {
   return <span>Desde {fmt(inicio)} · en curso</span>
 }
 
-function TallerCard({ ins, onDesvincular }) {
+function TallerCard({ ins, onDesvincular, onVerResumen }) {
   const edicion = ins.edicionTaller
   const taller = edicion.taller
   return (
     <Card>
       <CardContent className="py-3 px-4">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
+          <button
+            onClick={() => onVerResumen(ins)}
+            className="flex-1 min-w-0 text-left hover:opacity-70 transition-opacity"
+          >
             <p className="font-medium truncate">{taller.nombre}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               <RangoFecha inicio={edicion.fecha} fin={edicion.fechaFin} />
               {edicion.lugar && ` · ${edicion.lugar}`}
             </p>
-          </div>
+          </button>
           <div className="flex items-center gap-1 shrink-0">
             {ins.aprobado === true && <Badge variant="success">Aprobado</Badge>}
             {ins.aprobado === false && <Badge variant="destructive">No aprobado</Badge>}
@@ -57,7 +61,7 @@ function TallerCard({ ins, onDesvincular }) {
   )
 }
 
-function TalleresTab({ talleres, onVincular, onDesvincular }) {
+function TalleresTab({ talleres, onVincular, onDesvincular, onVerResumen }) {
   const actuales = talleres.filter((ins) => ins.aprobado === null)
   const cursados = talleres.filter((ins) => ins.aprobado !== null)
 
@@ -77,7 +81,7 @@ function TalleresTab({ talleres, onVincular, onDesvincular }) {
         {actuales.length === 0 ? (
           <p className="text-sm text-muted-foreground pl-6">Sin taller activo registrado</p>
         ) : (
-          actuales.map((ins) => <TallerCard key={ins.id} ins={ins} onDesvincular={onDesvincular} />)
+          actuales.map((ins) => <TallerCard key={ins.id} ins={ins} onDesvincular={onDesvincular} onVerResumen={onVerResumen} />)
         )}
       </div>
 
@@ -87,7 +91,7 @@ function TalleresTab({ talleres, onVincular, onDesvincular }) {
             <BookCheck className="h-4 w-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold text-muted-foreground">Talleres cursados</h3>
           </div>
-          {cursados.map((ins) => <TallerCard key={ins.id} ins={ins} onDesvincular={onDesvincular} />)}
+          {cursados.map((ins) => <TallerCard key={ins.id} ins={ins} onDesvincular={onDesvincular} onVerResumen={onVerResumen} />)}
         </div>
       )}
 
@@ -106,6 +110,7 @@ export default function HermanoDetailPage() {
   const [tab, setTab] = useState(0)
   const [editModal, setEditModal] = useState(false)
   const [vincularModal, setVincularModal] = useState(false)
+  const [selectedInscripcion, setSelectedInscripcion] = useState(null)
 
   const queryClient = useQueryClient()
   const { toast } = useToast()
@@ -182,6 +187,7 @@ export default function HermanoDetailPage() {
           hermanoId={id}
           onVincular={() => setVincularModal(true)}
           onDesvincular={handleDesvincularTaller}
+          onVerResumen={(ins) => setSelectedInscripcion(ins)}
         />
       )}
 
@@ -227,6 +233,12 @@ export default function HermanoDetailPage() {
           inscripcionesActuales={historial?.talleres ?? []}
           onClose={() => setVincularModal(false)}
           onSaved={() => { setVincularModal(false); refetchHistorial() }}
+        />
+      )}
+      {selectedInscripcion && (
+        <TallerResumenModal
+          ins={selectedInscripcion}
+          onClose={() => setSelectedInscripcion(null)}
         />
       )}
     </div>

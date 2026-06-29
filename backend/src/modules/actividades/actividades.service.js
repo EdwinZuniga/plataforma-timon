@@ -91,9 +91,9 @@ export const guardarAsistencia = async (equipoId, actividadId, registros) => {
 
   const ops = registros.map(({ hermanoId, presente }) =>
     prisma.asistencia.upsert({
-      where: { hermanoId_actividadId: { hermanoId, actividadId } },
+      where: { hermanoId_actividadId: { hermanoId: Number(hermanoId), actividadId } },
       update: { presente },
-      create: { hermanoId, actividadId, presente },
+      create: { hermanoId: Number(hermanoId), actividadId, presente },
     })
   )
 

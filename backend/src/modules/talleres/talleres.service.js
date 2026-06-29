@@ -73,7 +73,7 @@ export const obtenerEdicion = async (equipoId, tallerId, edicionId) => {
       },
       temasMes: {
         include: {
-          expositor: { select: { id: true, nombre: true, apellido: true } },
+          expositor: { include: { usuario: { select: { id: true, nombre: true } } } },
         },
         orderBy: [{ anio: 'asc' }, { mes: 'asc' }],
       },
@@ -182,11 +182,15 @@ export const upsertTemaMes = async (equipoId, edicionId, mes, anio, data) => {
   const edicion = await prisma.edicionTaller.findFirst({ where: { id: edicionId, taller: { equipoId } } })
   if (!edicion) throw { status: 404, message: 'Edición no encontrada', code: 'EDICION_NO_ENCONTRADA' }
   const { titulo, expositorId, notas, documentoUrl } = data
+  if (expositorId) {
+    const expositor = await prisma.miembroEquipo.findFirst({ where: { id: expositorId, equipoId, activo: true } })
+    if (!expositor) throw { status: 404, message: 'Miembro no encontrado', code: 'MIEMBRO_NO_ENCONTRADO' }
+  }
   return prisma.temaMes.upsert({
     where: { edicionId_mes_anio: { edicionId, mes: Number(mes), anio: Number(anio) } },
     create: { edicionId, mes: Number(mes), anio: Number(anio), titulo, expositorId: expositorId || null, notas, documentoUrl },
     update: { titulo, expositorId: expositorId || null, notas, documentoUrl },
-    include: { expositor: { select: { id: true, nombre: true, apellido: true } } },
+    include: { expositor: { include: { usuario: { select: { id: true, nombre: true } } } } },
   })
 }
 
@@ -204,6 +208,40 @@ export const upsertParticipacionMes = async (inscripcionId, mes, anio, participo
     create: { inscripcionId, mes: Number(mes), anio: Number(anio), participo: Boolean(participo), notas: notas || null },
     update: { participo: Boolean(participo), notas: notas || null },
   })
+}
+
+export const resumenInscripcion = async (equipoId, inscripcionId) => {
+  const inscripcion = await prisma.inscripcion.findFirst({
+    where: { id: inscripcionId, edicionTaller: { taller: { equipoId } } },
+    include: {
+      asistenciasMes: { orderBy: [{ anio: 'asc' }, { mes: 'asc' }] },
+      tareasEntrega: { orderBy: [{ anio: 'asc' }, { mes: 'asc' }] },
+      participaciones: { orderBy: [{ anio: 'asc' }, { mes: 'asc' }] },
+    },
+  })
+  if (!inscripcion) throw { status: 404, message: 'Inscripción no encontrada', code: 'INSCRIPCION_NO_ENCONTRADA' }
+
+  return {
+    asistencia: {
+      total: inscripcion.asistenciasMes.length,
+      presentes: inscripcion.asistenciasMes.filter((a) => a.estado === 'PRESENTE').length,
+      ausentes: inscripcion.asistenciasMes.filter((a) => a.estado === 'AUSENTE').length,
+      permisos: inscripcion.asistenciasMes.filter((a) => a.estado === 'PERMISO').length,
+      detalle: inscripcion.asistenciasMes,
+    },
+    tareas: {
+      total: inscripcion.tareasEntrega.length,
+      entregadas: inscripcion.tareasEntrega.filter((t) => t.entrego).length,
+      noEntregadas: inscripcion.tareasEntrega.filter((t) => !t.entrego).length,
+      detalle: inscripcion.tareasEntrega,
+    },
+    participacion: {
+      total: inscripcion.participaciones.length,
+      participo: inscripcion.participaciones.filter((p) => p.participo).length,
+      noParticipo: inscripcion.participaciones.filter((p) => !p.participo).length,
+      detalle: inscripcion.participaciones,
+    },
+  }
 }
 
 export const estadisticas = async (equipoId) => {

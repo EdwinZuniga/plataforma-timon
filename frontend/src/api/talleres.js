@@ -37,3 +37,6 @@ export const upsertTareaEntrega = (equipoId, inscripcionId, data) =>
   api.put(`/equipos/${equipoId}/inscripciones/${inscripcionId}/tarea-mes`, data)
 export const upsertParticipacionMes = (equipoId, inscripcionId, data) =>
   api.put(`/equipos/${equipoId}/inscripciones/${inscripcionId}/participacion-mes`, data)
+
+export const getInscripcionResumen = (equipoId, inscripcionId) =>
+  api.get(`/equipos/${equipoId}/inscripciones/${inscripcionId}/resumen`)

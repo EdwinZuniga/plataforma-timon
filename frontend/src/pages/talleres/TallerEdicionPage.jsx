@@ -11,8 +11,10 @@ import {
   upsertTemaMes,
   upsertTareaEntrega,
   upsertParticipacionMes,
+  inscribirHermanos,
 } from '@/api/talleres'
 import { getMiembros } from '@/api/equipos'
+import { getHermanos } from '@/api/hermanos'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -78,6 +80,7 @@ export default function TallerEdicionPage() {
   const [activeTab, setActiveTab] = useState('general')
   const [showApoyoModal, setShowApoyoModal] = useState(false)
   const [showTemaModal, setShowTemaModal] = useState(null) // { mes, anio }
+  const [showVincularModal, setShowVincularModal] = useState(false)
 
   const { data: edicion, isLoading } = useQuery({
     queryKey: ['edicion', edicionId],
@@ -132,7 +135,7 @@ export default function TallerEdicionPage() {
     : null
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
+    <div className="p-4 md:p-6 max-w-2xl md:max-w-3xl lg:max-w-5xl mx-auto space-y-5">
 
       {/* Encabezado */}
       <div className="flex items-center gap-3">
@@ -214,7 +217,12 @@ export default function TallerEdicionPage() {
 
       {/* Contenido: tab General */}
       {activeTab === 'general' && (
-        <GeneralTab inscripciones={inscripciones} months={months} multiAnio={multiAnio} />
+        <GeneralTab
+          inscripciones={inscripciones}
+          months={months}
+          multiAnio={multiAnio}
+          onVincular={() => setShowVincularModal(true)}
+        />
       )}
 
       {/* Contenido: tab de mes */}
@@ -225,7 +233,6 @@ export default function TallerEdicionPage() {
             tema={getTemaMes(edicion.temasMes, activeMes.mes, activeMes.anio)}
             mes={activeMes.mes}
             anio={activeMes.anio}
-            inscripciones={inscripciones}
             onEdit={() => setShowTemaModal(activeMes)}
           />
 
@@ -354,10 +361,20 @@ export default function TallerEdicionPage() {
           tallerId={tallerId}
           mes={showTemaModal.mes}
           anio={showTemaModal.anio}
-          inscripciones={inscripciones}
           equipoActual={equipoActual}
           initialData={getTemaMes(edicion.temasMes, showTemaModal.mes, showTemaModal.anio)}
           onClose={() => setShowTemaModal(null)}
+          onSuccess={() => qc.invalidateQueries({ queryKey: ['edicion', edicionId] })}
+          toast={toast}
+        />
+      )}
+
+      {/* Modal vincular hermano */}
+      {showVincularModal && (
+        <VincularHermanoModal
+          edicion={edicion}
+          equipoActual={equipoActual}
+          onClose={() => setShowVincularModal(false)}
           onSuccess={() => qc.invalidateQueries({ queryKey: ['edicion', edicionId] })}
           toast={toast}
         />
@@ -417,9 +434,7 @@ function TemaDelMes({ tema, mes, anio, onEdit }) {
     )
   }
 
-  const expositorNombre = tema.expositor
-    ? `${tema.expositor.nombre}${tema.expositor.apellido ? ' ' + tema.expositor.apellido : ''}`
-    : null
+  const expositorNombre = tema.expositor?.nombreCorto || tema.expositor?.usuario?.nombre
 
   return (
     <div className="rounded-lg border bg-card px-4 py-3 space-y-1.5">
@@ -508,12 +523,18 @@ function EstadoControl({ estado, onChange, disabled }) {
 
 // ─── GeneralTab ───────────────────────────────────────────────────────────────
 
-function GeneralTab({ inscripciones, months, multiAnio }) {
+function GeneralTab({ inscripciones, months, multiAnio, onVincular }) {
   if (inscripciones.length === 0) {
     return (
-      <p className="text-sm text-center text-muted-foreground py-8">
-        Sin hermanos inscritos en esta edición.
-      </p>
+      <div className="flex flex-col items-center gap-3 py-10">
+        <p className="text-sm text-muted-foreground">Sin hermanos inscritos en esta edición.</p>
+        <button
+          onClick={onVincular}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+        >
+          <Plus className="h-4 w-4" /> Vincular hermano
+        </button>
+      </div>
     )
   }
 
@@ -599,10 +620,18 @@ function GeneralTab({ inscripciones, months, multiAnio }) {
         </tfoot>
       </table>
 
-      {/* Leyenda */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> Tarea entregada</span>
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> Participó</span>
+      {/* Leyenda + botón vincular */}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mt-3">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> Tarea entregada</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> Participó</span>
+        </div>
+        <button
+          onClick={onVincular}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline shrink-0"
+        >
+          <Plus className="h-3.5 w-3.5" /> Vincular hermano
+        </button>
       </div>
     </div>
   )
@@ -729,9 +758,126 @@ function ApoyoModal({ edicion, tallerId, equipoActual, onClose, onSuccess, toast
   )
 }
 
+// ─── VincularHermanoModal ─────────────────────────────────────────────────────
+
+function VincularHermanoModal({ edicion, equipoActual, onClose, onSuccess, toast }) {
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState(new Set())
+  const [loading, setLoading] = useState(false)
+
+  const inscritosIds = new Set((edicion.inscripciones ?? []).map((i) => i.hermano.id))
+
+  const { data: resultado, isLoading } = useQuery({
+    queryKey: ['hermanos-busqueda', equipoActual?.id, search],
+    queryFn: () =>
+      getHermanos(equipoActual.id, { q: search || undefined, page: 1 }).then((r) => r.data.data),
+    enabled: !!equipoActual?.id,
+  })
+
+  const disponibles = (resultado ?? []).filter((h) => !inscritosIds.has(h.id))
+
+  const toggle = (id) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const onVincular = async () => {
+    if (selected.size === 0) return
+    setLoading(true)
+    try {
+      await inscribirHermanos(equipoActual.id, edicion.id, [...selected])
+      toast({ title: `${selected.size} hermano${selected.size > 1 ? 's' : ''} vinculado${selected.size > 1 ? 's' : ''}` })
+      onSuccess()
+      onClose()
+    } catch {
+      toast({ title: 'Error al vincular hermanos', variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
+      <div className="bg-background rounded-2xl shadow-xl w-full max-w-md p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-base">Vincular hermano</h2>
+          <button onClick={onClose} className="p-1 rounded text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <Input
+          placeholder="Buscar por nombre o apellido..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          autoFocus
+          className="h-9"
+        />
+
+        <div className="max-h-64 overflow-y-auto divide-y rounded-lg border">
+          {isLoading && (
+            <p className="text-sm text-center py-6 text-muted-foreground">Buscando...</p>
+          )}
+          {!isLoading && disponibles.length === 0 && (
+            <p className="text-sm text-center py-6 text-muted-foreground">
+              {search ? 'Sin resultados para esa búsqueda' : 'Todos los hermanos ya están inscritos'}
+            </p>
+          )}
+          {disponibles.map((h) => (
+            <button
+              key={h.id}
+              onClick={() => toggle(h.id)}
+              className={cn(
+                'w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors',
+                selected.has(h.id) ? 'bg-primary/10' : 'hover:bg-muted/50'
+              )}
+            >
+              <div
+                className={cn(
+                  'h-4 w-4 rounded border-2 shrink-0 flex items-center justify-center transition-colors',
+                  selected.has(h.id) ? 'bg-primary border-primary' : 'border-input'
+                )}
+              >
+                {selected.has(h.id) && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">{h.nombre} {h.apellido}</p>
+                <p className="text-xs text-muted-foreground truncate">{h.comunidad?.nombre}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2 pt-1">
+          <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            className="flex-1"
+            disabled={selected.size === 0 || loading}
+            onClick={onVincular}
+          >
+            {selected.size > 0 ? `Vincular (${selected.size})` : 'Vincular'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── TemaModal ────────────────────────────────────────────────────────────────
 
-function TemaModal({ edicion, tallerId, mes, anio, inscripciones, equipoActual, initialData, onClose, onSuccess, toast }) {
+function TemaModal({ edicion, tallerId, mes, anio, equipoActual, initialData, onClose, onSuccess, toast }) {
+  const { data: miembros = [] } = useQuery({
+    queryKey: ['miembros', equipoActual?.id],
+    queryFn: () => getMiembros(equipoActual.id).then((r) => r.data.data),
+    enabled: !!equipoActual?.id,
+  })
+
   const { register, handleSubmit } = useForm({
     defaultValues: {
       titulo: initialData?.titulo ?? '',
@@ -774,15 +920,15 @@ function TemaModal({ edicion, tallerId, mes, anio, inscripciones, equipoActual, 
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Expuso</label>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">RESPONSABLE</label>
             <select
               {...register('expositorId', { valueAsNumber: true })}
               className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
             >
               <option value="">Sin asignar</option>
-              {inscripciones.map((ins) => (
-                <option key={ins.hermano.id} value={ins.hermano.id}>
-                  {ins.hermano.nombre} {ins.hermano.apellido}
+              {miembros.filter((m) => m.activo).map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.nombreCorto || m.usuario?.nombre}
                 </option>
               ))}
             </select>

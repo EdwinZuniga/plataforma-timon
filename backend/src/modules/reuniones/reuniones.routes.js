@@ -10,6 +10,7 @@ router.get('/', requireAuth, requireEquipo, ctrl.listar)
 router.post('/', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.crear)
 router.get('/:id', requireAuth, requireEquipo, ctrl.obtener)
 router.put('/:id', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.actualizar)
+router.delete('/:id', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.eliminar)
 router.post('/:id/acuerdos', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.crearAcuerdo)
 router.post('/:id/generar-texto', requireAuth, requireEquipo, ctrl.generarTexto)
 

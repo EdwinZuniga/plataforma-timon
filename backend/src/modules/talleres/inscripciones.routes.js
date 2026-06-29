@@ -57,6 +57,13 @@ router.put('/inscripciones/:inscripcionId/tarea-mes', requireAuth, requireEquipo
   } catch (err) { next(err) }
 })
 
+router.get('/inscripciones/:inscripcionId/resumen', requireAuth, requireEquipo, async (req, res, next) => {
+  try {
+    const data = await svc.resumenInscripcion(req.params.equipoId, req.params.inscripcionId)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+})
+
 router.put('/inscripciones/:inscripcionId/participacion-mes', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
   try {
     const { mes, anio, participo, notas } = req.body

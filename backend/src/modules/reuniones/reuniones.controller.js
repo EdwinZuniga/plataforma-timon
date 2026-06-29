@@ -9,11 +9,16 @@ export const listar = async (req, res, next) => {
 
 export const crear = async (req, res, next) => {
   try {
-    const { titulo, fecha, lugar, participantes } = req.body
+    const { titulo, fecha, lugar, participantes, asistenteIds } = req.body
     if (!titulo || !fecha) {
       return next({ status: 400, message: 'Título y fecha son requeridos', code: 'DATOS_REQUERIDOS' })
     }
-    const data = await svc.crearReunion(req.params.equipoId, req.usuario.id, { titulo, fecha, lugar, participantes })
+    const data = await svc.crearReunion(
+      req.params.equipoId,
+      req.usuario.id,
+      { titulo, fecha, lugar, participantes },
+      Array.isArray(asistenteIds) ? asistenteIds.map(Number) : []
+    )
     res.status(201).json({ success: true, data })
   } catch (err) { next(err) }
 }
@@ -29,6 +34,13 @@ export const actualizar = async (req, res, next) => {
   try {
     const data = await svc.actualizarReunion(req.params.equipoId, req.params.id, req.body)
     res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export const eliminar = async (req, res, next) => {
+  try {
+    await svc.eliminarReunion(req.params.equipoId, req.params.id)
+    res.json({ success: true })
   } catch (err) { next(err) }
 }
 

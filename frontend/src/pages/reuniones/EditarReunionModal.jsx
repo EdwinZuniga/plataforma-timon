@@ -1,23 +1,31 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { createReunion } from '@/api/reuniones'
+import { updateReunion } from '@/api/reuniones'
 import { getMiembros } from '@/api/equipos'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { X, Check } from 'lucide-react'
 
-export function ReunionModal({ onClose, onSaved }) {
+const toDateInput = (iso) => iso ? iso.split('T')[0] : ''
+
+export function EditarReunionModal({ reunion, onClose, onSaved }) {
   const { equipoActual } = useAuthStore()
   const { toast } = useToast()
-  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
-  const [selectedMiembros, setSelectedMiembros] = useState([])
+  const [selectedMiembros, setSelectedMiembros] = useState(
+    reunion.asistentes?.map((a) => a.miembro.id) ?? []
+  )
 
-  const { register, handleSubmit, formState: { errors } } = useForm()
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: {
+      titulo: reunion.titulo,
+      fecha: toDateInput(reunion.fecha),
+      lugar: reunion.lugar ?? '',
+    },
+  })
 
   const { data: miembros = [] } = useQuery({
     queryKey: ['miembros', equipoActual?.id],
@@ -38,9 +46,9 @@ export function ReunionModal({ onClose, onSaved }) {
   const onSubmit = async (data) => {
     setLoading(true)
     try {
-      const res = await createReunion(equipoActual.id, { ...data, asistenteIds: selectedMiembros })
-      toast({ title: 'Reunión creada' })
-      navigate(`/reuniones/${res.data.data.id}`)
+      await updateReunion(equipoActual.id, reunion.id, { ...data, asistenteIds: selectedMiembros })
+      toast({ title: 'Reunión actualizada' })
+      onSaved()
     } catch (err) {
       toast({ title: 'Error', description: err.response?.data?.error || 'Ocurrió un error', variant: 'destructive' })
     } finally {
@@ -52,7 +60,7 @@ export function ReunionModal({ onClose, onSaved }) {
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
       <div className="bg-card rounded-t-2xl md:rounded-xl w-full max-w-lg shadow-xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b shrink-0">
-          <h2 className="font-semibold text-lg">Nueva reunión</h2>
+          <h2 className="font-semibold text-lg">Editar reunión</h2>
           <button onClick={onClose} className="min-h-0 h-auto p-1 text-muted-foreground"><X className="h-5 w-5" /></button>
         </div>
 
@@ -60,7 +68,7 @@ export function ReunionModal({ onClose, onSaved }) {
           <form onSubmit={handleSubmit(onSubmit)} className="p-4 space-y-4">
             <div className="space-y-1">
               <label className="text-sm font-medium">Título *</label>
-              <Input {...register('titulo', { required: 'Requerido' })} placeholder="Ej: Reunión semanal de equipo" />
+              <Input {...register('titulo', { required: 'Requerido' })} />
               {errors.titulo && <p className="text-xs text-destructive">{errors.titulo.message}</p>}
             </div>
 
@@ -124,12 +132,11 @@ export function ReunionModal({ onClose, onSaved }) {
                   })}
                 </div>
               )}
-
             </div>
 
             <div className="flex gap-2 pt-2">
               <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
-              <Button type="submit" className="flex-1" disabled={loading}>{loading ? 'Creando...' : 'Crear y editar'}</Button>
+              <Button type="submit" className="flex-1" disabled={loading}>{loading ? 'Guardando...' : 'Guardar cambios'}</Button>
             </div>
           </form>
         </div>
