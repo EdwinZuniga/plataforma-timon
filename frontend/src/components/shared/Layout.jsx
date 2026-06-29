@@ -1,0 +1,160 @@
+import { useState } from 'react'
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom'
+import { useAuthStore } from '@/stores/useAuthStore'
+import {
+  Home, Users, UserCheck, Calendar, FileText,
+  Settings, LogOut, Menu, X, ChevronRight,
+  Wrench, BookOpen, MoreHorizontal, UserCircle,
+} from 'lucide-react'
+import { cn } from '@/utils/cn'
+import { Button } from '@/components/ui/button'
+
+const navItems = [
+  { to: '/dashboard', icon: Home, label: 'Inicio' },
+  { to: '/comunidades', icon: Users, label: 'Comunidades' },
+  { to: '/hermanos', icon: UserCheck, label: 'Hermanos' },
+  { to: '/actividades', icon: Calendar, label: 'Actividades' },
+  { to: '/reuniones', icon: FileText, label: 'Reuniones' },
+]
+
+const moreItems = [
+  { to: '/talleres', icon: BookOpen, label: 'Talleres' },
+  { to: '/servicios', icon: Wrench, label: 'Servicios' },
+  { to: '/equipos', icon: Settings, label: 'Equipos' },
+]
+
+function NavLink({ to, icon: Icon, label, mobile }) {
+  const { pathname } = useLocation()
+  const active = pathname.startsWith(to)
+  return (
+    <Link
+      to={to}
+      className={cn(
+        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors min-h-[44px]',
+        mobile ? 'flex-col gap-0.5 text-xs px-1 py-1' : '',
+        active
+          ? 'bg-primary-700/10 text-primary-700 dark:text-primary-500'
+          : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+      )}
+    >
+      <Icon className={cn('shrink-0', mobile ? 'h-5 w-5' : 'h-4 w-4')} />
+      <span>{label}</span>
+    </Link>
+  )
+}
+
+export function Layout({ children }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { usuario, equipoActual, logout } = useAuthStore()
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Sidebar desktop */}
+      <aside className="hidden md:flex flex-col w-64 border-r bg-card shrink-0">
+        <div
+          className="flex items-center gap-2 px-4 py-4 border-b"
+          style={{ borderLeftColor: 'var(--color-equipo)', borderLeftWidth: 4 }}
+        >
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-muted-foreground">Equipo activo</p>
+            <p className="font-semibold truncate" style={{ color: 'var(--color-equipo)' }}>
+              {equipoActual?.nombre || 'Sin equipo'}
+            </p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+        </div>
+
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {navItems.map((item) => <NavLink key={item.to} {...item} />)}
+          <div className="pt-4 pb-1 px-3">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Más</p>
+          </div>
+          {moreItems.map((item) => <NavLink key={item.to} {...item} />)}
+        </nav>
+
+        <div className="border-t p-3">
+          <Link to="/perfil" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors group">
+            <div className="h-8 w-8 rounded-full bg-primary-700 text-white flex items-center justify-center text-xs font-bold shrink-0">
+              {usuario?.nombre?.[0]?.toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{usuario?.nombre}</p>
+              <p className="text-xs text-muted-foreground truncate">{usuario?.email}</p>
+            </div>
+            <UserCircle className="h-4 w-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </Link>
+          <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive mt-1" onClick={logout}>
+            <LogOut className="h-4 w-4" /> Cerrar sesión
+          </Button>
+        </div>
+      </aside>
+
+      {/* Sidebar móvil overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-card shadow-xl flex flex-col">
+            <div className="flex items-center justify-between px-4 py-4 border-b">
+              <span className="font-semibold" style={{ color: 'var(--color-equipo)' }}>
+                {equipoActual?.nombre || 'Plataforma Timón'}
+              </span>
+              <button onClick={() => setSidebarOpen(false)} className="min-h-0 h-auto p-1">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+              {[...navItems, ...moreItems].map((item) => (
+                <NavLink key={item.to} {...item} />
+              ))}
+            </nav>
+            <div className="border-t p-3 space-y-1">
+              <Link
+                to="/perfil"
+                onClick={() => setSidebarOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              >
+                <UserCircle className="h-4 w-4" /> Mi perfil
+              </Link>
+              <Button variant="ghost" className="w-full justify-start gap-2 text-destructive" onClick={logout}>
+                <LogOut className="h-4 w-4" /> Cerrar sesión
+              </Button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Header móvil */}
+        <header className="flex md:hidden items-center gap-3 px-4 py-3 border-b bg-card shrink-0">
+          <button onClick={() => setSidebarOpen(true)} className="min-h-0 h-auto p-1 -ml-1">
+            <Menu className="h-5 w-5" />
+          </button>
+          <span className="font-semibold" style={{ color: 'var(--color-equipo)' }}>
+            {equipoActual?.nombre || 'Plataforma Timón'}
+          </span>
+        </header>
+
+        {/* Contenido principal */}
+        <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+          {children ?? <Outlet />}
+        </main>
+
+        {/* Bottom navigation móvil */}
+        <nav className="flex md:hidden items-center border-t bg-card fixed bottom-0 left-0 right-0 z-30">
+          {navItems.slice(0, 4).map((item) => (
+            <NavLink key={item.to} {...item} mobile />
+          ))}
+          <div className="flex-1">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="flex flex-col items-center gap-0.5 w-full py-1 text-xs text-muted-foreground"
+            >
+              <MoreHorizontal className="h-5 w-5" />
+              <span>Más</span>
+            </button>
+          </div>
+        </nav>
+      </div>
+    </div>
+  )
+}

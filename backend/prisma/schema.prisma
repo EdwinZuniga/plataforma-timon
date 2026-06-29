@@ -1,0 +1,396 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+// ─── EQUIPOS TIMÓN ──────────────────────────────────────────────────────────
+
+model EquipoTimon {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  descripcion String?
+  color       String   @default("#6D28D9")
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  miembros          MiembroEquipo[]
+  comunidades       Comunidad[]
+  talleres          Taller[]
+  actividades       Actividad[]
+  catalogoServicios CatalogoServicio[]
+  reuniones         Reunion[]
+
+  @@map("EquipoTimon")
+}
+
+// ─── USUARIOS ────────────────────────────────────────────────────────────────
+
+model Usuario {
+  id           Int      @id @default(autoincrement())
+  nombre       String
+  email        String   @unique
+  passwordHash String
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  equipos       MiembroEquipo[]
+  reuniones     Reunion[]
+  refreshTokens RefreshToken[]
+
+  @@map("Usuario")
+}
+
+// Roles: COORDINADOR | ENLACE | SECRETARIO | CONSULTOR
+model MiembroEquipo {
+  id          Int      @id @default(autoincrement())
+  usuarioId   Int
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  equipoId    Int
+  equipo      EquipoTimon @relation(fields: [equipoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  rol         String   @default("CONSULTOR")
+  nombreCorto String?
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  comunidades             Comunidad[]
+  edicionesCoordinadas    EdicionTaller[]
+  equipoApoyoEdiciones    EquipoApoyoEdicion[]
+
+  @@unique([usuarioId, equipoId])
+  @@map("MiembroEquipo")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  usuarioId Int
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("RefreshToken")
+}
+
+// ─── COMUNIDADES ─────────────────────────────────────────────────────────────
+
+// estado: ACTIVA | PROCESO_INSCRIPCION | INACTIVA
+model Comunidad {
+  id              Int      @id @default(autoincrement())
+  numero          String?
+  nombre          String
+  departamento    String
+  estado          String   @default("ACTIVA")
+  equipoId        Int
+  equipo          EquipoTimon @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  enlaceId        Int?
+  enlace          MiembroEquipo? @relation(fields: [enlaceId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  enlaceConsejo   String?
+  fechaEleccion   String?
+  lugarAsamblea   String?
+  horarioAsamblea String?
+  oficial         Boolean  @default(false)
+  notas           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  hermanos        Hermano[]
+  miembrosConsejo MiembroConsejo[]
+  visitas         Visita[]
+
+  @@map("Comunidad")
+}
+
+model MiembroConsejo {
+  id          Int       @id @default(autoincrement())
+  comunidadId Int
+  comunidad   Comunidad @relation(fields: [comunidadId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  nombre      String
+  telefono    String?
+  activo      Boolean   @default(true)
+  nota        String?
+
+  @@map("MiembroConsejo")
+}
+
+model Visita {
+  id          Int       @id @default(autoincrement())
+  comunidadId Int
+  comunidad   Comunidad @relation(fields: [comunidadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  fecha       DateTime
+  encargados  String?
+  horario     String?
+  notas       String?
+  createdAt   DateTime  @default(now())
+
+  @@map("Visita")
+}
+
+// ─── HERMANOS ────────────────────────────────────────────────────────────────
+
+model Hermano {
+  id          Int       @id @default(autoincrement())
+  nombre      String
+  apellido    String?
+  telefono    String?
+  email       String?
+  comunidadId Int
+  comunidad   Comunidad @relation(fields: [comunidadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  activo      Boolean   @default(true)
+  notas       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  inscripciones      Inscripcion[]
+  asistencias        Asistencia[]
+  serviciosAsignados ServicioAsignado[]
+  temasMes           TemaMes[]          @relation("TemaMesExpositor")
+
+  @@map("Hermano")
+}
+
+// ─── TALLERES ────────────────────────────────────────────────────────────────
+
+model Taller {
+  id          Int         @id @default(autoincrement())
+  equipoId    Int
+  equipo      EquipoTimon @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  nombre      String
+  descripcion String?
+  activo      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+
+  ediciones EdicionTaller[]
+
+  @@map("Taller")
+}
+
+model EdicionTaller {
+  id             Int            @id @default(autoincrement())
+  tallerId       Int
+  taller         Taller         @relation(fields: [tallerId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  coordinadorId  Int?
+  coordinador    MiembroEquipo? @relation(fields: [coordinadorId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  fecha          DateTime
+  fechaFin       DateTime?
+  lugar          String?
+  notas          String?
+  createdAt      DateTime       @default(now())
+
+  inscripciones Inscripcion[]
+  equipoApoyo   EquipoApoyoEdicion[]
+  temasMes      TemaMes[]
+
+  @@map("EdicionTaller")
+}
+
+model Inscripcion {
+  id              Int           @id @default(autoincrement())
+  hermanoId       Int
+  hermano         Hermano       @relation(fields: [hermanoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  edicionTallerId Int
+  edicionTaller   EdicionTaller @relation(fields: [edicionTallerId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  asistio         Boolean       @default(false)
+  aprobado        Boolean?
+  certificado     Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+
+  asistenciasMes   AsistenciaMes[]
+  tareasEntrega    TareaEntrega[]
+  participaciones  ParticipacionMes[]
+
+  @@unique([hermanoId, edicionTallerId])
+  @@map("Inscripcion")
+}
+
+// estado: PRESENTE | AUSENTE | PERMISO
+model AsistenciaMes {
+  id            Int         @id @default(autoincrement())
+  inscripcionId Int
+  inscripcion   Inscripcion @relation(fields: [inscripcionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  mes           Int
+  anio          Int
+  estado        String      @default("AUSENTE")
+  createdAt     DateTime    @default(now())
+
+  @@unique([inscripcionId, mes, anio])
+  @@map("AsistenciaMes")
+}
+
+model EquipoApoyoEdicion {
+  id        Int           @id @default(autoincrement())
+  edicionId Int
+  edicion   EdicionTaller @relation(fields: [edicionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  miembroId Int
+  miembro   MiembroEquipo @relation(fields: [miembroId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  rol       String?
+  createdAt DateTime      @default(now())
+
+  @@unique([edicionId, miembroId])
+  @@map("EquipoApoyoEdicion")
+}
+
+model TemaMes {
+  id           Int           @id @default(autoincrement())
+  edicionId    Int
+  edicion      EdicionTaller @relation(fields: [edicionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  mes          Int
+  anio         Int
+  titulo       String?
+  expositorId  Int?
+  expositor    Hermano?      @relation("TemaMesExpositor", fields: [expositorId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  notas        String?
+  documentoUrl String?
+  createdAt    DateTime      @default(now())
+
+  @@unique([edicionId, mes, anio])
+  @@map("TemaMes")
+}
+
+model TareaEntrega {
+  id            Int         @id @default(autoincrement())
+  inscripcionId Int
+  inscripcion   Inscripcion @relation(fields: [inscripcionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  mes           Int
+  anio          Int
+  entrego       Boolean     @default(false)
+  notas         String?
+  createdAt     DateTime    @default(now())
+
+  @@unique([inscripcionId, mes, anio])
+  @@map("TareaEntrega")
+}
+
+model ParticipacionMes {
+  id            Int         @id @default(autoincrement())
+  inscripcionId Int
+  inscripcion   Inscripcion @relation(fields: [inscripcionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  mes           Int
+  anio          Int
+  participo     Boolean     @default(false)
+  notas         String?
+  createdAt     DateTime    @default(now())
+
+  @@unique([inscripcionId, mes, anio])
+  @@map("ParticipacionMes")
+}
+
+// ─── ACTIVIDADES ─────────────────────────────────────────────────────────────
+
+// tipo: RETIRO | ASAMBLEA | ENCUENTRO | MISION | FORMACION | OTRO
+model Actividad {
+  id          Int         @id @default(autoincrement())
+  equipoId    Int
+  equipo      EquipoTimon @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  nombre      String
+  tipo        String
+  fecha       DateTime
+  lugar       String?
+  descripcion String?
+  anio        Int
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  asistencias Asistencia[]
+  servicios   ServicioActividad[]
+
+  @@map("Actividad")
+}
+
+model Asistencia {
+  id          Int       @id @default(autoincrement())
+  hermanoId   Int
+  hermano     Hermano   @relation(fields: [hermanoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  actividadId Int
+  actividad   Actividad @relation(fields: [actividadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  presente    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@unique([hermanoId, actividadId])
+  @@map("Asistencia")
+}
+
+// ─── SERVICIOS ───────────────────────────────────────────────────────────────
+
+model CatalogoServicio {
+  id          Int         @id @default(autoincrement())
+  equipoId    Int
+  equipo      EquipoTimon @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  nombre      String
+  descripcion String?
+  activo      Boolean     @default(true)
+
+  serviciosActividad ServicioActividad[]
+
+  @@map("CatalogoServicio")
+}
+
+// estado: PENDIENTE | ASIGNADO | CONFIRMADO | CANCELADO
+model ServicioActividad {
+  id                 Int              @id @default(autoincrement())
+  actividadId        Int
+  actividad          Actividad        @relation(fields: [actividadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  catalogoServicioId Int
+  catalogoServicio   CatalogoServicio @relation(fields: [catalogoServicioId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  descripcion        String?
+  estado             String           @default("PENDIENTE")
+  origenOCR          Boolean          @default(false)
+  imagenCartaRuta    String?
+  createdAt          DateTime         @default(now())
+
+  asignados ServicioAsignado[]
+
+  @@map("ServicioActividad")
+}
+
+model ServicioAsignado {
+  id                  Int               @id @default(autoincrement())
+  servicioActividadId Int
+  servicioActividad   ServicioActividad @relation(fields: [servicioActividadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  hermanoId           Int
+  hermano             Hermano           @relation(fields: [hermanoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  confirmado          Boolean           @default(false)
+  createdAt           DateTime          @default(now())
+
+  @@unique([servicioActividadId, hermanoId])
+  @@map("ServicioAsignado")
+}
+
+// ─── REUNIONES / ACTAS ───────────────────────────────────────────────────────
+
+model Reunion {
+  id            Int         @id @default(autoincrement())
+  equipoId      Int
+  equipo        EquipoTimon @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  titulo        String
+  fecha         DateTime
+  lugar         String?
+  redactorId    Int
+  redactor      Usuario     @relation(fields: [redactorId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  participantes String?
+  textoGenerado String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  acuerdos Acuerdo[]
+
+  @@map("Reunion")
+}
+
+model Acuerdo {
+  id          Int       @id @default(autoincrement())
+  reunionId   Int
+  reunion     Reunion   @relation(fields: [reunionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  descripcion String
+  responsable String?
+  fechaLimite DateTime?
+  cumplido    Boolean   @default(false)
+  orden       Int
+
+  @@map("Acuerdo")
+}
