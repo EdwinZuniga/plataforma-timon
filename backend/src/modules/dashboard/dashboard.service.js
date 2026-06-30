@@ -9,7 +9,7 @@ export const obtenerDashboard = async (equipoId) => {
     actividadesAnio,
     talleres,
     serviciosPendientes,
-    actividadesPorMes,
+    asistenciaTalleresMes,
     hermanosPorDepartamento,
   ] = await Promise.all([
     prisma.comunidad.count({ where: { equipoId, estado: 'ACTIVA' } }),
@@ -17,10 +17,15 @@ export const obtenerDashboard = async (equipoId) => {
     prisma.actividad.count({ where: { equipoId, anio: anioActual } }),
     prisma.taller.count({ where: { equipoId, activo: true } }),
     prisma.servicioActividad.count({ where: { actividad: { equipoId }, estado: 'PENDIENTE' } }),
-    prisma.actividad.groupBy({
-      by: ['anio'],
-      where: { equipoId, anio: anioActual },
+    prisma.asistenciaMes.groupBy({
+      by: ['mes'],
+      where: {
+        anio: anioActual,
+        estado: 'PRESENTE',
+        inscripcion: { edicionTaller: { taller: { equipoId } } },
+      },
       _count: { id: true },
+      orderBy: { mes: 'asc' },
     }),
     prisma.comunidad.groupBy({
       by: ['departamento'],
@@ -29,7 +34,10 @@ export const obtenerDashboard = async (equipoId) => {
     }),
   ])
 
-  const actividadesPorMesData = Array.from({ length: 12 }, (_, i) => ({ mes: i + 1, total: 0 }))
+  const asistenciaPorMesData = Array.from({ length: 12 }, (_, i) => {
+    const found = asistenciaTalleresMes.find((d) => d.mes === i + 1)
+    return { mes: i + 1, total: found ? found._count.id : 0 }
+  })
 
   return {
     metricas: {
@@ -40,7 +48,7 @@ export const obtenerDashboard = async (equipoId) => {
       serviciosPendientes,
     },
     graficas: {
-      actividadesPorMes: actividadesPorMesData,
+      asistenciaTalleresMes: asistenciaPorMesData,
       hermanosPorDepartamento: hermanosPorDepartamento.map((d) => ({
         departamento: d.departamento,
         total: d._count.id,

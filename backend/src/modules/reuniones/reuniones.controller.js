@@ -53,6 +53,15 @@ export const crearAcuerdo = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
+export const guardarComisiones = async (req, res, next) => {
+  try {
+    const { comisiones } = req.body
+    if (!Array.isArray(comisiones)) return next({ status: 400, message: 'comisiones debe ser un array', code: 'DATOS_INVALIDOS' })
+    const data = await svc.guardarComisiones(req.params.equipoId, req.params.id, comisiones)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
 export const generarTexto = async (req, res, next) => {
   try {
     const data = await svc.generarTexto(req.params.equipoId, req.params.id)

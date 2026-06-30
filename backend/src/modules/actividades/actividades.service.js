@@ -7,6 +7,11 @@ export const listarActividades = async (equipoId, { anio, tipo, page = 1 }) => {
     equipoId,
     ...(anio && { anio: parseInt(anio) }),
     ...(tipo && { tipo }),
+    // Excluir actividades creadas únicamente por OCR (sin servicios manuales)
+    OR: [
+      { servicios: { none: {} } },
+      { servicios: { some: { origenOCR: false } } },
+    ],
   }
 
   const [total, data] = await Promise.all([
@@ -35,12 +40,6 @@ export const obtenerActividad = async (equipoId, id) => {
     where: { id, equipoId },
     include: {
       _count: { select: { asistencias: true } },
-      servicios: {
-        include: {
-          catalogoServicio: true,
-          asignados: { include: { hermano: { select: { id: true, nombre: true, apellido: true } } } },
-        },
-      },
     },
   })
   if (!actividad) throw { status: 404, message: 'Actividad no encontrada', code: 'ACTIVIDAD_NO_ENCONTRADA' }

@@ -56,7 +56,7 @@ async function main() {
   console.log('✅ Talleres de ejemplo creados')
 
   // Catálogo de servicios
-  const servicios = ['Alabanza', 'Ujieres', 'Logística', 'Cocina', 'Registro']
+  const servicios = ['Animación', 'Logística']
   for (const nombre of servicios) {
     const existe = await prisma.catalogoServicio.findFirst({ where: { nombre, equipoId: equipo.id } })
     if (!existe) await prisma.catalogoServicio.create({ data: { nombre, equipoId: equipo.id } })

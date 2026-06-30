@@ -3,15 +3,16 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { getReunion, createAcuerdo, updateAcuerdo, updateReunion, generarTexto, deleteReunion } from '@/api/reuniones'
+import { getReunion, createAcuerdo, updateAcuerdo, updateReunion, generarTexto, deleteReunion, saveComisiones } from '@/api/reuniones'
 import { getMiembros } from '@/api/equipos'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageSpinner } from '@/components/ui/spinner'
 import { useToast } from '@/components/ui/toast'
-import { ArrowLeft, Plus, Copy, CheckCircle, Circle, Edit, Trash2, StickyNote, Check, Pencil } from 'lucide-react'
+import { ArrowLeft, Plus, Copy, CheckCircle, Circle, Edit, Trash2, StickyNote, Check, Pencil, Users2, FileText } from 'lucide-react'
 import { EditarReunionModal } from './EditarReunionModal'
+import { ComisionesModal } from './ComisionesModal'
 import { NotasEditor } from '@/components/NotasEditor'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 
@@ -26,6 +27,7 @@ export default function ReunionDetailPage() {
   const [editModal, setEditModal] = useState(false)
   const [notasEditando, setNotasEditando] = useState(false)
   const [confirmEliminar, setConfirmEliminar] = useState(false)
+  const [comisionesModal, setComisionesModal] = useState(false)
   const [selectedResponsables, setSelectedResponsables] = useState([])
 
   const { data: reunion, isLoading } = useQuery({
@@ -87,6 +89,16 @@ export default function ReunionDetailPage() {
     onError: (err) => toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' }),
   })
 
+  const { mutate: guardarComisionesMut } = useMutation({
+    mutationFn: (comisiones) => saveComisiones(equipoActual.id, id, comisiones),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reunion', id] })
+      setComisionesModal(false)
+      toast({ title: 'Comisiones guardadas' })
+    },
+    onError: (err) => toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' }),
+  })
+
   const { mutate: guardarNotas, isPending: guardandoNotas } = useMutation({
     mutationFn: (html) => updateReunion(equipoActual.id, id, { notas: html }),
     onSuccess: () => {
@@ -120,14 +132,21 @@ export default function ReunionDetailPage() {
           </p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <Button size="sm" variant="outline" onClick={() => setEditModal(true)}>
-            <Edit className="h-4 w-4" /> Editar
+          <Button size="sm" variant="outline" onClick={() => setEditModal(true)} title="Editar">
+            <Edit className="h-4 w-4" />
+            <span className="hidden md:inline ml-1">Editar</span>
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setNotasEditando(true)}>
-            <StickyNote className="h-4 w-4" /> Notas
+          <Button size="sm" variant="outline" onClick={() => setNotasEditando(true)} title="Notas">
+            <StickyNote className="h-4 w-4" />
+            <span className="hidden md:inline ml-1">Notas</span>
           </Button>
-          <Button size="sm" variant="outline" onClick={() => generar()} disabled={generando}>
-            {generando ? '...' : 'Generar texto'}
+          <Button size="sm" variant="outline" onClick={() => setComisionesModal(true)} title="Comisiones">
+            <Users2 className="h-4 w-4" />
+            <span className="hidden md:inline ml-1">Comisiones</span>
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => generar()} disabled={generando} title="Generar texto">
+            <FileText className="h-4 w-4" />
+            <span className="hidden md:inline ml-1">{generando ? '...' : 'Generar texto'}</span>
           </Button>
           <button
             onClick={handleEliminar}
@@ -149,6 +168,36 @@ export default function ReunionDetailPage() {
       {reunion.asistentes?.length === 0 && reunion.participantes && (
         <p className="text-sm">👥 {reunion.participantes}</p>
       )}
+
+      {/* Comisiones */}
+      {reunion.comisiones && (() => {
+        const cs = JSON.parse(reunion.comisiones).filter((c) => c.miembros.length > 0)
+        return cs.length > 0 ? (
+          <Card>
+            <CardContent className="py-3 px-4 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold flex items-center gap-1.5">
+                  <Users2 className="h-4 w-4 text-primary" /> Comisiones
+                </p>
+                <button
+                  onClick={() => setComisionesModal(true)}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Pencil className="h-3.5 w-3.5" /> Editar
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
+                {cs.map((c) => (
+                  <div key={c.nombre}>
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{c.nombre}</p>
+                    <p className="text-sm">{c.miembros.join(', ')}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : null
+      })()}
 
       {/* Notas: tarjeta de solo lectura */}
       {reunion.notas && !notasEditando && (
@@ -286,6 +335,14 @@ export default function ReunionDetailPage() {
           reunion={reunion}
           onClose={() => setEditModal(false)}
           onSaved={() => { setEditModal(false); qc.invalidateQueries({ queryKey: ['reunion', id] }) }}
+        />
+      )}
+
+      {comisionesModal && (
+        <ComisionesModal
+          reunion={reunion}
+          onClose={() => setComisionesModal(false)}
+          onSaved={(data) => guardarComisionesMut(data)}
         />
       )}
 

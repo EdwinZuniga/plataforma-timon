@@ -63,6 +63,7 @@ model MiembroEquipo {
   equipoApoyoEdiciones    EquipoApoyoEdicion[]
   temasMesExpuestos       TemaMes[]          @relation("TemaMesExpositor")
   reunionesAsistidas      ReunionAsistente[]
+  serviciosAsignados      ServicioAsignado[]
 
   @@unique([usuarioId, equipoId])
   @@map("MiembroEquipo")
@@ -148,9 +149,8 @@ model Hermano {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  inscripciones      Inscripcion[]
-  asistencias        Asistencia[]
-  serviciosAsignados ServicioAsignado[]
+  inscripciones Inscripcion[]
+  asistencias   Asistencia[]
 
   @@map("Hermano")
 }
@@ -333,16 +333,19 @@ model CatalogoServicio {
 
 // estado: PENDIENTE | ASIGNADO | CONFIRMADO | CANCELADO
 model ServicioActividad {
-  id                 Int              @id @default(autoincrement())
-  actividadId        Int
-  actividad          Actividad        @relation(fields: [actividadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  catalogoServicioId Int
-  catalogoServicio   CatalogoServicio @relation(fields: [catalogoServicioId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  descripcion        String?
-  estado             String           @default("PENDIENTE")
-  origenOCR          Boolean          @default(false)
-  imagenCartaRuta    String?
-  createdAt          DateTime         @default(now())
+  id                   Int              @id @default(autoincrement())
+  actividadId          Int
+  actividad            Actividad        @relation(fields: [actividadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  catalogoServicioId   Int
+  catalogoServicio     CatalogoServicio @relation(fields: [catalogoServicioId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  descripcion          String?
+  estado               String           @default("PENDIENTE")
+  origenOCR            Boolean          @default(false)
+  imagenCartaRuta      String?
+  comunidadSolicitante String?
+  horaServicio         String?
+  dirigidoA            String?
+  createdAt            DateTime         @default(now())
 
   asignados ServicioAsignado[]
 
@@ -353,12 +356,12 @@ model ServicioAsignado {
   id                  Int               @id @default(autoincrement())
   servicioActividadId Int
   servicioActividad   ServicioActividad @relation(fields: [servicioActividadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  hermanoId           Int
-  hermano             Hermano           @relation(fields: [hermanoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  miembroId           Int
+  miembro             MiembroEquipo     @relation(fields: [miembroId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   confirmado          Boolean           @default(false)
   createdAt           DateTime          @default(now())
 
-  @@unique([servicioActividadId, hermanoId])
+  @@unique([servicioActividadId, miembroId])
   @@map("ServicioAsignado")
 }
 
@@ -378,6 +381,8 @@ model Reunion {
   textoGenerado String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+
+  comisiones    String?
 
   acuerdos   Acuerdo[]
   asistentes ReunionAsistente[]

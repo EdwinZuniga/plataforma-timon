@@ -32,11 +32,28 @@ export const listarServicios = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
+export const listarTodos = async (req, res, next) => {
+  try {
+    const { estado, page, origenOCR, anio, mes, catalogoServicioId } = req.query
+    const data = await svc.listarTodos(req.params.equipoId, { estado, page, origenOCR, anio, mes, catalogoServicioId })
+    res.json({ success: true, ...data })
+  } catch (err) { next(err) }
+}
+
 export const asignar = async (req, res, next) => {
   try {
-    const { hermanoId } = req.body
-    if (!hermanoId) return next({ status: 400, message: 'hermanoId requerido', code: 'DATOS_REQUERIDOS' })
-    const data = await svc.asignarHermano(req.params.equipoId, req.params.servicioId, parseInt(hermanoId))
+    const { miembroId } = req.body
+    if (!miembroId) return next({ status: 400, message: 'miembroId requerido', code: 'DATOS_REQUERIDOS' })
+    const data = await svc.asignarMiembro(req.params.equipoId, req.params.servicioId, parseInt(miembroId))
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export const desasignar = async (req, res, next) => {
+  try {
+    const { miembroId } = req.body
+    if (!miembroId) return next({ status: 400, message: 'miembroId requerido', code: 'DATOS_REQUERIDOS' })
+    const data = await svc.desasignarMiembro(req.params.equipoId, req.params.servicioId, parseInt(miembroId))
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }
@@ -45,6 +62,38 @@ export const confirmar = async (req, res, next) => {
   try {
     const data = await svc.confirmarServicio(req.params.equipoId, req.params.servicioId)
     res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export const finalizar = async (req, res, next) => {
+  try {
+    const data = await svc.finalizarServicio(req.params.equipoId, req.params.servicioId)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export const reabrir = async (req, res, next) => {
+  try {
+    const data = await svc.reabrirServicio(req.params.equipoId, req.params.servicioId)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export const editar = async (req, res, next) => {
+  try {
+    const { catalogoServicioId, descripcion, horaServicio, comunidadSolicitante, actividadFecha, actividadLugar, actividadNombre } = req.body
+    const data = await svc.editarServicio(req.params.equipoId, req.params.servicioId, {
+      catalogoServicioId: catalogoServicioId !== undefined ? parseInt(catalogoServicioId) : undefined,
+      descripcion, horaServicio, comunidadSolicitante, actividadFecha, actividadLugar, actividadNombre,
+    })
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export const eliminar = async (req, res, next) => {
+  try {
+    await svc.eliminarServicio(req.params.equipoId, req.params.servicioId)
+    res.json({ success: true })
   } catch (err) { next(err) }
 }
 

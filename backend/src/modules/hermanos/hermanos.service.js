@@ -58,17 +58,12 @@ export const historialHermano = async (equipoId, id) => {
         include: { actividad: true },
         orderBy: { createdAt: 'desc' },
       },
-      serviciosAsignados: {
-        include: { servicioActividad: { include: { actividad: true, catalogoServicio: true } } },
-        orderBy: { createdAt: 'desc' },
-      },
     },
   })
   if (!hermano) throw { status: 404, message: 'Hermano no encontrado', code: 'HERMANO_NO_ENCONTRADO' }
   return {
     talleres: hermano.inscripciones,
     actividades: hermano.asistencias,
-    servicios: hermano.serviciosAsignados,
   }
 }
 

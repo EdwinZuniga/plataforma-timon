@@ -23,6 +23,13 @@ const moreItems = [
   { to: '/equipos', icon: Settings, label: 'Equipos' },
 ]
 
+const bottomNavItems = [
+  { to: '/dashboard', icon: Home, label: 'Inicio' },
+  { to: '/reuniones', icon: FileText, label: 'Reuniones' },
+  { to: '/talleres', icon: BookOpen, label: 'Talleres' },
+  { to: '/servicios', icon: Wrench, label: 'Servicios' },
+]
+
 function NavLink({ to, icon: Icon, label, mobile }) {
   const { pathname } = useLocation()
   const active = pathname.startsWith(to)
@@ -31,7 +38,7 @@ function NavLink({ to, icon: Icon, label, mobile }) {
       to={to}
       className={cn(
         'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors min-h-[44px]',
-        mobile ? 'flex-col gap-0.5 text-xs px-1 py-1' : '',
+        mobile ? 'flex-col gap-0.5 text-xs px-1 py-2 flex-1 justify-center' : '',
         active
           ? 'bg-primary-700/10 text-primary-700 dark:text-primary-500'
           : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -141,7 +148,7 @@ export function Layout({ children }) {
 
         {/* Bottom navigation móvil */}
         <nav className="flex md:hidden items-center border-t bg-card fixed bottom-0 left-0 right-0 z-30">
-          {navItems.slice(0, 4).map((item) => (
+          {bottomNavItems.map((item) => (
             <NavLink key={item.to} {...item} mobile />
           ))}
           <div className="flex-1">

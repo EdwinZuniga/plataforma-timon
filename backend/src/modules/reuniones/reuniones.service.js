@@ -118,6 +118,15 @@ const htmlToText = (html) => {
     .trim()
 }
 
+export const guardarComisiones = async (equipoId, reunionId, comisiones) => {
+  const existe = await prisma.reunion.findFirst({ where: { id: reunionId, equipoId } })
+  if (!existe) throw { status: 404, message: 'Reunión no encontrada', code: 'REUNION_NO_ENCONTRADA' }
+  return prisma.reunion.update({
+    where: { id: reunionId },
+    data: { comisiones: JSON.stringify(comisiones) },
+  })
+}
+
 export const generarTexto = async (equipoId, reunionId) => {
   const reunion = await prisma.reunion.findFirst({
     where: { id: reunionId, equipoId },
@@ -154,11 +163,19 @@ export const generarTexto = async (equipoId, reunionId) => {
 
   const notasPlano = htmlToText(reunion.notas)
 
+  let comisionesTexto = ''
+  if (reunion.comisiones) {
+    const cs = JSON.parse(reunion.comisiones).filter((c) => c.miembros.length > 0)
+    if (cs.length > 0) {
+      comisionesTexto = '\nCOMISIONES:\n' + cs.map((c) => `• ${c.nombre}: ${c.miembros.join(', ')}`).join('\n')
+    }
+  }
+
   const texto = `📋 ACTA DE REUNIÓN — ${reunion.equipo.nombre.toUpperCase()}
 📅 Fecha: ${fecha}
 📍 Lugar: ${reunion.lugar || 'Sin especificar'}
 👥 Participantes: ${nombresAsistentes}
-${notasPlano ? `\n📝 Notas:\n${notasPlano}\n` : ''}
+${notasPlano ? `\n📝 Notas:\n${notasPlano}\n` : ''}${comisionesTexto ? `${comisionesTexto}\n` : ''}
 ACUERDOS:
 ${acuerdosTexto || 'Sin acuerdos registrados.'}
 

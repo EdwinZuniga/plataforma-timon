@@ -10,11 +10,35 @@ export const procesar = async (req, res, next) => {
 
 export const confirmar = async (req, res, next) => {
   try {
-    const { actividadId, catalogoServicioId, hermanoId, descripcion, imagenCartaRuta } = req.body
-    if (!actividadId || !catalogoServicioId) {
-      return next({ status: 400, message: 'actividadId y catalogoServicioId son requeridos', code: 'DATOS_REQUERIDOS' })
-    }
-    const data = await svc.confirmarServicio(req.params.equipoId, { actividadId, catalogoServicioId, hermanoId, descripcion, imagenCartaRuta })
+    const {
+      catalogoServicioId,
+      miembroIds,
+      descripcion,
+      imagenCartaRuta,
+      comunidadSolicitante,
+      horaServicio,
+      dirigidoA,
+      fechaServicio,
+      lugarServicio,
+    } = req.body
+
+    const ids = Array.isArray(miembroIds)
+      ? miembroIds
+      : miembroIds
+        ? JSON.parse(miembroIds)
+        : []
+
+    const data = await svc.confirmarServicio(req.params.equipoId, {
+      catalogoServicioId,
+      miembroIds: ids,
+      descripcion,
+      imagenCartaRuta,
+      comunidadSolicitante,
+      horaServicio,
+      dirigidoA,
+      fechaServicio,
+      lugarServicio,
+    })
     res.status(201).json({ success: true, data })
   } catch (err) { next(err) }
 }

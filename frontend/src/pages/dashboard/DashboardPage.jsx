@@ -36,8 +36,8 @@ export default function DashboardPage() {
   if (isLoading) return <PageSpinner />
 
   const metricas = data?.metricas || {}
-  const actividadesPorMes = (data?.graficas?.actividadesPorMes || []).map((d, i) => ({
-    mes: MESES[d.mes - 1] || MESES[i],
+  const asistenciaTalleresMes = (data?.graficas?.asistenciaTalleresMes || []).map((d) => ({
+    mes: MESES[d.mes - 1],
     total: d.total,
   }))
   const herPorDep = data?.graficas?.hermanosPorDepartamento || []
@@ -60,15 +60,15 @@ export default function DashboardPage() {
       <div className="grid md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Actividades por mes ({new Date().getFullYear()})</CardTitle>
+            <CardTitle className="text-base">Asistencia en talleres por mes ({new Date().getFullYear()})</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={actividadesPorMes}>
+              <BarChart data={asistenciaTalleresMes}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip />
+                <Tooltip formatter={(val) => [val, 'Asistentes']} />
                 <Bar dataKey="total" fill="var(--color-equipo)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
