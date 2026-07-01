@@ -21,6 +21,8 @@ import reunionesRoutes from './modules/reuniones/reuniones.routes.js'
 import acuerdosRoutes from './modules/reuniones/acuerdos.routes.js'
 import ocrRoutes from './modules/ocr/ocr.routes.js'
 import dashboardRoutes from './modules/dashboard/dashboard.routes.js'
+import tesoreriaRoutes from './modules/tesoreria/tesoreria.routes.js'
+import inventarioRoutes from './modules/inventario/inventario.routes.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -73,6 +75,8 @@ app.use('/api/equipos/:equipoId/reuniones', reunionesRoutes)
 app.use('/api/equipos/:equipoId', acuerdosRoutes)
 app.use('/api/equipos/:equipoId/ocr', ocrRoutes)
 app.use('/api/equipos/:equipoId/dashboard', dashboardRoutes)
+app.use('/api/equipos/:equipoId/tesoreria', tesoreriaRoutes)
+app.use('/api/equipos/:equipoId/inventario', inventarioRoutes)
 
 app.use(errorHandler)
 

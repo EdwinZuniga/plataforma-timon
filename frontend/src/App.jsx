@@ -28,6 +28,8 @@ import TallerEdicionPage from '@/pages/talleres/TallerEdicionPage'
 import ServiciosPage from '@/pages/servicios/ServiciosPage'
 import EquiposPage from '@/pages/equipos/EquiposPage'
 import PerfilPage from '@/pages/perfil/PerfilPage'
+import TesoreriaPage from '@/pages/tesoreria/TesoreriaPage'
+import InventarioPage from '@/pages/inventario/InventarioPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -72,6 +74,8 @@ function AppRoutes() {
         <Route path="/talleres/:id/ediciones/:edicionId" element={<TallerEdicionPage />} />
         <Route path="/servicios" element={<ServiciosPage />} />
         <Route path="/equipos" element={<EquiposPage />} />
+        <Route path="/tesoreria" element={<TesoreriaPage />} />
+        <Route path="/inventario" element={<InventarioPage />} />
         <Route path="/perfil" element={<PerfilPage />} />
       </Route>
 

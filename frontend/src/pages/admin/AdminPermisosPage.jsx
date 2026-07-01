@@ -17,6 +17,8 @@ const MODULOS = [
   { key: 'talleres', label: 'Talleres' },
   { key: 'servicios', label: 'Servicios' },
   { key: 'equipos', label: 'Equipos' },
+  { key: 'tesoreria', label: 'Tesorería' },
+  { key: 'inventario', label: 'Inventario' },
 ]
 
 const ACCIONES = [

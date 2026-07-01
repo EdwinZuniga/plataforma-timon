@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import {
   Home, Users, UserCheck, Calendar, FileText,
   Settings, LogOut, Menu, X, ChevronRight,
-  Wrench, BookOpen, MoreHorizontal, UserCircle, ShieldCheck,
+  Wrench, BookOpen, MoreHorizontal, UserCircle, ShieldCheck, Landmark, Package,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,8 @@ const navItems = [
 const moreItems = [
   { to: '/talleres', icon: BookOpen, label: 'Talleres', modulo: 'talleres' },
   { to: '/servicios', icon: Wrench, label: 'Servicios', modulo: 'servicios' },
+  { to: '/tesoreria', icon: Landmark, label: 'Tesorería', modulo: 'tesoreria' },
+  { to: '/inventario', icon: Package, label: 'Inventario', modulo: 'inventario' },
   { to: '/equipos', icon: Settings, label: 'Equipos', modulo: null },
 ]
 

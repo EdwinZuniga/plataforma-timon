@@ -18,12 +18,16 @@ model EquipoTimon {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  miembros          MiembroEquipo[]
-  comunidades       Comunidad[]
-  talleres          Taller[]
-  actividades       Actividad[]
-  catalogoServicios CatalogoServicio[]
-  reuniones         Reunion[]
+  miembros              MiembroEquipo[]
+  comunidades           Comunidad[]
+  talleres              Taller[]
+  actividades           Actividad[]
+  catalogoServicios     CatalogoServicio[]
+  reuniones             Reunion[]
+  movimientosTesoreria  MovimientoTesoreria[]
+  ofrendasSemanales     OfrendaSemanal[]
+  articulos             Articulo[]
+  prestamosArticulo     PrestamoArticulo[]
 
   @@map("EquipoTimon")
 }
@@ -66,6 +70,9 @@ model MiembroEquipo {
   reunionesAsistidas      ReunionAsistente[]
   serviciosAsignados      ServicioAsignado[]
   permisos                PermisoUsuario[]
+  movimientosRegistrados  MovimientoTesoreria[] @relation("MovimientoResponsable")
+  ofrendasSemanales       OfrendaSemanal[]
+  prestamosRegistrados    PrestamoArticulo[]    @relation("PrestamoResponsable")
 
   @@unique([usuarioId, equipoId])
   @@map("MiembroEquipo")
@@ -315,8 +322,9 @@ model Actividad {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  asistencias Asistencia[]
-  servicios   ServicioActividad[]
+  asistencias          Asistencia[]
+  servicios            ServicioActividad[]
+  movimientosTesoreria MovimientoTesoreria[]
 
   @@map("Actividad")
 }
@@ -430,4 +438,92 @@ model ReunionAsistente {
 
   @@unique([reunionId, miembroId])
   @@map("ReunionAsistente")
+}
+
+// ─── TESORERÍA ───────────────────────────────────────────────────────────────
+
+// tipo: INGRESO | EGRESO
+// caja: GENERAL | CHICA
+model MovimientoTesoreria {
+  id            Int            @id @default(autoincrement())
+  equipoId      Int
+  equipo        EquipoTimon    @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  tipo          String
+  caja          String
+  concepto      String
+  categoria     String?
+  monto         Float
+  fecha         DateTime
+  descripcion   String?
+  actividadId   Int?
+  actividad     Actividad?     @relation(fields: [actividadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  registradoPor Int
+  responsable   MiembroEquipo  @relation("MovimientoResponsable", fields: [registradoPor], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("MovimientoTesoreria")
+}
+
+// ─── INVENTARIO ──────────────────────────────────────────────────────────────
+
+// condicion: BUENO | REGULAR | MALO
+model Articulo {
+  id          Int              @id @default(autoincrement())
+  equipoId    Int
+  equipo      EquipoTimon      @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  nombre      String
+  descripcion String?
+  categoria   String?
+  cantidad    Int              @default(1)
+  condicion   String           @default("BUENO")
+  ubicacion   String?
+  notas       String?
+  activo      Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  prestamos   PrestamoArticulo[]
+
+  @@map("Articulo")
+}
+
+// estado: PRESTADO | DEVUELTO
+model PrestamoArticulo {
+  id               Int           @id @default(autoincrement())
+  equipoId         Int
+  equipo           EquipoTimon   @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  articuloId       Int
+  articulo         Articulo      @relation(fields: [articuloId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  cantidadPrestada Int           @default(1)
+  prestadoA        String
+  contacto         String?
+  fechaPrestamo    DateTime
+  fechaEsperada    DateTime?
+  fechaDevolucion  DateTime?
+  estado           String        @default("PRESTADO")
+  registradoPor    Int
+  responsable      MiembroEquipo @relation("PrestamoResponsable", fields: [registradoPor], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  notas            String?
+  notasDevolucion  String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@map("PrestamoArticulo")
+}
+
+// Registro de ofrendas semanales de Caja Chica (por reunión sabatina)
+model OfrendaSemanal {
+  id        Int           @id @default(autoincrement())
+  equipoId  Int
+  equipo    EquipoTimon   @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  miembroId Int
+  miembro   MiembroEquipo @relation(fields: [miembroId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  fecha     DateTime
+  monto     Float         @default(1)
+  anio      Int
+  createdAt DateTime      @default(now())
+
+  @@unique([miembroId, fecha])
+  @@map("OfrendaSemanal")
 }
