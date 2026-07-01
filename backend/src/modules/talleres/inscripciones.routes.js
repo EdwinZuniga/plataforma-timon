@@ -1,12 +1,12 @@
 import { Router } from 'express'
-import { requireAuth, requireEquipo, requireRolMinimo } from '../../middlewares/auth.js'
+import { requireAuth, requireEquipo, requireRolMinimo, requirePermiso } from '../../middlewares/auth.js'
 import { registerIntParams } from '../../middlewares/parseIntParams.js'
 import * as svc from './talleres.service.js'
 
 const router = Router({ mergeParams: true })
 registerIntParams(router)
 
-router.post('/ediciones/:edicionId/inscripciones', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
+router.post('/ediciones/:edicionId/inscripciones', requireAuth, requireEquipo, requirePermiso('talleres', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
   try {
     const { hermanoIds } = req.body
     if (!Array.isArray(hermanoIds) || hermanoIds.length === 0) {
@@ -17,7 +17,7 @@ router.post('/ediciones/:edicionId/inscripciones', requireAuth, requireEquipo, r
   } catch (err) { next(err) }
 })
 
-router.put('/inscripciones/:inscripcionId', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
+router.put('/inscripciones/:inscripcionId', requireAuth, requireEquipo, requirePermiso('talleres', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
   try {
     const { asistio, aprobado, certificado } = req.body
     const data = await svc.actualizarInscripcion(req.params.inscripcionId, { asistio, aprobado, certificado })
@@ -25,14 +25,14 @@ router.put('/inscripciones/:inscripcionId', requireAuth, requireEquipo, requireR
   } catch (err) { next(err) }
 })
 
-router.delete('/inscripciones/:inscripcionId', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
+router.delete('/inscripciones/:inscripcionId', requireAuth, requireEquipo, requirePermiso('talleres', 'eliminar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
   try {
     await svc.eliminarInscripcion(req.params.inscripcionId)
     res.json({ success: true })
   } catch (err) { next(err) }
 })
 
-router.put('/inscripciones/:inscripcionId/asistencia-mes', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
+router.put('/inscripciones/:inscripcionId/asistencia-mes', requireAuth, requireEquipo, requirePermiso('talleres', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
   try {
     const { mes, anio, estado } = req.body
     if (!mes || !anio || !estado) {
@@ -46,7 +46,7 @@ router.put('/inscripciones/:inscripcionId/asistencia-mes', requireAuth, requireE
   } catch (err) { next(err) }
 })
 
-router.put('/inscripciones/:inscripcionId/tarea-mes', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
+router.put('/inscripciones/:inscripcionId/tarea-mes', requireAuth, requireEquipo, requirePermiso('talleres', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
   try {
     const { mes, anio, entrego, notas } = req.body
     if (mes === undefined || anio === undefined || entrego === undefined) {
@@ -64,7 +64,7 @@ router.get('/inscripciones/:inscripcionId/resumen', requireAuth, requireEquipo, 
   } catch (err) { next(err) }
 })
 
-router.put('/inscripciones/:inscripcionId/participacion-mes', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
+router.put('/inscripciones/:inscripcionId/participacion-mes', requireAuth, requireEquipo, requirePermiso('talleres', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
   try {
     const { mes, anio, participo, notas } = req.body
     if (mes === undefined || anio === undefined || participo === undefined) {

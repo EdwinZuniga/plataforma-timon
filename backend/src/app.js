@@ -8,6 +8,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { errorHandler } from './middlewares/errorHandler.js'
+import adminRoutes from './modules/admin/admin.routes.js'
 import authRoutes from './modules/auth/auth.routes.js'
 import equiposRoutes from './modules/equipos/equipos.routes.js'
 import comunidadesRoutes from './modules/comunidades/comunidades.routes.js'
@@ -59,6 +60,7 @@ app.get('/api/health', (req, res) => {
 })
 
 app.use('/api/auth', authRoutes)
+app.use('/api/admin', adminRoutes)
 app.use('/api/equipos', equiposRoutes)
 
 app.use('/api/equipos/:equipoId/comunidades', comunidadesRoutes)

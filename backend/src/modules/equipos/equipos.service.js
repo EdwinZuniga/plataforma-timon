@@ -68,8 +68,28 @@ export const agregarMiembro = async (equipoId, email, rol, nombreCorto, nombre) 
   return { usuarioCreado, contrasenaTemp, email }
 }
 
-export const actualizarMiembro = async (miembroId, data) => {
-  return prisma.miembroEquipo.update({ where: { id: miembroId }, data })
+export const actualizarMiembro = async (miembroId, { rol, nombreCorto, activo, nombre, email }) => {
+  return prisma.$transaction(async (tx) => {
+    const miembro = await tx.miembroEquipo.update({
+      where: { id: miembroId },
+      data: {
+        ...(rol !== undefined && { rol }),
+        ...(nombreCorto !== undefined && { nombreCorto }),
+        ...(activo !== undefined && { activo }),
+      },
+      include: { usuario: { select: { id: true } } },
+    })
+    if (nombre !== undefined || email !== undefined) {
+      await tx.usuario.update({
+        where: { id: miembro.usuario.id },
+        data: {
+          ...(nombre !== undefined && { nombre }),
+          ...(email !== undefined && { email }),
+        },
+      })
+    }
+    return miembro
+  })
 }
 
 export const desactivarMiembro = async (miembroId) => {

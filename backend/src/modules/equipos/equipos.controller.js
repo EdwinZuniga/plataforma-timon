@@ -49,8 +49,8 @@ export const agregarMiembro = async (req, res, next) => {
 
 export const actualizarMiembro = async (req, res, next) => {
   try {
-    const { rol, nombreCorto, activo } = req.body
-    const data = await svc.actualizarMiembro(req.params.miembroId, { rol, nombreCorto, activo })
+    const { rol, nombreCorto, activo, nombre, email } = req.body
+    const data = await svc.actualizarMiembro(req.params.miembroId, { rol, nombreCorto, activo, nombre, email })
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }

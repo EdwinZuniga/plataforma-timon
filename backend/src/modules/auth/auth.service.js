@@ -15,7 +15,7 @@ export const loginService = async (email, password) => {
     throw { status: 401, message: 'Credenciales incorrectas', code: 'CREDENCIALES_INVALIDAS' }
   }
 
-  const payload = { id: usuario.id, nombre: usuario.nombre, email: usuario.email }
+  const payload = { id: usuario.id, nombre: usuario.nombre, email: usuario.email, superAdmin: usuario.superAdmin }
   const accessToken = signAccessToken(payload)
   const refreshToken = signRefreshToken({ id: usuario.id })
 
@@ -46,7 +46,7 @@ export const refreshService = async (token) => {
     throw { status: 401, message: 'Usuario no encontrado o inactivo', code: 'USUARIO_INACTIVO' }
   }
 
-  const userPayload = { id: usuario.id, nombre: usuario.nombre, email: usuario.email }
+  const userPayload = { id: usuario.id, nombre: usuario.nombre, email: usuario.email, superAdmin: usuario.superAdmin }
   const newAccessToken = signAccessToken(userPayload)
   const newRefreshToken = signRefreshToken({ id: usuario.id })
 

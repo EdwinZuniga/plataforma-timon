@@ -4,8 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { ToastProvider } from '@/components/ui/toast'
 import { Layout } from '@/components/shared/Layout'
-import { ProtectedRoute, EquipoRoute } from '@/components/shared/ProtectedRoute'
+import { ProtectedRoute, EquipoRoute, SuperAdminRoute } from '@/components/shared/ProtectedRoute'
 
+import AdminLayout from '@/pages/admin/AdminLayout'
+import AdminPage from '@/pages/admin/AdminPage'
+import AdminUsuariosPage from '@/pages/admin/AdminUsuariosPage'
+import AdminEquiposPage from '@/pages/admin/AdminEquiposPage'
+import AdminPermisosPage from '@/pages/admin/AdminPermisosPage'
 import LoginPage from '@/pages/auth/LoginPage'
 import SeleccionarEquipoPage from '@/pages/auth/SeleccionarEquipoPage'
 import DashboardPage from '@/pages/dashboard/DashboardPage'
@@ -44,6 +49,13 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/seleccionar-equipo" element={<ProtectedRoute><SeleccionarEquipoPage /></ProtectedRoute>} />
+
+      <Route element={<SuperAdminRoute><AdminLayout /></SuperAdminRoute>}>
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin/usuarios" element={<AdminUsuariosPage />} />
+        <Route path="/admin/equipos" element={<AdminEquiposPage />} />
+        <Route path="/admin/permisos" element={<AdminPermisosPage />} />
+      </Route>
 
       <Route element={<EquipoRoute><Layout><Outlet /></Layout></EquipoRoute>}>
         <Route path="/dashboard" element={<DashboardPage />} />

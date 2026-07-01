@@ -4,31 +4,39 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import {
   Home, Users, UserCheck, Calendar, FileText,
   Settings, LogOut, Menu, X, ChevronRight,
-  Wrench, BookOpen, MoreHorizontal, UserCircle,
+  Wrench, BookOpen, MoreHorizontal, UserCircle, ShieldCheck,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { Button } from '@/components/ui/button'
 
+// modulo: null = siempre visible (dashboard, equipos no tienen restricción de módulo)
 const navItems = [
-  { to: '/dashboard', icon: Home, label: 'Inicio' },
-  { to: '/comunidades', icon: Users, label: 'Comunidades' },
-  { to: '/hermanos', icon: UserCheck, label: 'Hermanos' },
-  { to: '/actividades', icon: Calendar, label: 'Actividades' },
-  { to: '/reuniones', icon: FileText, label: 'Reuniones' },
+  { to: '/dashboard', icon: Home, label: 'Inicio', modulo: null },
+  { to: '/comunidades', icon: Users, label: 'Comunidades', modulo: 'comunidades' },
+  { to: '/hermanos', icon: UserCheck, label: 'Hermanos', modulo: 'hermanos' },
+  { to: '/actividades', icon: Calendar, label: 'Actividades', modulo: 'actividades' },
+  { to: '/reuniones', icon: FileText, label: 'Reuniones', modulo: 'reuniones' },
 ]
 
 const moreItems = [
-  { to: '/talleres', icon: BookOpen, label: 'Talleres' },
-  { to: '/servicios', icon: Wrench, label: 'Servicios' },
-  { to: '/equipos', icon: Settings, label: 'Equipos' },
+  { to: '/talleres', icon: BookOpen, label: 'Talleres', modulo: 'talleres' },
+  { to: '/servicios', icon: Wrench, label: 'Servicios', modulo: 'servicios' },
+  { to: '/equipos', icon: Settings, label: 'Equipos', modulo: null },
 ]
 
 const bottomNavItems = [
-  { to: '/dashboard', icon: Home, label: 'Inicio' },
-  { to: '/reuniones', icon: FileText, label: 'Reuniones' },
-  { to: '/talleres', icon: BookOpen, label: 'Talleres' },
-  { to: '/servicios', icon: Wrench, label: 'Servicios' },
+  { to: '/dashboard', icon: Home, label: 'Inicio', modulo: null },
+  { to: '/reuniones', icon: FileText, label: 'Reuniones', modulo: 'reuniones' },
+  { to: '/talleres', icon: BookOpen, label: 'Talleres', modulo: 'talleres' },
+  { to: '/servicios', icon: Wrench, label: 'Servicios', modulo: 'servicios' },
 ]
+
+// Devuelve true si el usuario puede ver el módulo según sus permisos
+function puedeVer(permisos, modulo) {
+  if (!modulo) return true
+  const p = permisos[modulo]
+  return !p || p.ver // sin config explícita → visible
+}
 
 function NavLink({ to, icon: Icon, label, mobile }) {
   const { pathname } = useLocation()
@@ -52,7 +60,12 @@ function NavLink({ to, icon: Icon, label, mobile }) {
 
 export function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { usuario, equipoActual, logout } = useAuthStore()
+  const { usuario, equipoActual, permisos, logout } = useAuthStore()
+  const navigate = useNavigate()
+
+  const visibleNavItems = navItems.filter((i) => puedeVer(permisos, i.modulo))
+  const visibleMoreItems = moreItems.filter((i) => puedeVer(permisos, i.modulo))
+  const visibleBottomItems = bottomNavItems.filter((i) => puedeVer(permisos, i.modulo))
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -72,14 +85,27 @@ export function Layout({ children }) {
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => <NavLink key={item.to} {...item} />)}
-          <div className="pt-4 pb-1 px-3">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Más</p>
-          </div>
-          {moreItems.map((item) => <NavLink key={item.to} {...item} />)}
+          {visibleNavItems.map((item) => <NavLink key={item.to} {...item} />)}
+          {visibleMoreItems.length > 0 && (
+            <>
+              <div className="pt-4 pb-1 px-3">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Más</p>
+              </div>
+              {visibleMoreItems.map((item) => <NavLink key={item.to} {...item} />)}
+            </>
+          )}
         </nav>
 
         <div className="border-t p-3">
+          {usuario?.superAdmin && (
+            <button
+              onClick={() => navigate('/admin')}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-violet-700 hover:bg-violet-50 transition-colors mb-1"
+            >
+              <ShieldCheck className="h-4 w-4 shrink-0" />
+              Administración
+            </button>
+          )}
           <Link to="/perfil" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors group">
             <div className="h-8 w-8 rounded-full bg-primary-700 text-white flex items-center justify-center text-xs font-bold shrink-0">
               {usuario?.nombre?.[0]?.toUpperCase()}
@@ -110,11 +136,20 @@ export function Layout({ children }) {
               </button>
             </div>
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-              {[...navItems, ...moreItems].map((item) => (
+              {[...visibleNavItems, ...visibleMoreItems].map((item) => (
                 <NavLink key={item.to} {...item} />
               ))}
             </nav>
             <div className="border-t p-3 space-y-1">
+              {usuario?.superAdmin && (
+                <Link
+                  to="/admin"
+                  onClick={() => setSidebarOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-violet-700 hover:bg-violet-50 transition-colors"
+                >
+                  <ShieldCheck className="h-4 w-4" /> Administración
+                </Link>
+              )}
               <Link
                 to="/perfil"
                 onClick={() => setSidebarOpen(false)}
@@ -148,7 +183,7 @@ export function Layout({ children }) {
 
         {/* Bottom navigation móvil */}
         <nav className="flex md:hidden items-center border-t bg-card fixed bottom-0 left-0 right-0 z-30">
-          {bottomNavItems.map((item) => (
+          {visibleBottomItems.map((item) => (
             <NavLink key={item.to} {...item} mobile />
           ))}
           <div className="flex-1">

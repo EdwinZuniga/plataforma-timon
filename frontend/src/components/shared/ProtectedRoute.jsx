@@ -16,3 +16,11 @@ export function EquipoRoute({ children }) {
   if (!equipoActual) return <Navigate to="/seleccionar-equipo" replace />
   return children ?? <Outlet />
 }
+
+export function SuperAdminRoute({ children }) {
+  const { usuario, isLoading } = useAuthStore()
+  if (isLoading) return <PageSpinner />
+  if (!usuario) return <Navigate to="/login" replace />
+  if (!usuario.superAdmin) return <Navigate to="/dashboard" replace />
+  return children ?? <Outlet />
+}

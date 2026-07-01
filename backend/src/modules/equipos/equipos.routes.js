@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { requireAuth, requireEquipo, requireRolMinimo } from '../../middlewares/auth.js'
 import { registerIntParams } from '../../middlewares/parseIntParams.js'
 import * as ctrl from './equipos.controller.js'
+import prisma from '../../config/database.js'
 
 const router = Router()
 registerIntParams(router)
@@ -15,5 +16,16 @@ router.get('/:equipoId/miembros', requireAuth, requireEquipo, ctrl.listarMiembro
 router.post('/:equipoId/miembros', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR']), ctrl.agregarMiembro)
 router.put('/:equipoId/miembros/:miembroId', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR']), ctrl.actualizarMiembro)
 router.delete('/:equipoId/miembros/:miembroId', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR']), ctrl.desactivarMiembro)
+
+// Permisos del usuario actual en este equipo
+router.get('/:equipoId/mis-permisos', requireAuth, requireEquipo, async (req, res, next) => {
+  try {
+    const permisos = await prisma.permisoUsuario.findMany({
+      where: { miembroId: req.membresia.id },
+      select: { modulo: true, ver: true, crear: true, editar: true, eliminar: true },
+    })
+    res.json({ success: true, data: permisos })
+  } catch (err) { next(err) }
+})
 
 export default router
