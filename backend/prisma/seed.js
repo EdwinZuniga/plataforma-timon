@@ -11,7 +11,7 @@ async function main() {
   let equipo = await prisma.equipoTimon.findFirst({ where: { nombre: 'Jóvenes' } })
   if (!equipo) {
     equipo = await prisma.equipoTimon.create({
-      data: { nombre: 'Jóvenes', descripcion: 'Equipo Timón de Jóvenes', color: '#6D28D9' },
+      data: { nombre: 'Jóvenes', descripcion: 'Equipo Timón de Jóvenes', color: '#1416a7' },
     })
   }
   console.log(`✅ Equipo: ${equipo.nombre} (id=${equipo.id})`)
@@ -20,8 +20,8 @@ async function main() {
   const passwordHash = await bcrypt.hash('Admin2026!', 10)
   const admin = await prisma.usuario.upsert({
     where: { email: 'admin@renovacion.org' },
-    update: {},
-    create: { nombre: 'Administrador', email: 'admin@renovacion.org', passwordHash },
+    update: { superAdmin: true },
+    create: { nombre: 'Administrador', email: 'admin@renovacion.org', passwordHash, superAdmin: true },
   })
   console.log(`✅ Usuario: ${admin.email} (id=${admin.id})`)
 

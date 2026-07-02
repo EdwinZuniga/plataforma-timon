@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { PageSpinner } from '@/components/ui/spinner'
 import { useToast } from '@/components/ui/toast'
 import { Plus, Trash2, X, Pencil } from 'lucide-react'
+import MiembroPerfilModal from './MiembroPerfilModal'
 
 const ROLES = ['COORDINADOR', 'MIEMBRO', 'SECRETARIO', 'CONSULTOR']
 const ROL_LABEL = { COORDINADOR: 'Coordinador', MIEMBRO: 'Miembro', SECRETARIO: 'Secretario', CONSULTOR: 'Consultor' }
@@ -67,6 +68,7 @@ export default function EquiposPage() {
   const qc = useQueryClient()
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
+  const [perfilTarget, setPerfilTarget] = useState(null)
   const [inviteLoading, setInviteLoading] = useState(false)
   const { register, handleSubmit, reset } = useForm()
 
@@ -137,13 +139,19 @@ export default function EquiposPage() {
           {miembros?.map((m) => (
             <Card key={m.id}>
               <CardContent className="flex items-center gap-3 py-3 px-4">
-                <div className="h-9 w-9 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-sm font-bold text-primary-700 shrink-0">
-                  {m.usuario.nombre[0]}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{m.usuario.nombre}</p>
-                  <p className="text-xs text-muted-foreground truncate">{m.usuario.email}</p>
-                </div>
+                <button
+                  className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                  onClick={() => setPerfilTarget(m)}
+                  title="Ver perfil y responsabilidades"
+                >
+                  <div className="h-9 w-9 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-sm font-bold text-primary-700 shrink-0">
+                    {m.usuario.nombre[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate hover:text-primary-700 transition-colors">{m.usuario.nombre}</p>
+                    <p className="text-xs text-muted-foreground truncate">{m.usuario.email}</p>
+                  </div>
+                </button>
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge variant={ROL_BADGE[m.rol]}>{ROL_LABEL[m.rol]}</Badge>
                   {!m.activo && <Badge variant="secondary">Inactivo</Badge>}
@@ -170,6 +178,13 @@ export default function EquiposPage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {perfilTarget && (
+        <MiembroPerfilModal
+          miembro={perfilTarget}
+          onClose={() => setPerfilTarget(null)}
+        />
       )}
 
       {editTarget && (

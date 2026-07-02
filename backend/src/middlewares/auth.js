@@ -61,7 +61,7 @@ export const requireSuperAdmin = (req, res, next) => {
 // - Con registro que concede permiso → establece req.permisoExplicito=true para saltar requireRolMinimo.
 // - Con registro que deniega → 403 inmediato.
 export const requirePermiso = (modulo, accion) => async (req, res, next) => {
-  if (req.usuario?.superAdmin) return next()
+  if (req.usuario?.superAdmin) { req.permisoExplicito = true; return next() }
   try {
     const miembroId = req.membresia.id
     const permiso = await prisma.permisoUsuario.findUnique({

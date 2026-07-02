@@ -61,3 +61,17 @@ export const desactivarMiembro = async (req, res, next) => {
     res.json({ success: true })
   } catch (err) { next(err) }
 }
+
+export const obtenerPerfilMiembro = async (req, res, next) => {
+  try {
+    const data = await svc.obtenerPerfilMiembro(req.params.miembroId)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export const obtenerMiPerfil = async (req, res, next) => {
+  try {
+    const data = await svc.obtenerMiPerfil(req.membresia.id, req.params.equipoId)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}

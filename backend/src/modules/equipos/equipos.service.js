@@ -95,3 +95,153 @@ export const actualizarMiembro = async (miembroId, { rol, nombreCorto, activo, n
 export const desactivarMiembro = async (miembroId) => {
   return prisma.miembroEquipo.update({ where: { id: miembroId }, data: { activo: false } })
 }
+
+export const obtenerMiPerfil = async (miembroId, equipoId) => {
+  const miembro = await prisma.miembroEquipo.findUnique({
+    where: { id: miembroId },
+    include: {
+      usuario: { select: { id: true, nombre: true, email: true } },
+      comunidades: {
+        select: { id: true, numero: true, nombre: true, departamento: true, estado: true },
+        orderBy: { nombre: 'asc' },
+      },
+      edicionesCoordinadas: {
+        include: { taller: { select: { nombre: true } } },
+        orderBy: { fecha: 'desc' },
+      },
+      equipoApoyoEdiciones: {
+        include: { edicion: { include: { taller: { select: { nombre: true } } } } },
+        orderBy: { createdAt: 'desc' },
+      },
+      temasMesExpuestos: {
+        include: { edicion: { include: { taller: { select: { nombre: true } } } } },
+        orderBy: [{ anio: 'desc' }, { mes: 'desc' }],
+      },
+      serviciosAsignados: {
+        include: {
+          servicioActividad: {
+            include: {
+              actividad: { select: { nombre: true, fecha: true, tipo: true } },
+              catalogoServicio: { select: { nombre: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  })
+
+  if (!miembro) throw { status: 404, message: 'Miembro no encontrado', code: 'MIEMBRO_NO_ENCONTRADO' }
+
+  // Acuerdos pendientes: texto libre, busca por nombre y nombreCorto
+  const nombresParaBuscar = [miembro.usuario.nombre]
+  if (miembro.nombreCorto) nombresParaBuscar.push(miembro.nombreCorto)
+
+  const acuerdosPendientes = await prisma.acuerdo.findMany({
+    where: {
+      cumplido: false,
+      reunion: { equipoId },
+      OR: nombresParaBuscar.map((n) => ({ responsable: { contains: n } })),
+    },
+    include: {
+      reunion: { select: { id: true, titulo: true, fecha: true } },
+    },
+    orderBy: { reunion: { fecha: 'desc' } },
+  })
+
+  // Comisiones: JSON guardado en Reunion.comisiones
+  const reunionesConComisiones = await prisma.reunion.findMany({
+    where: { equipoId, comisiones: { not: null } },
+    select: { id: true, titulo: true, fecha: true, comisiones: true },
+    orderBy: { fecha: 'desc' },
+  })
+
+  const comisionesDelMiembro = []
+  for (const reunion of reunionesConComisiones) {
+    try {
+      const parsed = JSON.parse(reunion.comisiones)
+      for (const comision of parsed) {
+        if (nombresParaBuscar.some((n) => comision.miembros?.includes(n))) {
+          comisionesDelMiembro.push({
+            reunionId: reunion.id,
+            reunionTitulo: reunion.titulo,
+            reunionFecha: reunion.fecha,
+            comision: comision.nombre,
+          })
+        }
+      }
+    } catch {}
+  }
+
+  // Ofrenda: total y por año
+  const [ofrendaTotal, ofrendasPorAnio] = await Promise.all([
+    prisma.ofrendaSemanal.aggregate({
+      where: { miembroId },
+      _sum: { monto: true },
+      _count: true,
+    }),
+    prisma.ofrendaSemanal.groupBy({
+      by: ['anio'],
+      where: { miembroId },
+      _sum: { monto: true },
+      orderBy: { anio: 'desc' },
+    }),
+  ])
+
+  return {
+    ...miembro,
+    acuerdosPendientes,
+    comisionesDelMiembro,
+    ofrenda: {
+      total: ofrendaTotal._sum.monto ?? 0,
+      entregas: ofrendaTotal._count,
+      porAnio: ofrendasPorAnio.map((o) => ({ anio: o.anio, total: o._sum.monto ?? 0 })),
+    },
+  }
+}
+
+export const obtenerPerfilMiembro = async (miembroId) => {
+  const miembro = await prisma.miembroEquipo.findUnique({
+    where: { id: miembroId },
+    include: {
+      usuario: { select: { id: true, nombre: true, email: true } },
+      comunidades: {
+        select: { id: true, numero: true, nombre: true, departamento: true, estado: true },
+        orderBy: { nombre: 'asc' },
+      },
+      edicionesCoordinadas: {
+        include: { taller: { select: { nombre: true } } },
+        orderBy: { fecha: 'desc' },
+      },
+      equipoApoyoEdiciones: {
+        include: {
+          edicion: {
+            include: { taller: { select: { nombre: true } } },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      },
+      temasMesExpuestos: {
+        include: {
+          edicion: { include: { taller: { select: { nombre: true } } } },
+        },
+        orderBy: [{ anio: 'desc' }, { mes: 'desc' }],
+      },
+      serviciosAsignados: {
+        include: {
+          servicioActividad: {
+            include: {
+              actividad: { select: { nombre: true, fecha: true, tipo: true } },
+              catalogoServicio: { select: { nombre: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      },
+    },
+  })
+
+  if (!miembro) throw { status: 404, message: 'Miembro no encontrado', code: 'MIEMBRO_NO_ENCONTRADO' }
+  return miembro
+}

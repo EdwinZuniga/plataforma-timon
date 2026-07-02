@@ -14,10 +14,13 @@ router.put('/:equipoId', requireAuth, requireEquipo, requireRolMinimo(['COORDINA
 
 router.get('/:equipoId/miembros', requireAuth, requireEquipo, ctrl.listarMiembros)
 router.post('/:equipoId/miembros', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR']), ctrl.agregarMiembro)
+router.get('/:equipoId/miembros/:miembroId/perfil', requireAuth, requireEquipo, ctrl.obtenerPerfilMiembro)
 router.put('/:equipoId/miembros/:miembroId', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR']), ctrl.actualizarMiembro)
 router.delete('/:equipoId/miembros/:miembroId', requireAuth, requireEquipo, requireRolMinimo(['COORDINADOR']), ctrl.desactivarMiembro)
 
 // Permisos del usuario actual en este equipo
+router.get('/:equipoId/mi-perfil', requireAuth, requireEquipo, ctrl.obtenerMiPerfil)
+
 router.get('/:equipoId/mis-permisos', requireAuth, requireEquipo, async (req, res, next) => {
   try {
     const permisos = await prisma.permisoUsuario.findMany({

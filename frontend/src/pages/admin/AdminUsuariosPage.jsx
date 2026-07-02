@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
-import { getUsuarios, createUsuario, updateUsuario, deleteUsuario } from '@/api/admin'
+import { getUsuarios, createUsuario, updateUsuario, deleteUsuario, getEquipos, asignarMiembro } from '@/api/admin'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
@@ -20,18 +20,44 @@ function UsuarioModal({ usuario, onClose }) {
   const isEdit = !!usuario
   const [showPass, setShowPass] = useState(false)
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { data: equiposData } = useQuery({
+    queryKey: ['admin-equipos-lista'],
+    queryFn: () => getEquipos({ limit: 100 }).then((r) => r.data.data.items),
+  })
+  const equipos = equiposData ?? []
+
+  const equiposActuales = usuario?.equipos?.map((m) => m.equipoId) ?? []
+
+  const { register, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: {
       nombre: usuario?.nombre ?? '',
       email: usuario?.email ?? '',
       password: '',
       superAdmin: usuario?.superAdmin ?? false,
       activo: usuario?.activo ?? true,
+      equipoId: '',
+      rol: 'COORDINADOR',
     },
   })
 
+  const equipoIdWatch = watch('equipoId')
+
   const mutation = useMutation({
-    mutationFn: (data) => isEdit ? updateUsuario(usuario.id, data) : createUsuario(data),
+    mutationFn: async (data) => {
+      const { equipoId, rol, ...payload } = data
+      payload.superAdmin = payload.superAdmin === true || payload.superAdmin === 'true'
+      if (!payload.password) delete payload.password
+
+      const result = isEdit
+        ? await updateUsuario(usuario.id, payload)
+        : await createUsuario(payload)
+
+      if (equipoId) {
+        const uid = isEdit ? usuario.id : result.data.data.id
+        await asignarMiembro(Number(equipoId), { usuarioId: uid, rol })
+      }
+      return result
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-usuarios'] })
       toast({ title: isEdit ? 'Usuario actualizado' : 'Usuario creado' })
@@ -42,12 +68,6 @@ function UsuarioModal({ usuario, onClose }) {
     },
   })
 
-  const onSubmit = (data) => {
-    const payload = { ...data, superAdmin: data.superAdmin === true || data.superAdmin === 'true' }
-    if (!payload.password) delete payload.password
-    mutation.mutate(payload)
-  }
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-card rounded-xl shadow-xl w-full max-w-md">
@@ -56,7 +76,7 @@ function UsuarioModal({ usuario, onClose }) {
           <button onClick={onClose}><X className="h-4 w-4" /></button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="p-5 space-y-4">
           <div>
             <label className="text-sm font-medium">Nombre</label>
             <Input {...register('nombre', { required: 'Requerido' })} className="mt-1" />
@@ -86,6 +106,37 @@ function UsuarioModal({ usuario, onClose }) {
               </button>
             </div>
             {errors.password && <p className="text-xs text-destructive mt-1">{errors.password.message}</p>}
+          </div>
+
+          {/* Asignar equipo */}
+          <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
+            <p className="text-sm font-medium">Agregar a equipo <span className="text-muted-foreground font-normal">(opcional)</span></p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Equipo</label>
+                <select
+                  {...register('equipoId')}
+                  className="w-full border rounded-md px-2 py-1.5 text-sm bg-background"
+                >
+                  <option value="">— ninguno —</option>
+                  {equipos.map((e) => (
+                    <option key={e.id} value={e.id} disabled={equiposActuales.includes(e.id)}>
+                      {e.nombre}{equiposActuales.includes(e.id) ? ' (ya asignado)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Rol</label>
+                <select
+                  {...register('rol')}
+                  disabled={!equipoIdWatch}
+                  className="w-full border rounded-md px-2 py-1.5 text-sm bg-background disabled:opacity-50"
+                >
+                  {ROLES.map((r) => <option key={r} value={r}>{ROLES_LABEL[r]}</option>)}
+                </select>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
