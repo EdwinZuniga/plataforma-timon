@@ -12,4 +12,14 @@ router.get('/:id', requireAuth, requireEquipo, requirePermiso('comunidades', 've
 router.put('/:id', requireAuth, requireEquipo, requirePermiso('comunidades', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.actualizar)
 router.delete('/:id', requireAuth, requireEquipo, requirePermiso('comunidades', 'eliminar'), requireRolMinimo(['COORDINADOR']), ctrl.eliminar)
 
+// Miembros del consejo
+router.post('/:id/consejo', requireAuth, requireEquipo, requirePermiso('comunidades', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.crearMiembroConsejo)
+router.put('/:id/consejo/:miembroId', requireAuth, requireEquipo, requirePermiso('comunidades', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.actualizarMiembroConsejo)
+router.delete('/:id/consejo/:miembroId', requireAuth, requireEquipo, requirePermiso('comunidades', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.eliminarMiembroConsejo)
+
+// Visitas
+router.post('/:id/visitas', requireAuth, requireEquipo, requirePermiso('comunidades', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.crearVisita)
+router.put('/:id/visitas/:visitaId', requireAuth, requireEquipo, requirePermiso('comunidades', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.actualizarVisita)
+router.delete('/:id/visitas/:visitaId', requireAuth, requireEquipo, requirePermiso('comunidades', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.eliminarVisita)
+
 export default router

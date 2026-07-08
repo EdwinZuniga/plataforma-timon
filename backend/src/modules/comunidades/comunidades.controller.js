@@ -38,3 +38,49 @@ export const eliminar = async (req, res, next) => {
     res.json({ success: true })
   } catch (err) { next(err) }
 }
+
+// ─── MIEMBROS CONSEJO ─────────────────────────────────────────────────────────
+
+export const crearMiembroConsejo = async (req, res, next) => {
+  try {
+    const data = await svc.crearMiembroConsejo(req.params.equipoId, req.params.id, req.body)
+    res.status(201).json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export const actualizarMiembroConsejo = async (req, res, next) => {
+  try {
+    const data = await svc.actualizarMiembroConsejo(req.params.equipoId, req.params.id, req.params.miembroId, req.body)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export const eliminarMiembroConsejo = async (req, res, next) => {
+  try {
+    await svc.eliminarMiembroConsejo(req.params.equipoId, req.params.id, req.params.miembroId)
+    res.json({ success: true })
+  } catch (err) { next(err) }
+}
+
+// ─── VISITAS ─────────────────────────────────────────────────────────────────
+
+export const crearVisita = async (req, res, next) => {
+  try {
+    const data = await svc.crearVisita(req.params.equipoId, req.params.id, req.body)
+    res.status(201).json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export const actualizarVisita = async (req, res, next) => {
+  try {
+    const data = await svc.actualizarVisita(req.params.equipoId, req.params.id, req.params.visitaId, req.body)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export const eliminarVisita = async (req, res, next) => {
+  try {
+    await svc.eliminarVisita(req.params.equipoId, req.params.id, req.params.visitaId)
+    res.json({ success: true })
+  } catch (err) { next(err) }
+}
