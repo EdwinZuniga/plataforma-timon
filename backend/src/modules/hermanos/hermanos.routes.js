@@ -7,10 +7,10 @@ const router = Router({ mergeParams: true })
 registerIntParams(router)
 
 router.get('/', requireAuth, requireEquipo, requirePermiso('hermanos', 'ver'), ctrl.listar)
-router.post('/', requireAuth, requireEquipo, requirePermiso('hermanos', 'crear'), requireRolMinimo(['COORDINADOR', 'SECRETARIO', 'ENLACE']), ctrl.crear)
+router.post('/', requireAuth, requireEquipo, requirePermiso('hermanos', 'crear'), requireRolMinimo(['COORDINADOR', 'SECRETARIO', 'MIEMBRO']), ctrl.crear)
 router.get('/:id', requireAuth, requireEquipo, requirePermiso('hermanos', 'ver'), ctrl.obtener)
 router.get('/:id/historial', requireAuth, requireEquipo, requirePermiso('hermanos', 'ver'), ctrl.historial)
-router.put('/:id', requireAuth, requireEquipo, requirePermiso('hermanos', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO', 'ENLACE']), ctrl.actualizar)
+router.put('/:id', requireAuth, requireEquipo, requirePermiso('hermanos', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO', 'MIEMBRO']), ctrl.actualizar)
 router.delete('/:id', requireAuth, requireEquipo, requirePermiso('hermanos', 'eliminar'), requireRolMinimo(['COORDINADOR']), ctrl.eliminar)
 
 export default router

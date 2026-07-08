@@ -9,7 +9,7 @@ import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { Plus, Search, Pencil, Trash2, ShieldCheck, X, Eye, EyeOff } from 'lucide-react'
 import { cn } from '@/utils/cn'
 
-const ROLES_LABEL = { COORDINADOR: 'Coordinador', ENLACE: 'Enlace', SECRETARIO: 'Secretario', CONSULTOR: 'Consultor' }
+const ROLES_LABEL = { COORDINADOR: 'Coordinador', MIEMBRO: 'Miembro', SECRETARIO: 'Secretario', CONSULTOR: 'Consultor' }
 const ROLES = Object.keys(ROLES_LABEL)
 
 // ─── MODAL USUARIO ────────────────────────────────────────────────────────────

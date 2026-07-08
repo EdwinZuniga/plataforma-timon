@@ -9,8 +9,8 @@ import { useToast } from '@/components/ui/toast'
 import { Plus, Search, Pencil, X, ChevronRight, Users, UserPlus } from 'lucide-react'
 import { cn } from '@/utils/cn'
 
-const ROLES = ['COORDINADOR', 'ENLACE', 'SECRETARIO', 'CONSULTOR']
-const ROLES_LABEL = { COORDINADOR: 'Coordinador', ENLACE: 'Enlace', SECRETARIO: 'Secretario', CONSULTOR: 'Consultor' }
+const ROLES = ['COORDINADOR', 'MIEMBRO', 'SECRETARIO', 'CONSULTOR']
+const ROLES_LABEL = { COORDINADOR: 'Coordinador', MIEMBRO: 'Miembro', SECRETARIO: 'Secretario', CONSULTOR: 'Consultor' }
 
 // ─── MODAL EQUIPO ─────────────────────────────────────────────────────────────
 

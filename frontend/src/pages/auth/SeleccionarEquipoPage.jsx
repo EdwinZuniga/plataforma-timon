@@ -9,7 +9,7 @@ import { ChevronRight } from 'lucide-react'
 
 const ROLES_LABELS = {
   COORDINADOR: 'Coordinador',
-  ENLACE: 'Miembro',
+  MIEMBRO: 'Miembro',
   SECRETARIO: 'Secretario',
   CONSULTOR: 'Consultor',
 }

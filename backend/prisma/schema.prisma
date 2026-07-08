@@ -51,7 +51,7 @@ model Usuario {
   @@map("Usuario")
 }
 
-// Roles: COORDINADOR | ENLACE | SECRETARIO | CONSULTOR
+// Roles: COORDINADOR | MIEMBRO | SECRETARIO | CONSULTOR
 model MiembroEquipo {
   id          Int      @id @default(autoincrement())
   usuarioId   Int
