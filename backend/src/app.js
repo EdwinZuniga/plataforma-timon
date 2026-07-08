@@ -29,22 +29,15 @@ const app = express()
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
 
-const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? (process.env.CORS_ORIGIN || '').split(',').map((o) => o.trim())
-  : null // En desarrollo, cualquier localhost está permitido
-
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir peticiones sin origin (Postman, curl, apps móviles)
     if (!origin) return callback(null, true)
-    // En desarrollo, aceptar cualquier localhost (cualquier puerto)
-    if (process.env.NODE_ENV !== 'production' && /^http:\/\/localhost(:\d+)?$/.test(origin)) {
-      return callback(null, true)
-    }
-    // En producción, verificar lista de orígenes permitidos
-    if (allowedOrigins && allowedOrigins.includes(origin)) {
-      return callback(null, true)
-    }
+    if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true)
+    const allowed = (process.env.CORS_ORIGIN || '')
+      .split(',')
+      .map((o) => o.trim())
+      .filter(Boolean)
+    if (allowed.includes(origin)) return callback(null, true)
     callback(new Error(`CORS: origen no permitido → ${origin}`))
   },
   credentials: true,
