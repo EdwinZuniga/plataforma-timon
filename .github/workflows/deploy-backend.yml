@@ -14,19 +14,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Install dependencies
-        working-directory: backend
-        run: npm ci --omit=dev
-
-      - name: Generate Prisma client
-        working-directory: backend
-        run: npx prisma generate
+      - name: Create deployment zip (sin node_modules)
+        run: |
+          cd backend
+          zip -r ../app.zip . \
+            --exclude "node_modules/*" \
+            --exclude ".env" \
+            --exclude "uploads/*" \
+            --exclude "*.traineddata"
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -37,4 +32,4 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_APP_NAME }}
-          package: backend
+          package: app.zip
