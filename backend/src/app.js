@@ -1,6 +1,5 @@
 import 'dotenv/config'
 import express from 'express'
-import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
@@ -28,20 +27,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true)
-    if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true)
-    const allowed = (process.env.CORS_ORIGIN || '')
-      .split(',')
-      .map((o) => o.trim())
-      .filter(Boolean)
-    if (allowed.includes(origin)) return callback(null, true)
-    callback(new Error(`CORS: origen no permitido → ${origin}`))
-  },
-  credentials: true,
-}))
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
