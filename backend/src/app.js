@@ -34,6 +34,9 @@ app.use(cookieParser())
 
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 
+// Sirve el frontend compilado (solo en producción o cuando existe la carpeta)
+const FRONTEND_DIST = path.join(__dirname, '../public')
+app.use(express.static(FRONTEND_DIST))
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
@@ -55,6 +58,14 @@ app.use('/api/equipos/:equipoId/ocr', ocrRoutes)
 app.use('/api/equipos/:equipoId/dashboard', dashboardRoutes)
 app.use('/api/equipos/:equipoId/tesoreria', tesoreriaRoutes)
 app.use('/api/equipos/:equipoId/inventario', inventarioRoutes)
+
+// SPA catch-all: cualquier ruta que no sea /api la atiende el frontend
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next()
+  res.sendFile(path.join(FRONTEND_DIST, 'index.html'), (err) => {
+    if (err) next() // si no existe el dist (dev local), deja pasar
+  })
+})
 
 app.use(errorHandler)
 

@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
+      - 'frontend/**'
   workflow_dispatch:
 
 jobs:
@@ -13,6 +14,22 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Copy frontend build into backend/public
+        run: |
+          mkdir -p backend/public
+          cp -r frontend/dist/. backend/public/
 
       - name: Create deployment zip (sin node_modules)
         run: |

@@ -379,7 +379,7 @@ export default function ComunidadDetailPage() {
                 className={inputCls}
                 value={consejoForm.nota}
                 onChange={(e) => setConsejoForm((f) => ({ ...f, nota: e.target.value }))}
-                placeholder="Ej. Anciano presidente"
+                placeholder="Ej. Anciano"
               />
             </Field>
             <div className="flex justify-end gap-2 pt-2">
