@@ -1,9 +1,13 @@
 import * as svc from './auth.service.js'
 
+const isProd = process.env.NODE_ENV === 'production'
+
+// En producción el frontend (Vercel) y el backend (Azure) son dominios distintos,
+// por lo que la cookie debe viajar cross-site: sameSite 'none' exige secure true.
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
+  secure: isProd,
+  sameSite: isProd ? 'none' : 'lax',
   maxAge: 7 * 24 * 60 * 60 * 1000,
 }
 
