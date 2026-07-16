@@ -1,5 +1,6 @@
 import multer from 'multer'
 import path from 'path'
+import fs from 'fs'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -7,7 +8,9 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads'
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(process.cwd(), UPLOAD_DIR, 'cartas'))
+    const dest = path.join(process.cwd(), UPLOAD_DIR, 'cartas')
+    fs.mkdirSync(dest, { recursive: true })
+    cb(null, dest)
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname)
