@@ -2,7 +2,7 @@ import prisma from '../../config/database.js'
 
 const PAGE_SIZE = 20
 
-export const listarComunidades = async (equipoId, { q, departamento, enlaceId, estado, page = 1 }) => {
+export const listarComunidades = async (equipoId, { q, departamento, enlaceId, estado, page = 1, limit }) => {
   const where = {
     equipoId,
     ...(q && { nombre: { contains: q } }),
@@ -11,18 +11,20 @@ export const listarComunidades = async (equipoId, { q, departamento, enlaceId, e
     ...(estado && { estado }),
   }
 
+  const take = Math.min(parseInt(limit) || PAGE_SIZE, 500)
+
   const [total, data] = await Promise.all([
     prisma.comunidad.count({ where }),
     prisma.comunidad.findMany({
       where,
       include: { enlace: { include: { usuario: { select: { nombre: true } } } } },
       orderBy: { nombre: 'asc' },
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
+      skip: (page - 1) * take,
+      take,
     }),
   ])
 
-  return { data, pagination: { page, limit: PAGE_SIZE, total, pages: Math.ceil(total / PAGE_SIZE) } }
+  return { data, pagination: { page, limit: take, total, pages: Math.ceil(total / take) } }
 }
 
 export const crearComunidad = async (equipoId, body) => {

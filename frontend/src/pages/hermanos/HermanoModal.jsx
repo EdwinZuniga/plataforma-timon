@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useMemo, useState } from 'react'
+import { useForm, Controller } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { createHermano, updateHermano } from '@/api/hermanos'
 import { getComunidades } from '@/api/comunidades'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Combobox } from '@/components/ui/combobox'
 import { useToast } from '@/components/ui/toast'
 import { X } from 'lucide-react'
 
@@ -16,13 +17,18 @@ export function HermanoModal({ onClose, onSaved, hermano }) {
 
   const { data: comunidadesData } = useQuery({
     queryKey: ['comunidades-select', equipoActual?.id],
-    queryFn: () => getComunidades(equipoActual.id, { limit: 200 }).then((r) => r.data.data),
+    queryFn: () => getComunidades(equipoActual.id, { limit: 500 }).then((r) => r.data.data),
     enabled: !!equipoActual?.id,
   })
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, formState: { errors } } = useForm({
     defaultValues: hermano || {},
   })
+
+  const comunidadOptions = useMemo(
+    () => (comunidadesData || []).map((c) => ({ value: c.id, label: c.nombre, sublabel: c.departamento })),
+    [comunidadesData]
+  )
 
   const onSubmit = async (data) => {
     setLoading(true)
@@ -69,15 +75,21 @@ export function HermanoModal({ onClose, onSaved, hermano }) {
             </div>
             <div className="space-y-1 col-span-2">
               <label className="text-sm font-medium">Comunidad *</label>
-              <select
-                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                {...register('comunidadId', { required: 'Requerido', valueAsNumber: true })}
-              >
-                <option value="">Seleccionar comunidad...</option>
-                {comunidadesData?.map((c) => (
-                  <option key={c.id} value={c.id}>{c.nombre} — {c.departamento}</option>
-                ))}
-              </select>
+              <Controller
+                name="comunidadId"
+                control={control}
+                rules={{ required: 'Requerido' }}
+                render={({ field }) => (
+                  <Combobox
+                    options={comunidadOptions}
+                    value={field.value}
+                    onChange={(v) => field.onChange(Number(v))}
+                    placeholder="Seleccionar comunidad..."
+                    searchPlaceholder="Buscar comunidad o departamento..."
+                    emptyLabel="No se encontraron comunidades"
+                  />
+                )}
+              />
               {errors.comunidadId && <p className="text-xs text-destructive">{errors.comunidadId.message}</p>}
             </div>
             <div className="space-y-1 col-span-2">
