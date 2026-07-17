@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PageSpinner } from '@/components/ui/spinner'
 import { useToast } from '@/components/ui/toast'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { Plus, X, Pencil, Trash2, TrendingUp, TrendingDown, Wallet } from 'lucide-react'
 import { cn } from '@/utils/cn'
 
@@ -189,6 +190,7 @@ function ListaMovimientos({ equipoId, caja, canEdit, anio }) {
   const qc = useQueryClient()
   const [showModal, setShowModal] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
   const [filtroTipo, setFiltroTipo] = useState('')
 
   const { data: movimientos, isLoading } = useQuery({
@@ -231,8 +233,12 @@ function ListaMovimientos({ equipoId, caja, canEdit, anio }) {
       toast({ title: 'Movimiento eliminado' })
       qc.invalidateQueries({ queryKey: ['tesoreria-movimientos', equipoId] })
       qc.invalidateQueries({ queryKey: ['tesoreria-resumen', equipoId] })
+      setDeleteTarget(null)
     },
-    onError: (err) => toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' }),
+    onError: (err) => {
+      toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' })
+      setDeleteTarget(null)
+    },
   })
 
   const stats = resumen?.[caja.toLowerCase()]
@@ -301,7 +307,7 @@ function ListaMovimientos({ equipoId, caja, canEdit, anio }) {
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => { if (confirm('¿Eliminar este movimiento?')) remove(m.id) }}
+                        onClick={() => setDeleteTarget(m)}
                         className="min-h-0 h-auto p-1 text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -320,6 +326,15 @@ function ListaMovimientos({ equipoId, caja, canEdit, anio }) {
       )}
       {editTarget && (
         <MovimientoModal cajaDefault={caja} movimiento={editTarget} loading={updating} onClose={() => setEditTarget(null)} onSave={(data) => update({ id: editTarget.id, data })} />
+      )}
+      {deleteTarget && (
+        <ConfirmModal
+          title="Eliminar movimiento"
+          description={`Se eliminará "${deleteTarget.concepto}" por $${deleteTarget.monto.toFixed(2)}. Esta acción no se puede deshacer.`}
+          confirmLabel="Eliminar"
+          onConfirm={() => remove(deleteTarget.id)}
+          onCancel={() => setDeleteTarget(null)}
+        />
       )}
     </div>
   )
@@ -390,6 +405,7 @@ function TablaOfrendas({ equipoId, anio, miembros, canEdit, montoPorSemana }) {
   const { toast } = useToast()
   const qc = useQueryClient()
   const [showModal, setShowModal] = useState(false)
+  const [celdaTarget, setCeldaTarget] = useState(null)
 
   const { data: ofrendas, isLoading } = useQuery({
     queryKey: ['tesoreria-ofrendas', equipoId, anio],
@@ -402,8 +418,12 @@ function TablaOfrendas({ equipoId, anio, miembros, canEdit, montoPorSemana }) {
     onSuccess: () => {
       toast({ title: 'Ofrenda registrada' })
       qc.invalidateQueries({ queryKey: ['tesoreria-ofrendas', equipoId, anio] })
+      setCeldaTarget(null)
     },
-    onError: (err) => toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' }),
+    onError: (err) => {
+      toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' })
+      setCeldaTarget(null)
+    },
   })
 
   const { mutate: eliminar } = useMutation({
@@ -411,8 +431,12 @@ function TablaOfrendas({ equipoId, anio, miembros, canEdit, montoPorSemana }) {
     onSuccess: () => {
       toast({ title: 'Ofrenda eliminada' })
       qc.invalidateQueries({ queryKey: ['tesoreria-ofrendas', equipoId, anio] })
+      setCeldaTarget(null)
     },
-    onError: (err) => toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' }),
+    onError: (err) => {
+      toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' })
+      setCeldaTarget(null)
+    },
   })
 
   const sabados = useMemo(() => getSabadosDelAnio(anio), [anio])
@@ -452,13 +476,18 @@ function TablaOfrendas({ equipoId, anio, miembros, canEdit, montoPorSemana }) {
     const key = fechaKey(sabado)
     const ofrenda = ofrendasIndex[miembro.id]?.[key]
     if (ofrenda) {
-      if (confirm(`¿Quitar ofrenda de ${miembro.usuario.nombre} del ${formatFechaUTC(sabado)}?`)) {
-        eliminar(ofrenda.id)
-      }
+      setCeldaTarget({ tipo: 'quitar', miembro, sabado, ofrenda })
     } else {
-      if (confirm(`¿Registrar ofrenda de $${montoPorSemana.toFixed(2)} para ${miembro.usuario.nombre} el ${formatFechaUTC(sabado)}?`)) {
-        registrar({ miembroId: miembro.id, fechas: [key], monto: montoPorSemana })
-      }
+      setCeldaTarget({ tipo: 'registrar', miembro, sabado })
+    }
+  }
+
+  const confirmarCelda = () => {
+    if (!celdaTarget) return
+    if (celdaTarget.tipo === 'quitar') {
+      eliminar(celdaTarget.ofrenda.id)
+    } else {
+      registrar({ miembroId: celdaTarget.miembro.id, fechas: [fechaKey(celdaTarget.sabado)], monto: montoPorSemana })
     }
   }
 
@@ -585,6 +614,26 @@ function TablaOfrendas({ equipoId, anio, miembros, canEdit, montoPorSemana }) {
           loading={registrando}
           onClose={() => setShowModal(false)}
           onSave={handleModalSave}
+        />
+      )}
+
+      {celdaTarget && celdaTarget.tipo === 'quitar' && (
+        <ConfirmModal
+          title="Quitar ofrenda"
+          description={`¿Quitar ofrenda de ${celdaTarget.miembro.usuario.nombre} del ${formatFechaUTC(celdaTarget.sabado)}?`}
+          confirmLabel="Quitar"
+          onConfirm={confirmarCelda}
+          onCancel={() => setCeldaTarget(null)}
+        />
+      )}
+      {celdaTarget && celdaTarget.tipo === 'registrar' && (
+        <ConfirmModal
+          title="Registrar ofrenda"
+          description={`¿Registrar ofrenda de $${montoPorSemana.toFixed(2)} para ${celdaTarget.miembro.usuario.nombre} el ${formatFechaUTC(celdaTarget.sabado)}?`}
+          confirmLabel="Registrar"
+          variant="default"
+          onConfirm={confirmarCelda}
+          onCancel={() => setCeldaTarget(null)}
         />
       )}
     </div>
