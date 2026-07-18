@@ -13,7 +13,7 @@ export const crear = async (req, res, next) => {
     if (!nombre || !comunidadId) {
       return next({ status: 400, message: 'Nombre y comunidad son requeridos', code: 'DATOS_REQUERIDOS' })
     }
-    const data = await svc.crearHermano({ nombre, apellido, telefono, email, comunidadId: parseInt(comunidadId), notas })
+    const data = await svc.crearHermano({ nombre, apellido, telefono, email, comunidadId: parseInt(comunidadId), equipoId: req.params.equipoId, notas })
     res.status(201).json({ success: true, data })
   } catch (err) { next(err) }
 }

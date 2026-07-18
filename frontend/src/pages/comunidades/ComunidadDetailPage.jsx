@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { PageSpinner } from '@/components/ui/spinner'
 import { Card, CardContent } from '@/components/ui/card'
 import { ComunidadModal } from './ComunidadModal'
-import { ArrowLeft, Edit, MapPin, Clock, Users, Plus, Trash2, Pencil, X } from 'lucide-react'
+import { ArrowLeft, Edit, MapPin, Clock, Users, Plus, Trash2, Pencil, X, ShieldCheck } from 'lucide-react'
 
 const TABS = ['Info general', 'Consejo', 'Hermanos', 'Visitas']
 const ESTADO_BADGE = { ACTIVA: 'success', PROCESO_INSCRIPCION: 'warning', INACTIVA: 'secondary' }
@@ -230,6 +230,17 @@ export default function ComunidadDetailPage() {
       {/* ── Consejo ── */}
       {tab === 1 && (
         <div className="space-y-3">
+          {data.enlaceConsejo && (
+            <Card className="border-primary-200 bg-primary-50/50">
+              <CardContent className="py-3 px-4 flex gap-2 items-start">
+                <ShieldCheck className="h-4 w-4 text-primary-700 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-primary-700 font-medium">Enlace Consejo Asesor</p>
+                  <p className="font-medium">{data.enlaceConsejo}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           <div className="flex justify-end">
             <Button size="sm" onClick={openNewConsejo}>
               <Plus className="h-4 w-4 mr-1" /> Agregar miembro

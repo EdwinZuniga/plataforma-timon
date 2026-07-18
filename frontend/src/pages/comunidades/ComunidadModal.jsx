@@ -99,6 +99,10 @@ export function ComunidadModal({ onClose, onSaved, comunidad }) {
               <Input {...register('lugarAsamblea')} placeholder="Lugar habitual de reunión" />
             </div>
             <div className="space-y-1 col-span-2">
+              <label className="text-sm font-medium">Enlace Consejo Asesor</label>
+              <Input {...register('enlaceConsejo')} placeholder="Nombre del enlace del consejo asesor" />
+            </div>
+            <div className="space-y-1 col-span-2">
               <label className="text-sm font-medium">Notas</label>
               <textarea
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"

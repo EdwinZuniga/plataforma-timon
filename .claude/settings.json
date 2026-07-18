@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(DRY_RUN=1 node prisma/_update_consejo_tmp.js)",
+      "Bash(wc -l /tmp_out.txt)",
+      "Bash(sed -n '1,60p' /tmp_out.txt)",
+      "Bash(npx vite *)",
+      "Bash(node prisma/_verify_tmp.js)",
+      "Bash(git status *)",
+      "Bash(node verify_tmp.mjs)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\(JSON.stringify\\(j.pagination\\), j.data.map\\(h=>h.nombre\\)\\)}\\)\")",
+      "Bash(git check-ignore *)"
+    ]
+  }
+}

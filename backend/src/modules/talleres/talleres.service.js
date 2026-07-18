@@ -127,12 +127,19 @@ export const inscribirHermanos = async (equipoId, edicionId, hermanoIds) => {
   })
   if (!edicion) throw { status: 404, message: 'Edición no encontrada', code: 'EDICION_NO_ENCONTRADA' }
 
+  const hermanosDelEquipo = await prisma.hermano.findMany({
+    where: { id: { in: hermanoIds }, equipoId },
+    select: { id: true },
+  })
+  const idsValidos = new Set(hermanosDelEquipo.map((h) => h.id))
+  const hermanoIdsFiltrados = hermanoIds.filter((id) => idsValidos.has(id))
+
   const existentes = await prisma.inscripcion.findMany({
-    where: { edicionTallerId: edicionId, hermanoId: { in: hermanoIds } },
+    where: { edicionTallerId: edicionId, hermanoId: { in: hermanoIdsFiltrados } },
     select: { hermanoId: true },
   })
   const yaInscritos = new Set(existentes.map((e) => e.hermanoId))
-  const nuevos = hermanoIds.filter((id) => !yaInscritos.has(id))
+  const nuevos = hermanoIdsFiltrados.filter((id) => !yaInscritos.has(id))
 
   if (nuevos.length > 0) {
     await prisma.inscripcion.createMany({

@@ -4,7 +4,7 @@ const PAGE_SIZE = 20
 
 export const listarHermanos = async (equipoId, { q, comunidadId, activo, page = 1 }) => {
   const where = {
-    comunidad: { equipoId },
+    equipoId,
     ...(q && {
       OR: [
         { nombre: { contains: q } },
@@ -35,7 +35,7 @@ export const crearHermano = async (body) => {
 
 export const obtenerHermano = async (equipoId, id) => {
   const hermano = await prisma.hermano.findFirst({
-    where: { id, comunidad: { equipoId } },
+    where: { id, equipoId },
     include: { comunidad: true },
   })
   if (!hermano) throw { status: 404, message: 'Hermano no encontrado', code: 'HERMANO_NO_ENCONTRADO' }
@@ -44,7 +44,7 @@ export const obtenerHermano = async (equipoId, id) => {
 
 export const historialHermano = async (equipoId, id) => {
   const hermano = await prisma.hermano.findFirst({
-    where: { id, comunidad: { equipoId } },
+    where: { id, equipoId },
     include: {
       inscripciones: {
         include: {
@@ -68,7 +68,7 @@ export const historialHermano = async (equipoId, id) => {
 }
 
 export const actualizarHermano = async (equipoId, id, body) => {
-  const existe = await prisma.hermano.findFirst({ where: { id, comunidad: { equipoId } } })
+  const existe = await prisma.hermano.findFirst({ where: { id, equipoId } })
   if (!existe) throw { status: 404, message: 'Hermano no encontrado', code: 'HERMANO_NO_ENCONTRADO' }
   const { nombre, apellido, telefono, email, comunidadId, activo, notas } = body
   return prisma.hermano.update({
@@ -78,7 +78,7 @@ export const actualizarHermano = async (equipoId, id, body) => {
 }
 
 export const eliminarHermano = async (equipoId, id) => {
-  const existe = await prisma.hermano.findFirst({ where: { id, comunidad: { equipoId } } })
+  const existe = await prisma.hermano.findFirst({ where: { id, equipoId } })
   if (!existe) throw { status: 404, message: 'Hermano no encontrado', code: 'HERMANO_NO_ENCONTRADO' }
   return prisma.hermano.update({ where: { id }, data: { activo: false } })
 }

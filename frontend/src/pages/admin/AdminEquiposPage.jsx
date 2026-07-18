@@ -149,9 +149,9 @@ function EquipoDetailModal({ equipoId, onClose }) {
             <>
               <div className="grid grid-cols-3 gap-3 text-center">
                 {[
-                  { label: 'Comunidades', val: equipo?._count?.comunidades },
                   { label: 'Talleres', val: equipo?._count?.talleres },
                   { label: 'Actividades', val: equipo?._count?.actividades },
+                  { label: 'Reuniones', val: equipo?._count?.reuniones },
                 ].map(({ label, val }) => (
                   <div key={label} className="rounded-lg border p-3">
                     <p className="text-xl font-bold">{val ?? 0}</p>
@@ -327,9 +327,9 @@ export default function AdminEquiposPage() {
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span>{eq._count.miembros} miembros</span>
                 <span>·</span>
-                <span>{eq._count.comunidades} comunidades</span>
-                <span>·</span>
                 <span>{eq._count.talleres} talleres</span>
+                <span>·</span>
+                <span>{eq._count.actividades} actividades</span>
               </div>
 
               <div className="flex items-center gap-1 pt-1">

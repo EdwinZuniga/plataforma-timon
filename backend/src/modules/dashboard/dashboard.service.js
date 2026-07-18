@@ -12,8 +12,8 @@ export const obtenerDashboard = async (equipoId) => {
     asistenciaTalleresMes,
     hermanosPorDepartamento,
   ] = await Promise.all([
-    prisma.comunidad.count({ where: { equipoId, estado: 'ACTIVA' } }),
-    prisma.hermano.count({ where: { comunidad: { equipoId }, activo: true } }),
+    prisma.comunidad.count({ where: { estado: 'ACTIVA' } }),
+    prisma.hermano.count({ where: { equipoId, activo: true } }),
     prisma.actividad.count({ where: { equipoId, anio: anioActual } }),
     prisma.taller.count({ where: { equipoId, activo: true } }),
     prisma.servicioActividad.count({ where: { actividad: { equipoId }, estado: 'PENDIENTE' } }),
@@ -29,7 +29,7 @@ export const obtenerDashboard = async (equipoId) => {
     }),
     prisma.comunidad.groupBy({
       by: ['departamento'],
-      where: { equipoId, estado: 'ACTIVA' },
+      where: { estado: 'ACTIVA' },
       _count: { id: true },
     }),
   ])
@@ -89,7 +89,7 @@ export const reporteActividad = async (equipoId, actividadId) => {
 
 export const reporteHermano = async (equipoId, hermanoId) => {
   const hermano = await prisma.hermano.findFirst({
-    where: { id: hermanoId, comunidad: { equipoId } },
+    where: { id: hermanoId, equipoId },
     include: {
       comunidad: true,
       inscripciones: { include: { edicionTaller: { include: { taller: true } } } },

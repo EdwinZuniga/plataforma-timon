@@ -40,9 +40,9 @@ async function main() {
     { nombre: 'Comunidad Cristo Vive', departamento: 'La Libertad', numero: 'C-003' },
   ]
   for (const c of comunidades) {
-    const existe = await prisma.comunidad.findFirst({ where: { nombre: c.nombre, equipoId: equipo.id } })
+    const existe = await prisma.comunidad.findFirst({ where: { nombre: c.nombre } })
     if (!existe) {
-      await prisma.comunidad.create({ data: { ...c, equipoId: equipo.id, estado: 'ACTIVA' } })
+      await prisma.comunidad.create({ data: { ...c, estado: 'ACTIVA' } })
     }
   }
   console.log('✅ Comunidades de ejemplo creadas')

@@ -63,7 +63,7 @@ export const listarAsistencia = async (equipoId, actividadId, { q }) => {
 
   const hermanos = await prisma.hermano.findMany({
     where: {
-      comunidad: { equipoId },
+      equipoId,
       activo: true,
       ...(q && { OR: [{ nombre: { contains: q } }, { apellido: { contains: q } }] }),
     },

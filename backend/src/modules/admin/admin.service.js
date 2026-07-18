@@ -112,7 +112,7 @@ export const listarEquipos = async ({ search, page = 1, limit = 20 } = {}) => {
       take: limit,
       orderBy: { createdAt: 'desc' },
       include: {
-        _count: { select: { miembros: true, comunidades: true, talleres: true, actividades: true } },
+        _count: { select: { miembros: true, talleres: true, actividades: true } },
       },
     }),
   ])
@@ -128,7 +128,7 @@ export const obtenerEquipo = async (id) => {
         include: { usuario: { select: { id: true, nombre: true, email: true } } },
         orderBy: { createdAt: 'asc' },
       },
-      _count: { select: { comunidades: true, talleres: true, actividades: true, reuniones: true } },
+      _count: { select: { talleres: true, actividades: true, reuniones: true } },
     },
   })
   if (!equipo) throw { status: 404, message: 'Equipo no encontrado', code: 'EQUIPO_NO_ENCONTRADO' }

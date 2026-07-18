@@ -18,16 +18,17 @@ model EquipoTimon {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  miembros              MiembroEquipo[]
-  comunidades           Comunidad[]
-  talleres              Taller[]
-  actividades           Actividad[]
-  catalogoServicios     CatalogoServicio[]
-  reuniones             Reunion[]
-  movimientosTesoreria  MovimientoTesoreria[]
-  ofrendasSemanales     OfrendaSemanal[]
-  articulos             Articulo[]
-  prestamosArticulo     PrestamoArticulo[]
+  miembros             MiembroEquipo[]
+  hermanos             Hermano[]
+  visitas              Visita[]
+  talleres             Taller[]
+  actividades          Actividad[]
+  catalogoServicios    CatalogoServicio[]
+  reuniones            Reunion[]
+  movimientosTesoreria MovimientoTesoreria[]
+  ofrendasSemanales    OfrendaSemanal[]
+  articulos            Articulo[]
+  prestamosArticulo    PrestamoArticulo[]
 
   @@map("EquipoTimon")
 }
@@ -53,27 +54,27 @@ model Usuario {
 
 // Roles: COORDINADOR | MIEMBRO | SECRETARIO | CONSULTOR
 model MiembroEquipo {
-  id          Int      @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   usuarioId   Int
-  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   equipoId    Int
   equipo      EquipoTimon @relation(fields: [equipoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  rol         String   @default("CONSULTOR")
+  rol         String      @default("CONSULTOR")
   nombreCorto String?
-  activo      Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  activo      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
 
-  comunidades             Comunidad[]
-  edicionesCoordinadas    EdicionTaller[]
-  equipoApoyoEdiciones    EquipoApoyoEdicion[]
-  temasMesExpuestos       TemaMes[]          @relation("TemaMesExpositor")
-  reunionesAsistidas      ReunionAsistente[]
-  serviciosAsignados      ServicioAsignado[]
-  permisos                PermisoUsuario[]
-  movimientosRegistrados  MovimientoTesoreria[] @relation("MovimientoResponsable")
-  ofrendasSemanales       OfrendaSemanal[]
-  prestamosRegistrados    PrestamoArticulo[]    @relation("PrestamoResponsable")
-  visitasResponsable      Visita[]              @relation("VisitaResponsable")
+  comunidades            Comunidad[]
+  edicionesCoordinadas   EdicionTaller[]
+  equipoApoyoEdiciones   EquipoApoyoEdicion[]
+  temasMesExpuestos      TemaMes[]             @relation("TemaMesExpositor")
+  reunionesAsistidas     ReunionAsistente[]
+  serviciosAsignados     ServicioAsignado[]
+  permisos               PermisoUsuario[]
+  movimientosRegistrados MovimientoTesoreria[] @relation("MovimientoResponsable")
+  ofrendasSemanales      OfrendaSemanal[]
+  prestamosRegistrados   PrestamoArticulo[]    @relation("PrestamoResponsable")
+  visitasResponsable     Visita[]              @relation("VisitaResponsable")
 
   @@unique([usuarioId, equipoId])
   @@map("MiembroEquipo")
@@ -110,23 +111,21 @@ model RefreshToken {
 
 // estado: ACTIVA | PROCESO_INSCRIPCION | INACTIVA
 model Comunidad {
-  id              Int      @id @default(autoincrement())
+  id              Int            @id @default(autoincrement())
   numero          String?
   nombre          String
   departamento    String
-  estado          String   @default("ACTIVA")
-  equipoId        Int
-  equipo          EquipoTimon @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  estado          String         @default("ACTIVA")
   enlaceId        Int?
   enlace          MiembroEquipo? @relation(fields: [enlaceId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   enlaceConsejo   String?
   fechaEleccion   String?
   lugarAsamblea   String?
   horarioAsamblea String?
-  oficial         Boolean  @default(false)
+  oficial         Boolean        @default(false)
   notas           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   hermanos        Hermano[]
   miembrosConsejo MiembroConsejo[]
@@ -152,6 +151,8 @@ model Visita {
   id            Int            @id @default(autoincrement())
   comunidadId   Int
   comunidad     Comunidad      @relation(fields: [comunidadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  equipoId      Int
+  equipo        EquipoTimon    @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   fecha         DateTime
   responsableId Int?
   responsable   MiembroEquipo? @relation("VisitaResponsable", fields: [responsableId], references: [id], onUpdate: NoAction, onDelete: NoAction)
@@ -167,17 +168,19 @@ model Visita {
 // ─── HERMANOS ────────────────────────────────────────────────────────────────
 
 model Hermano {
-  id          Int       @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   nombre      String
   apellido    String?
   telefono    String?
   email       String?
   comunidadId Int
-  comunidad   Comunidad @relation(fields: [comunidadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  activo      Boolean   @default(true)
+  comunidad   Comunidad   @relation(fields: [comunidadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  equipoId    Int
+  equipo      EquipoTimon @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  activo      Boolean     @default(true)
   notas       String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   inscripciones Inscripcion[]
   asistencias   Asistencia[]
@@ -202,16 +205,16 @@ model Taller {
 }
 
 model EdicionTaller {
-  id             Int            @id @default(autoincrement())
-  tallerId       Int
-  taller         Taller         @relation(fields: [tallerId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  coordinadorId  Int?
-  coordinador    MiembroEquipo? @relation(fields: [coordinadorId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  fecha          DateTime
-  fechaFin       DateTime?
-  lugar          String?
-  notas          String?
-  createdAt      DateTime       @default(now())
+  id            Int            @id @default(autoincrement())
+  tallerId      Int
+  taller        Taller         @relation(fields: [tallerId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  coordinadorId Int?
+  coordinador   MiembroEquipo? @relation(fields: [coordinadorId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  fecha         DateTime
+  fechaFin      DateTime?
+  lugar         String?
+  notas         String?
+  createdAt     DateTime       @default(now())
 
   inscripciones Inscripcion[]
   equipoApoyo   EquipoApoyoEdicion[]
@@ -231,9 +234,9 @@ model Inscripcion {
   certificado     Boolean       @default(false)
   createdAt       DateTime      @default(now())
 
-  asistenciasMes   AsistenciaMes[]
-  tareasEntrega    TareaEntrega[]
-  participaciones  ParticipacionMes[]
+  asistenciasMes  AsistenciaMes[]
+  tareasEntrega   TareaEntrega[]
+  participaciones ParticipacionMes[]
 
   @@unique([hermanoId, edicionTallerId])
   @@map("Inscripcion")
@@ -267,9 +270,9 @@ model EquipoApoyoEdicion {
 }
 
 model TemaMes {
-  id           Int           @id @default(autoincrement())
+  id           Int            @id @default(autoincrement())
   edicionId    Int
-  edicion      EdicionTaller @relation(fields: [edicionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  edicion      EdicionTaller  @relation(fields: [edicionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   mes          Int
   anio         Int
   titulo       String?
@@ -277,7 +280,7 @@ model TemaMes {
   expositor    MiembroEquipo? @relation("TemaMesExpositor", fields: [expositorId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   notas        String?
   documentoUrl String?
-  createdAt    DateTime      @default(now())
+  createdAt    DateTime       @default(now())
 
   @@unique([edicionId, mes, anio])
   @@map("TemaMes")
@@ -413,7 +416,7 @@ model Reunion {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  comisiones    String?
+  comisiones String?
 
   acuerdos   Acuerdo[]
   asistentes ReunionAsistente[]
@@ -450,9 +453,9 @@ model ReunionAsistente {
 // tipo: INGRESO | EGRESO
 // caja: GENERAL | CHICA
 model MovimientoTesoreria {
-  id            Int            @id @default(autoincrement())
+  id            Int           @id @default(autoincrement())
   equipoId      Int
-  equipo        EquipoTimon    @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  equipo        EquipoTimon   @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   tipo          String
   caja          String
   concepto      String
@@ -461,11 +464,11 @@ model MovimientoTesoreria {
   fecha         DateTime
   descripcion   String?
   actividadId   Int?
-  actividad     Actividad?     @relation(fields: [actividadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  actividad     Actividad?    @relation(fields: [actividadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   registradoPor Int
-  responsable   MiembroEquipo  @relation("MovimientoResponsable", fields: [registradoPor], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  responsable   MiembroEquipo @relation("MovimientoResponsable", fields: [registradoPor], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@map("MovimientoTesoreria")
 }
@@ -474,21 +477,21 @@ model MovimientoTesoreria {
 
 // condicion: BUENO | REGULAR | MALO
 model Articulo {
-  id          Int              @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   equipoId    Int
-  equipo      EquipoTimon      @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  equipo      EquipoTimon @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   nombre      String
   descripcion String?
   categoria   String?
-  cantidad    Int              @default(1)
-  condicion   String           @default("BUENO")
+  cantidad    Int         @default(1)
+  condicion   String      @default("BUENO")
   ubicacion   String?
   notas       String?
-  activo      Boolean          @default(true)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  activo      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-  prestamos   PrestamoArticulo[]
+  prestamos PrestamoArticulo[]
 
   @@map("Articulo")
 }
