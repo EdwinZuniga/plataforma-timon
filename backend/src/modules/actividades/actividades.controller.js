@@ -49,3 +49,21 @@ export const guardarAsistencia = async (req, res, next) => {
     res.json({ success: true, data })
   } catch (err) { next(err) }
 }
+
+export const listarAsistenciaMiembros = async (req, res, next) => {
+  try {
+    const data = await svc.listarAsistenciaMiembros(req.params.equipoId, req.params.id, req.query)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export const guardarAsistenciaMiembros = async (req, res, next) => {
+  try {
+    const { registros } = req.body
+    if (!Array.isArray(registros)) {
+      return next({ status: 400, message: 'Se espera un array de registros', code: 'DATOS_INVALIDOS' })
+    }
+    const data = await svc.guardarAsistenciaMiembros(req.params.equipoId, req.params.id, registros)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}

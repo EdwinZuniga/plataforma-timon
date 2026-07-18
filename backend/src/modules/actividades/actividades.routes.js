@@ -12,5 +12,7 @@ router.get('/:id', requireAuth, requireEquipo, requirePermiso('actividades', 've
 router.put('/:id', requireAuth, requireEquipo, requirePermiso('actividades', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.actualizar)
 router.get('/:id/asistencia', requireAuth, requireEquipo, requirePermiso('actividades', 'ver'), ctrl.listarAsistencia)
 router.post('/:id/asistencia', requireAuth, requireEquipo, requirePermiso('actividades', 'editar'), ctrl.guardarAsistencia)
+router.get('/:id/asistencia-miembros', requireAuth, requireEquipo, requirePermiso('actividades', 'ver'), ctrl.listarAsistenciaMiembros)
+router.post('/:id/asistencia-miembros', requireAuth, requireEquipo, requirePermiso('actividades', 'editar'), ctrl.guardarAsistenciaMiembros)
 
 export default router

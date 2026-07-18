@@ -9,7 +9,20 @@
       "Bash(git status *)",
       "Bash(node verify_tmp.mjs)",
       "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\(JSON.stringify\\(j.pagination\\), j.data.map\\(h=>h.nombre\\)\\)}\\)\")",
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "Bash(tasklist //FI \"IMAGENAME eq node.exe\")",
+      "Bash(wmic process *)",
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"Name='node.exe'\")",
+      "PowerShell(Stop-Process -Id 48204 -Force -Confirm:$false)",
+      "PowerShell(Stop-Process -Id 40560 -Force -Confirm:$false)",
+      "PowerShell(Get-Process -Id 48204,40560 -ErrorAction SilentlyContinue)",
+      "Bash(npx eslint *)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(npm run *)",
+      "Bash(npx jest *)",
+      "Bash(npm test *)",
+      "Bash(timeout 8 node src/app.js)",
+      "Bash(npm start *)"
     ]
   }
 }

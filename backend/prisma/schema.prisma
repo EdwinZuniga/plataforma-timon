@@ -75,6 +75,7 @@ model MiembroEquipo {
   ofrendasSemanales      OfrendaSemanal[]
   prestamosRegistrados   PrestamoArticulo[]    @relation("PrestamoResponsable")
   visitasResponsable     Visita[]              @relation("VisitaResponsable")
+  asistenciasMiembro     AsistenciaMiembro[]
 
   @@unique([usuarioId, equipoId])
   @@map("MiembroEquipo")
@@ -331,6 +332,7 @@ model Actividad {
   updatedAt   DateTime    @updatedAt
 
   asistencias          Asistencia[]
+  asistenciasMiembros  AsistenciaMiembro[]
   servicios            ServicioActividad[]
   movimientosTesoreria MovimientoTesoreria[]
 
@@ -348,6 +350,19 @@ model Asistencia {
 
   @@unique([hermanoId, actividadId])
   @@map("Asistencia")
+}
+
+model AsistenciaMiembro {
+  id              Int           @id @default(autoincrement())
+  miembroEquipoId Int
+  miembroEquipo   MiembroEquipo @relation(fields: [miembroEquipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  actividadId     Int
+  actividad       Actividad     @relation(fields: [actividadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  presente        Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+
+  @@unique([miembroEquipoId, actividadId])
+  @@map("AsistenciaMiembro")
 }
 
 // ─── SERVICIOS ───────────────────────────────────────────────────────────────

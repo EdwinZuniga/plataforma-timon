@@ -99,3 +99,51 @@ export const guardarAsistencia = async (equipoId, actividadId, registros) => {
   await prisma.$transaction(ops)
   return { guardados: registros.length }
 }
+
+export const listarAsistenciaMiembros = async (equipoId, actividadId, { q }) => {
+  const actividad = await prisma.actividad.findFirst({ where: { id: actividadId, equipoId } })
+  if (!actividad) throw { status: 404, message: 'Actividad no encontrada', code: 'ACTIVIDAD_NO_ENCONTRADA' }
+
+  const miembros = await prisma.miembroEquipo.findMany({
+    where: {
+      equipoId,
+      activo: true,
+      ...(q && {
+        OR: [
+          { nombreCorto: { contains: q } },
+          { usuario: { nombre: { contains: q } } },
+        ],
+      }),
+    },
+    include: {
+      usuario: { select: { nombre: true } },
+      asistenciasMiembro: { where: { actividadId } },
+    },
+  })
+
+  return miembros
+    .map((m) => ({
+      miembroId: m.id,
+      nombre: m.nombreCorto || m.usuario.nombre,
+      rol: m.rol,
+      presente: m.asistenciasMiembro[0]?.presente ?? false,
+      asistenciaId: m.asistenciasMiembro[0]?.id ?? null,
+    }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre))
+}
+
+export const guardarAsistenciaMiembros = async (equipoId, actividadId, registros) => {
+  const actividad = await prisma.actividad.findFirst({ where: { id: actividadId, equipoId } })
+  if (!actividad) throw { status: 404, message: 'Actividad no encontrada', code: 'ACTIVIDAD_NO_ENCONTRADA' }
+
+  const ops = registros.map(({ miembroId, presente }) =>
+    prisma.asistenciaMiembro.upsert({
+      where: { miembroEquipoId_actividadId: { miembroEquipoId: Number(miembroId), actividadId } },
+      update: { presente },
+      create: { miembroEquipoId: Number(miembroId), actividadId, presente },
+    })
+  )
+
+  await prisma.$transaction(ops)
+  return { guardados: registros.length }
+}
