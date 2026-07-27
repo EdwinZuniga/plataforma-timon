@@ -13,13 +13,34 @@ export default function LoginPage() {
   const { login, seleccionarEquipo } = useAuthStore()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [loadingLabel, setLoadingLabel] = useState('Ingresando...')
 
   const { register, handleSubmit, formState: { errors } } = useForm()
 
+  const DB_RETRY_ATTEMPTS = 2
+  const DB_RETRY_DELAY_MS = 3000
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
   const onSubmit = async ({ email, password }) => {
     setLoading(true)
+    setLoadingLabel('Ingresando...')
     try {
-      await login(email, password)
+      let intento = 0
+      for (;;) {
+        try {
+          await login(email, password)
+          break
+        } catch (err) {
+          const isDbIniciando = err.response?.data?.code === 'DB_INICIANDO'
+          if (isDbIniciando && intento < DB_RETRY_ATTEMPTS) {
+            intento++
+            setLoadingLabel('El sistema se está iniciando...')
+            await sleep(DB_RETRY_DELAY_MS)
+            continue
+          }
+          throw err
+        }
+      }
 
       // Obtener equipos y auto-seleccionar si solo hay uno
       const res = await misEquipos()
@@ -84,7 +105,7 @@ export default function LoginPage() {
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Ingresando...' : 'Ingresar'}
+                {loading ? loadingLabel : 'Ingresar'}
               </Button>
             </form>
           </CardContent>
