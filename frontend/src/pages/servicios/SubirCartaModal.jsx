@@ -1,13 +1,19 @@
-import { useState, useRef } from 'react'
+import { useMemo, useState, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { procesarCarta, confirmarCarta } from '@/api/ocr'
 import { getCatalogo } from '@/api/servicios'
+import { getComunidades } from '@/api/comunidades'
 import { getMiembros } from '@/api/equipos'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Combobox } from '@/components/ui/combobox'
 import { useToast } from '@/components/ui/toast'
 import { X, Upload, Loader2, FileText, Users, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
+
+function normalizar(str) {
+  return (str || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+}
 
 const PASO_UPLOAD = 1
 const PASO_PROCESANDO = 2
@@ -56,6 +62,7 @@ export function SubirCartaModal({ onClose, onSaved }) {
 
   const [form, setForm] = useState({
     catalogoServicioId: '',
+    comunidadId: '',
     descripcion: '',
     comunidadSolicitante: '',
     horaServicio: '',
@@ -71,6 +78,17 @@ export function SubirCartaModal({ onClose, onSaved }) {
     queryFn: () => getCatalogo(equipoActual.id).then((r) => r.data.data),
     enabled: !!equipoActual?.id,
   })
+
+  const { data: comunidades } = useQuery({
+    queryKey: ['comunidades-select', equipoActual?.id],
+    queryFn: () => getComunidades(equipoActual.id, { limit: 500 }).then((r) => r.data.data),
+    enabled: !!equipoActual?.id,
+  })
+
+  const comunidadOptions = useMemo(
+    () => (comunidades || []).map((c) => ({ value: c.id, label: c.nombre, sublabel: c.departamento })),
+    [comunidades]
+  )
 
   const { data: miembros } = useQuery({
     queryKey: ['miembros-equipo', equipoActual?.id],
@@ -106,10 +124,17 @@ export function SubirCartaModal({ onClose, onSaved }) {
 
       setOcrRaw({ texto: textoExtraido || '', confianza: confianza || 0 })
       setOcrData({ ...datosEstructurados, rutaArchivo })
+
+      const detectada = datosEstructurados.comunidadSolicitante || ''
+      const coincidencia = detectada
+        ? (comunidades || []).find((c) => normalizar(c.nombre).includes(normalizar(detectada)) || normalizar(detectada).includes(normalizar(c.nombre)))
+        : null
+
       setForm({
         catalogoServicioId: '',
+        comunidadId: coincidencia?.id || '',
         descripcion: datosEstructurados.tipoServicio || '',
-        comunidadSolicitante: datosEstructurados.comunidadSolicitante || '',
+        comunidadSolicitante: detectada,
         horaServicio: datosEstructurados.horaServicio || '',
         lugarServicio: datosEstructurados.lugarServicio || '',
         fechaServicio: datosEstructurados.fechaServicio || '',
@@ -133,6 +158,10 @@ export function SubirCartaModal({ onClose, onSaved }) {
   }
 
   const guardar = async () => {
+    if (!form.comunidadId) {
+      toast({ title: 'Selecciona la comunidad solicitante', variant: 'destructive' })
+      return
+    }
     if (!form.catalogoServicioId) {
       toast({ title: 'Selecciona el tipo de servicio', variant: 'destructive' })
       return
@@ -141,6 +170,7 @@ export function SubirCartaModal({ onClose, onSaved }) {
     try {
       await confirmarCarta(equipoActual.id, {
         catalogoServicioId: form.catalogoServicioId,
+        comunidadId: form.comunidadId,
         miembroIds: miembroIdsSeleccionados,
         descripcion: form.descripcion,
         imagenCartaRuta: ocrData?.rutaArchivo,
@@ -248,12 +278,18 @@ export function SubirCartaModal({ onClose, onSaved }) {
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Comunidad solicitante</label>
-                    <Input
-                      value={form.comunidadSolicitante}
-                      onChange={(e) => setForm((f) => ({ ...f, comunidadSolicitante: e.target.value }))}
-                      placeholder="Nombre de la comunidad"
+                    <label className="text-xs font-medium text-muted-foreground">Comunidad solicitante *</label>
+                    <Combobox
+                      options={comunidadOptions}
+                      value={form.comunidadId}
+                      onChange={(v) => setForm((f) => ({ ...f, comunidadId: v }))}
+                      placeholder="Seleccionar comunidad..."
+                      searchPlaceholder="Buscar comunidad o departamento..."
+                      emptyLabel="No se encontraron comunidades"
                     />
+                    {form.comunidadSolicitante && (
+                      <p className="text-xs text-muted-foreground">Detectado en la carta: "{form.comunidadSolicitante}"</p>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-muted-foreground">Dirigido a</label>
@@ -358,7 +394,7 @@ export function SubirCartaModal({ onClose, onSaved }) {
 
               <div className="flex gap-2 pt-2">
                 <Button variant="outline" className="flex-1" onClick={() => setPaso(PASO_UPLOAD)}>Volver</Button>
-                <Button className="flex-1" onClick={guardar} disabled={guardando || !form.catalogoServicioId}>
+                <Button className="flex-1" onClick={guardar} disabled={guardando || !form.comunidadId || !form.catalogoServicioId}>
                   {guardando
                     ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Guardando...</>
                     : 'Guardar servicio'}

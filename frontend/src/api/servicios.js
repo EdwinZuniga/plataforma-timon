@@ -10,6 +10,7 @@ export const getPendientes = (equipoId) => api.get(`${base(equipoId)}/pendientes
 
 export const getServicios = (equipoId, actividadId) => api.get(`${base(equipoId)}/actividades/${actividadId}/servicios`)
 export const createServicio = (equipoId, actividadId, data) => api.post(`${base(equipoId)}/actividades/${actividadId}/servicios`, data)
+export const createServicioManual = (equipoId, data) => api.post(`${base(equipoId)}/manual`, data)
 
 export const asignarMiembro = (equipoId, servicioId, miembroId) =>
   api.put(`${base(equipoId)}/${servicioId}/asignar`, { miembroId })

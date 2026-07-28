@@ -61,7 +61,7 @@ export default function MiembroPerfilModal({ miembro, onClose }) {
         {/* Header */}
         <div className="flex items-start justify-between p-4 border-b shrink-0">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-base font-bold text-primary-700 shrink-0">
+            <div className="h-12 w-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-base font-bold text-primary-700 dark:text-primary-500 shrink-0">
               {iniciales}
             </div>
             <div>

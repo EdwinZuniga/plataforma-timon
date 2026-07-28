@@ -143,7 +143,7 @@ function UsuarioModal({ usuario, onClose }) {
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input type="checkbox" {...register('superAdmin')} className="rounded" />
               <span className="text-sm font-medium flex items-center gap-1">
-                <ShieldCheck className="h-4 w-4 text-violet-600" /> SuperAdmin
+                <ShieldCheck className="h-4 w-4 text-violet-600 dark:text-violet-400" /> SuperAdmin
               </span>
             </label>
             {isEdit && (
@@ -245,12 +245,12 @@ export default function AdminUsuariosPage() {
                 <tr key={u.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-bold shrink-0">
+                      <div className="h-7 w-7 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center text-xs font-bold shrink-0">
                         {u.nombre?.[0]?.toUpperCase()}
                       </div>
                       <span className="font-medium">{u.nombre}</span>
                       {u.superAdmin && (
-                        <ShieldCheck className="h-3.5 w-3.5 text-violet-600 shrink-0" title="SuperAdmin" />
+                        <ShieldCheck className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400 shrink-0" title="SuperAdmin" />
                       )}
                     </div>
                   </td>

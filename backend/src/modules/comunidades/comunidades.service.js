@@ -44,6 +44,20 @@ export const obtenerComunidad = async (equipoId, id) => {
           responsable: { include: { usuario: { select: { nombre: true } } } },
         },
       },
+      servicios: {
+        where: { actividad: { equipoId } },
+        orderBy: { actividad: { fecha: 'desc' } },
+        take: 30,
+        include: {
+          actividad: { select: { id: true, nombre: true, fecha: true, lugar: true, tipo: true } },
+          catalogoServicio: true,
+          asignados: {
+            include: {
+              miembro: { select: { id: true, rol: true, nombreCorto: true, usuario: { select: { nombre: true } } } },
+            },
+          },
+        },
+      },
       hermanos: { where: { activo: true, equipoId }, select: { id: true, nombre: true, apellido: true, telefono: true } },
     },
   })

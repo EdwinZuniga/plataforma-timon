@@ -13,11 +13,13 @@ import { Button } from '@/components/ui/button'
 import { PageSpinner } from '@/components/ui/spinner'
 import { Card, CardContent } from '@/components/ui/card'
 import { ComunidadModal } from './ComunidadModal'
-import { ArrowLeft, Edit, MapPin, Clock, Users, Plus, Trash2, Pencil, X, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Edit, MapPin, Clock, Users, Plus, Trash2, Pencil, X, ShieldCheck, Wrench, Calendar } from 'lucide-react'
 
-const TABS = ['Info general', 'Consejo', 'Hermanos', 'Visitas']
+const TABS = ['Info general', 'Consejo', 'Hermanos', 'Visitas', 'Servicios']
 const ESTADO_BADGE = { ACTIVA: 'success', PROCESO_INSCRIPCION: 'warning', INACTIVA: 'secondary' }
 const ESTADO_LABEL = { ACTIVA: 'Activa', PROCESO_INSCRIPCION: 'En proceso', INACTIVA: 'Inactiva' }
+const SERVICIO_ESTADO_BADGE = { PENDIENTE: 'destructive', ASIGNADO: 'warning', CONFIRMADO: 'success', FINALIZADO: 'secondary', CANCELADO: 'outline' }
+const nombreMiembro = (m) => m.nombreCorto || m.usuario?.nombre || `Miembro ${m.id}`
 
 const CONSEJO_EMPTY = { nombre: '', telefono: '', periodo: '', nota: '' }
 const VISITA_EMPTY = { fecha: '', responsableId: '', apoyo: '', horario: '', notas: '' }
@@ -25,7 +27,7 @@ const VISITA_EMPTY = { fecha: '', responsableId: '', apoyo: '', horario: '', not
 function Modal({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+      <div className="bg-card rounded-lg shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <h2 className="font-semibold text-base">{title}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
@@ -189,7 +191,7 @@ export default function ComunidadDetailPage() {
             key={t}
             onClick={() => setTab(i)}
             className={`px-4 py-2 text-sm font-medium whitespace-nowrap min-h-[44px] transition-colors border-b-2 ${
-              tab === i ? 'border-primary-700 text-primary-700' : 'border-transparent text-muted-foreground hover:text-foreground'
+              tab === i ? 'border-primary-700 text-primary-700 dark:border-primary-500 dark:text-primary-500' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {t}
@@ -231,11 +233,11 @@ export default function ComunidadDetailPage() {
       {tab === 1 && (
         <div className="space-y-3">
           {data.enlaceConsejo && (
-            <Card className="border-primary-200 bg-primary-50/50">
+            <Card className="border-primary-200 bg-primary-50/50 dark:border-primary-800/50 dark:bg-primary-900/20">
               <CardContent className="py-3 px-4 flex gap-2 items-start">
-                <ShieldCheck className="h-4 w-4 text-primary-700 mt-0.5 shrink-0" />
+                <ShieldCheck className="h-4 w-4 text-primary-700 dark:text-primary-500 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-xs text-primary-700 font-medium">Enlace Consejo Asesor</p>
+                  <p className="text-xs text-primary-700 dark:text-primary-500 font-medium">Enlace Consejo Asesor</p>
                   <p className="font-medium">{data.enlaceConsejo}</p>
                 </div>
               </CardContent>
@@ -344,6 +346,55 @@ export default function ComunidadDetailPage() {
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* ── Servicios ── */}
+      {tab === 4 && (
+        <div className="space-y-3">
+          {data.servicios?.length === 0 ? (
+            <p className="text-muted-foreground text-sm py-8 text-center">Sin servicios registrados para esta comunidad</p>
+          ) : (
+            data.servicios?.map((s) => (
+              <Card key={s.id}>
+                <CardContent className="py-3 px-4 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Wrench className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <p className="font-medium">{s.catalogoServicio?.nombre}</p>
+                    <Badge variant={SERVICIO_ESTADO_BADGE[s.estado]}>{s.estado}</Badge>
+                  </div>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Calendar className="h-3.5 w-3.5 shrink-0" />
+                    <span>
+                      {s.actividad?.fecha
+                        ? new Date(s.actividad.fecha).toLocaleDateString('es-SV', { timeZone: 'UTC' })
+                        : 'Sin fecha'}
+                    </span>
+                  </div>
+                  {(s.actividad?.lugar || s.horaServicio) && (
+                    <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                      {s.actividad?.lugar && (
+                        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {s.actividad.lugar}</span>
+                      )}
+                      {s.horaServicio && (
+                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {s.horaServicio}</span>
+                      )}
+                    </div>
+                  )}
+                  {s.descripcion && <p className="text-sm text-muted-foreground">{s.descripcion}</p>}
+                  {s.asignados?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {s.asignados.map((a) => (
+                        <span key={a.miembro.id} className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded-full">
+                          <Users className="h-3 w-3" />{nombreMiembro(a.miembro)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))

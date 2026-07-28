@@ -20,7 +20,7 @@ function NavItem({ to, icon: Icon, label, exact }) {
       className={cn(
         'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
         active
-          ? 'bg-violet-700/10 text-violet-700'
+          ? 'bg-violet-700/10 text-violet-700 dark:text-violet-400'
           : 'text-muted-foreground hover:bg-accent hover:text-foreground'
       )}
     >
@@ -38,9 +38,9 @@ export default function AdminLayout() {
     <div className="flex h-screen overflow-hidden bg-background">
       <aside className="flex flex-col w-64 border-r bg-card shrink-0">
         <div className="flex items-center gap-2 px-4 py-4 border-b">
-          <ShieldCheck className="h-5 w-5 text-violet-600 shrink-0" />
+          <ShieldCheck className="h-5 w-5 text-violet-600 dark:text-violet-400 shrink-0" />
           <div>
-            <p className="font-semibold text-sm text-violet-700">SuperAdmin</p>
+            <p className="font-semibold text-sm text-violet-700 dark:text-violet-400">SuperAdmin</p>
             <p className="text-xs text-muted-foreground truncate">{usuario?.email}</p>
           </div>
         </div>

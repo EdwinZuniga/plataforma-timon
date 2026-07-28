@@ -76,7 +76,7 @@ export default function ActividadesPage() {
                   <Card className="hover:shadow-md transition-shadow cursor-pointer">
                     <CardContent className="flex items-center gap-3 py-3 px-4">
                       <div className="h-10 w-10 rounded-lg bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center shrink-0">
-                        <Calendar className="h-5 w-5 text-primary-700" />
+                        <Calendar className="h-5 w-5 text-primary-700 dark:text-primary-500" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">

@@ -3,22 +3,6 @@ import sharp from 'sharp'
 import { promises as fs } from 'fs'
 import path from 'path'
 import os from 'os'
-import prisma from '../../config/database.js'
-
-const MESES_ES = {
-  ene: 0, enero: 0, feb: 1, febrero: 1, mar: 2, marzo: 2,
-  abr: 3, abril: 3, may: 4, mayo: 4, jun: 5, junio: 5,
-  jul: 6, julio: 6, ago: 7, agosto: 7, sep: 8, septiembre: 8, sept: 8,
-  oct: 9, octubre: 9, nov: 10, noviembre: 10, dic: 11, diciembre: 11,
-}
-
-const TIPO_MAP = [
-  [/retiro/i, 'RETIRO'],
-  [/asamblea/i, 'ASAMBLEA'],
-  [/encuentro/i, 'ENCUENTRO'],
-  [/misi[oó]n/i, 'MISION'],
-  [/formaci[oó]n/i, 'FORMACION'],
-]
 
 /*
   Preprocesa la imagen antes de pasarla a Tesseract:
@@ -55,29 +39,6 @@ const preprocesarImagen = async (rutaArchivo) => {
     // Si el preprocesado falla, usa la imagen original
     return rutaArchivo
   }
-}
-
-const parseFechaServicio = (fechaStr) => {
-  if (!fechaStr) return new Date()
-  const m1 = fechaStr.match(/(\d{1,2})\W+(\w+)\W+(\d{4})/)
-  if (m1) {
-    const mes = MESES_ES[m1[2].toLowerCase().substring(0, 3)]
-    if (mes !== undefined) return new Date(parseInt(m1[3]), mes, parseInt(m1[1]))
-  }
-  const m2 = fechaStr.match(/(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})/i)
-  if (m2) {
-    const mes = MESES_ES[m2[2].toLowerCase().substring(0, 3)]
-    if (mes !== undefined) return new Date(parseInt(m2[3]), mes, parseInt(m2[1]))
-  }
-  const d = new Date(fechaStr)
-  return isNaN(d) ? new Date() : d
-}
-
-const detectarTipoActividad = (texto) => {
-  for (const [patron, tipo] of TIPO_MAP) {
-    if (patron.test(texto || '')) return tipo
-  }
-  return 'OTRO'
 }
 
 const extraerDatos = (texto) => {
@@ -179,61 +140,3 @@ export const procesarImagen = async (rutaArchivo) => {
   }
 }
 
-export const confirmarServicio = async (equipoId, datos) => {
-  const {
-    catalogoServicioId, miembroIds = [], descripcion, imagenCartaRuta,
-    comunidadSolicitante, horaServicio, dirigidoA, fechaServicio, lugarServicio,
-  } = datos
-
-  if (!catalogoServicioId) {
-    throw { status: 400, message: 'catalogoServicioId es requerido', code: 'DATOS_REQUERIDOS' }
-  }
-
-  if (miembroIds.length > 0) {
-    const ids = miembroIds.map(Number)
-    const validos = await prisma.miembroEquipo.count({
-      where: { id: { in: ids }, equipoId: Number(equipoId), activo: true },
-    })
-    if (validos !== ids.length) {
-      throw { status: 403, message: 'Solo miembros del Equipo Timón pueden ser asignados', code: 'MIEMBRO_NO_DEL_EQUIPO' }
-    }
-  }
-
-  const fecha = parseFechaServicio(fechaServicio)
-  const nombreActividad = descripcion?.substring(0, 100)
-    || (comunidadSolicitante ? `Servicio para ${comunidadSolicitante}` : 'Servicio solicitado por carta')
-
-  const actividad = await prisma.actividad.create({
-    data: {
-      equipoId: Number(equipoId),
-      nombre: nombreActividad,
-      tipo: detectarTipoActividad(descripcion || ''),
-      fecha,
-      lugar: lugarServicio || null,
-      descripcion: comunidadSolicitante ? `Solicitado por: ${comunidadSolicitante}` : null,
-      anio: fecha.getFullYear(),
-    },
-  })
-
-  const servicio = await prisma.servicioActividad.create({
-    data: {
-      actividadId: actividad.id,
-      catalogoServicioId: Number(catalogoServicioId),
-      descripcion: descripcion || null,
-      origenOCR: true,
-      imagenCartaRuta: imagenCartaRuta || null,
-      estado: miembroIds.length > 0 ? 'ASIGNADO' : 'PENDIENTE',
-      comunidadSolicitante: comunidadSolicitante || null,
-      horaServicio: horaServicio || null,
-      dirigidoA: dirigidoA || null,
-    },
-  })
-
-  for (const mId of miembroIds.map(Number)) {
-    await prisma.servicioAsignado.create({
-      data: { servicioActividadId: servicio.id, miembroId: mId },
-    })
-  }
-
-  return { actividad, servicio }
-}

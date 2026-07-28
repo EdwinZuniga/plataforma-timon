@@ -12,6 +12,8 @@ router.post('/catalogo', requireAuth, requireEquipo, requirePermiso('servicios',
 router.get('/pendientes', requireAuth, requireEquipo, requirePermiso('servicios', 'ver'), ctrl.pendientes)
 router.get('/', requireAuth, requireEquipo, requirePermiso('servicios', 'ver'), ctrl.listarTodos)
 
+router.post('/manual', requireAuth, requireEquipo, requirePermiso('servicios', 'crear'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.crearManual)
+
 router.post('/actividades/:actividadId/servicios', requireAuth, requireEquipo, requirePermiso('servicios', 'crear'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.crearServicio)
 router.get('/actividades/:actividadId/servicios', requireAuth, requireEquipo, requirePermiso('servicios', 'ver'), ctrl.listarServicios)
 

@@ -53,7 +53,7 @@ export default function HermanosPage() {
               <Card className="hover:shadow-md transition-shadow cursor-pointer">
                 <CardContent className="flex items-center gap-3 py-3 px-4">
                   <div className="h-9 w-9 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0">
-                    <User className="h-4 w-4 text-primary-700" />
+                    <User className="h-4 w-4 text-primary-700 dark:text-primary-500" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium">{h.nombre} {h.apellido}</p>

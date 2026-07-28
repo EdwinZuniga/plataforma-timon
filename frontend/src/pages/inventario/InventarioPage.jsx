@@ -426,7 +426,7 @@ function PrestamoRow({ prestamo, canEdit, onDevolver, onDelete }) {
           </Badge>
           {prestamo.estado === 'PRESTADO' && (
             <button onClick={() => onDevolver(prestamo)}
-              className="text-xs text-primary-700 hover:underline font-medium mt-1 whitespace-nowrap">
+              className="text-xs text-primary-700 dark:text-primary-500 hover:underline font-medium mt-1 whitespace-nowrap">
               Registrar devolución
             </button>
           )}
@@ -583,7 +583,7 @@ export default function InventarioPage() {
       <div className="grid grid-cols-3 gap-3">
         <Card>
           <CardContent className="flex items-center gap-3 py-3 px-4">
-            <Package className="h-8 w-8 text-primary-700 shrink-0" />
+            <Package className="h-8 w-8 text-primary-700 dark:text-primary-500 shrink-0" />
             <div>
               <p className="text-xs text-muted-foreground">Artículos</p>
               <p className="text-xl font-bold">{resumen?.articulos ?? '—'}</p>

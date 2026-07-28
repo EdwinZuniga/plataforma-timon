@@ -88,7 +88,7 @@ export function EditarReunionModal({ reunion, onClose, onSaved }) {
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">Asistentes</label>
                 {selectedMiembros.length > 0 && (
-                  <span className="text-xs text-primary-700 font-medium">{selectedMiembros.length} seleccionados</span>
+                  <span className="text-xs text-primary-700 dark:text-primary-500 font-medium">{selectedMiembros.length} seleccionados</span>
                 )}
               </div>
               {activosSorted.length === 0 ? (
@@ -101,7 +101,7 @@ export function EditarReunionModal({ reunion, onClose, onSaved }) {
                       <button
                         type="button"
                         onClick={() => setSelectedMiembros(todosSeleccionados ? [] : activosSorted.map((m) => m.id))}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50 ${todosSeleccionados ? 'bg-primary-50' : ''}`}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50 ${todosSeleccionados ? 'bg-primary-50 dark:bg-primary-900/20' : ''}`}
                       >
                         <div className={`h-5 w-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${todosSeleccionados ? 'border-primary-700 bg-primary-700' : 'border-input'}`}>
                           {todosSeleccionados && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
@@ -117,7 +117,7 @@ export function EditarReunionModal({ reunion, onClose, onSaved }) {
                         key={m.id}
                         type="button"
                         onClick={() => toggleMiembro(m.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50 ${selected ? 'bg-primary-50' : ''}`}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50 ${selected ? 'bg-primary-50 dark:bg-primary-900/20' : ''}`}
                       >
                         <div className={`h-5 w-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${selected ? 'border-primary-700 bg-primary-700' : 'border-input'}`}>
                           {selected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}

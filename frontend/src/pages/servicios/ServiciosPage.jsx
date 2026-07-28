@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { PageSpinner } from '@/components/ui/spinner'
 import { useToast } from '@/components/ui/toast'
 import { SubirCartaModal } from './SubirCartaModal'
+import { RegistrarManualModal } from './RegistrarManualModal'
 import {
   Wrench, Calendar, MapPin, Clock, Building2, Users,
   CheckCircle, Upload, X, UserPlus, ChevronDown, ChevronUp,
@@ -330,6 +331,7 @@ export default function ServiciosPage() {
   const qc = useQueryClient()
   const [tabEstado, setTabEstado] = useState('')
   const [modalCarta, setModalCarta] = useState(false)
+  const [modalManual, setModalManual] = useState(false)
   const [modalCatalogo, setModalCatalogo] = useState(false)
   const [servicioEditar, setServicioEditar] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
@@ -402,6 +404,9 @@ export default function ServiciosPage() {
         <div className="flex gap-2 shrink-0">
           <Button variant="outline" size="sm" onClick={() => setModalCatalogo(true)} title="Gestionar tipos de servicio">
             <Settings className="h-4 w-4 mr-1" /> Catálogo
+          </Button>
+          <Button variant="outline" onClick={() => setModalManual(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Registrar manualmente
           </Button>
           <Button onClick={() => setModalCarta(true)}>
             <Upload className="h-4 w-4 mr-1" /> Subir carta
@@ -636,6 +641,13 @@ export default function ServiciosPage() {
         <SubirCartaModal
           onClose={() => setModalCarta(false)}
           onSaved={() => { setModalCarta(false); invalidar() }}
+        />
+      )}
+
+      {modalManual && (
+        <RegistrarManualModal
+          onClose={() => setModalManual(false)}
+          onSaved={() => { setModalManual(false); invalidar() }}
         />
       )}
 

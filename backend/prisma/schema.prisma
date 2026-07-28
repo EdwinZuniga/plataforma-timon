@@ -131,6 +131,7 @@ model Comunidad {
   hermanos        Hermano[]
   miembrosConsejo MiembroConsejo[]
   visitas         Visita[]
+  servicios       ServicioActividad[]
 
   @@map("Comunidad")
 }
@@ -391,6 +392,8 @@ model ServicioActividad {
   estado               String           @default("PENDIENTE")
   origenOCR            Boolean          @default(false)
   imagenCartaRuta      String?
+  comunidadId          Int?
+  comunidad            Comunidad?       @relation(fields: [comunidadId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   comunidadSolicitante String?
   horaServicio         String?
   dirigidoA            String?

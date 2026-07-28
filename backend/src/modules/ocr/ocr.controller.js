@@ -1,4 +1,5 @@
 import * as svc from './ocr.service.js'
+import * as serviciosSvc from '../servicios/servicios.service.js'
 
 export const procesar = async (req, res, next) => {
   try {
@@ -12,6 +13,7 @@ export const confirmar = async (req, res, next) => {
   try {
     const {
       catalogoServicioId,
+      comunidadId,
       miembroIds,
       descripcion,
       imagenCartaRuta,
@@ -28,8 +30,9 @@ export const confirmar = async (req, res, next) => {
         ? JSON.parse(miembroIds)
         : []
 
-    const data = await svc.confirmarServicio(req.params.equipoId, {
+    const data = await serviciosSvc.crearServicioCompleto(req.params.equipoId, {
       catalogoServicioId,
+      comunidadId,
       miembroIds: ids,
       descripcion,
       imagenCartaRuta,
@@ -38,6 +41,7 @@ export const confirmar = async (req, res, next) => {
       dirigidoA,
       fechaServicio,
       lugarServicio,
+      origenOCR: true,
     })
     res.status(201).json({ success: true, data })
   } catch (err) { next(err) }

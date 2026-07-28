@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useThemeStore } from '@/stores/useThemeStore'
 import {
   Home, Users, UserCheck, Calendar, FileText,
   Settings, LogOut, Menu, X, ChevronRight,
   Wrench, BookOpen, MoreHorizontal, UserCircle, ShieldCheck, Landmark, Package,
+  Sun, Moon,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { Button } from '@/components/ui/button'
@@ -60,6 +62,23 @@ function NavLink({ to, icon: Icon, label, mobile }) {
   )
 }
 
+function ThemeToggle({ className }) {
+  const { theme, toggleTheme } = useThemeStore()
+  const isDark = theme === 'dark'
+  return (
+    <button
+      onClick={toggleTheme}
+      className={cn(
+        'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors',
+        className
+      )}
+    >
+      {isDark ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
+      {isDark ? 'Modo claro' : 'Modo oscuro'}
+    </button>
+  )
+}
+
 export function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { usuario, equipoActual, permisos, logout } = useAuthStore()
@@ -102,7 +121,7 @@ export function Layout({ children }) {
           {usuario?.superAdmin && (
             <button
               onClick={() => navigate('/admin')}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-violet-700 hover:bg-violet-50 transition-colors mb-1"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-950/40 transition-colors mb-1"
             >
               <ShieldCheck className="h-4 w-4 shrink-0" />
               Administración
@@ -118,6 +137,7 @@ export function Layout({ children }) {
             </div>
             <UserCircle className="h-4 w-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
           </Link>
+          <ThemeToggle className="w-full mt-1" />
           <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive mt-1" onClick={logout}>
             <LogOut className="h-4 w-4" /> Cerrar sesión
           </Button>
@@ -147,7 +167,7 @@ export function Layout({ children }) {
                 <Link
                   to="/admin"
                   onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-violet-700 hover:bg-violet-50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-950/40 transition-colors"
                 >
                   <ShieldCheck className="h-4 w-4" /> Administración
                 </Link>
@@ -159,6 +179,7 @@ export function Layout({ children }) {
               >
                 <UserCircle className="h-4 w-4" /> Mi perfil
               </Link>
+              <ThemeToggle />
               <Button variant="ghost" className="w-full justify-start gap-2 text-destructive" onClick={logout}>
                 <LogOut className="h-4 w-4" /> Cerrar sesión
               </Button>

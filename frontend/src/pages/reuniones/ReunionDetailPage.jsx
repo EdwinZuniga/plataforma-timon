@@ -201,11 +201,11 @@ export default function ReunionDetailPage() {
 
       {/* Notas: tarjeta de solo lectura */}
       {reunion.notas && !notasEditando && (
-        <Card className="border-primary-200">
+        <Card className="border-primary-200 dark:border-primary-800/50">
           <CardContent className="py-3 px-4 space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold flex items-center gap-1.5">
-                <StickyNote className="h-4 w-4 text-primary-700" /> Notas
+                <StickyNote className="h-4 w-4 text-primary-700 dark:text-primary-500" /> Notas
               </p>
               <button
                 onClick={() => setNotasEditando(true)}
@@ -243,7 +243,7 @@ export default function ReunionDetailPage() {
       </div>
 
       {addingAcuerdo && (
-        <Card className="border-primary-200">
+        <Card className="border-primary-200 dark:border-primary-800/50">
           <CardContent className="py-4 space-y-3">
             <Input {...register('descripcion', { required: 'Requerido' })} placeholder="Descripción del acuerdo" />
             {errors.descripcion && <p className="text-xs text-destructive">{errors.descripcion.message}</p>}
@@ -251,7 +251,7 @@ export default function ReunionDetailPage() {
               <div className="flex items-center justify-between">
                 <label className="text-xs font-medium text-muted-foreground">Responsables</label>
                 {selectedResponsables.length > 0 && (
-                  <span className="text-xs text-primary-700 font-medium">{selectedResponsables.length} seleccionados</span>
+                  <span className="text-xs text-primary-700 dark:text-primary-500 font-medium">{selectedResponsables.length} seleccionados</span>
                 )}
               </div>
               <div className="border rounded-md divide-y max-h-32 overflow-y-auto">
@@ -263,7 +263,7 @@ export default function ReunionDetailPage() {
                       key={m.id}
                       type="button"
                       onClick={() => toggleResponsable(nombre)}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/50 ${selected ? 'bg-primary-50' : ''}`}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/50 ${selected ? 'bg-primary-50 dark:bg-primary-900/20' : ''}`}
                     >
                       <div className={`h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${selected ? 'border-primary-700 bg-primary-700' : 'border-input'}`}>
                         {selected && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}

@@ -22,7 +22,13 @@
       "Bash(npx jest *)",
       "Bash(npm test *)",
       "Bash(timeout 8 node src/app.js)",
-      "Bash(npm start *)"
+      "Bash(npm start *)",
+      "Bash(npx vercel *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(curl -s https://plataforma-timon.vercel.app/ -o /tmp/index_live2.html -D /tmp/index_headers2.txt)",
+      "Read(//tmp/**)",
+      "Bash(curl -s https://plataforma-timon.vercel.app/assets/index-4A6UlVog.js -o /tmp/bundle2.js)"
     ]
   }
 }

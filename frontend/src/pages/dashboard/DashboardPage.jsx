@@ -9,7 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const COLORS = ['#6D28D9', '#7C3AED', '#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE', '#4C1D95', '#5B21B6']
 
-function MetricCard({ icon: Icon, label, value, color = 'text-primary-700' }) {
+function MetricCard({ icon: Icon, label, value, color = 'text-primary-700 dark:text-primary-500' }) {
   return (
     <Card>
       <CardContent className="flex items-center gap-4 py-5">

@@ -25,6 +25,24 @@ export const crearServicio = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
+export const crearManual = async (req, res, next) => {
+  try {
+    const {
+      catalogoServicioId, comunidadId, miembroIds, descripcion,
+      horaServicio, dirigidoA, fechaServicio, lugarServicio,
+    } = req.body
+
+    const ids = Array.isArray(miembroIds) ? miembroIds : (miembroIds ? JSON.parse(miembroIds) : [])
+
+    const data = await svc.crearServicioCompleto(req.params.equipoId, {
+      catalogoServicioId, comunidadId, miembroIds: ids, descripcion,
+      horaServicio, dirigidoA, fechaServicio, lugarServicio,
+      origenOCR: false,
+    })
+    res.status(201).json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
 export const listarServicios = async (req, res, next) => {
   try {
     const data = await svc.listarServicios(req.params.equipoId, req.params.actividadId)

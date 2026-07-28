@@ -126,7 +126,7 @@ function PermisoMatrix({ miembro, onClose }) {
       {/* Header usuario seleccionado */}
       <div className="px-6 py-4 border-b flex items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-sm font-bold shrink-0">
+          <div className="h-9 w-9 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center text-sm font-bold shrink-0">
             {miembro.usuario.nombre?.[0]?.toUpperCase()}
           </div>
           <div>
@@ -134,7 +134,7 @@ function PermisoMatrix({ miembro, onClose }) {
             <p className="text-xs text-muted-foreground">
               {miembro.equipo.nombre} · <span className="capitalize">{miembro.rol.toLowerCase()}</span>
               {hasExplicit && (
-                <span className="ml-2 text-violet-600 font-medium">· Permisos configurados</span>
+                <span className="ml-2 text-violet-600 dark:text-violet-400 font-medium">· Permisos configurados</span>
               )}
             </p>
           </div>
@@ -161,7 +161,7 @@ function PermisoMatrix({ miembro, onClose }) {
 
       {/* Nota informativa */}
       {!hasExplicit && (
-        <div className="mx-6 mt-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2.5 text-sm text-amber-800">
+        <div className="mx-6 mt-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2.5 text-sm text-amber-800 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400">
           Sin configuración explícita — el acceso se rige por el rol <strong>{miembro.rol}</strong>. Guarda los permisos para aplicar restricciones o ampliar acceso.
         </div>
       )}
@@ -237,7 +237,7 @@ function UserMembershipItem({ membership, selected, onClick }) {
       onClick={onClick}
       className={cn(
         'w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-2',
-        selected ? 'bg-violet-100 text-violet-800' : 'hover:bg-accent'
+        selected ? 'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300' : 'hover:bg-accent'
       )}
     >
       <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: membership.equipo.color }} />
@@ -264,11 +264,11 @@ function UserItem({ user, selected, onClick, expanded, onToggleExpand, selectedM
       <div
         className={cn(
           'flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors',
-          selected ? 'bg-violet-50' : 'hover:bg-accent'
+          selected ? 'bg-violet-50 dark:bg-violet-950/30' : 'hover:bg-accent'
         )}
         onClick={onClick}
       >
-        <div className="h-7 w-7 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-bold shrink-0">
+        <div className="h-7 w-7 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center text-xs font-bold shrink-0">
           {user.nombre?.[0]?.toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">

@@ -5,7 +5,7 @@ const variants = {
   destructive: 'bg-red-600 text-white hover:bg-red-500',
   outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
   ghost: 'hover:bg-accent hover:text-accent-foreground',
-  link: 'text-primary-700 underline-offset-4 hover:underline',
+  link: 'text-primary-700 dark:text-primary-500 underline-offset-4 hover:underline',
 }
 
 const sizes = {
