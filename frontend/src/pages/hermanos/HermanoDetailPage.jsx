@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { HermanoModal } from './HermanoModal'
 import { VincularTallerModal } from './VincularTallerModal'
 import { TallerResumenModal } from './TallerResumenModal'
+import { PhoneActions } from '@/components/shared/PhoneActions'
 import { useToast } from '@/components/ui/toast'
 import { ArrowLeft, Edit, CheckCircle, XCircle, PlusCircle, Trash2, BookOpen, BookCheck } from 'lucide-react'
 import { formatCalendarDate } from '@/utils/dates'
@@ -174,7 +175,15 @@ export default function HermanoDetailPage() {
 
       {tab === 0 && (
         <div className="grid md:grid-cols-2 gap-4">
-          {hermano.telefono && <Card><CardContent className="py-3 px-4"><p className="text-xs text-muted-foreground">Teléfono</p><p className="font-medium">{hermano.telefono}</p></CardContent></Card>}
+          {hermano.telefono && (
+            <Card><CardContent className="py-3 px-4 flex items-center justify-between gap-2">
+              <div>
+                <p className="text-xs text-muted-foreground">Teléfono</p>
+                <p className="font-medium">{hermano.telefono}</p>
+              </div>
+              <PhoneActions telefono={hermano.telefono} />
+            </CardContent></Card>
+          )}
           {hermano.email && <Card><CardContent className="py-3 px-4"><p className="text-xs text-muted-foreground">Email</p><p className="font-medium">{hermano.email}</p></CardContent></Card>}
           <Card><CardContent className="py-3 px-4"><p className="text-xs text-muted-foreground">Comunidad</p><p className="font-medium">{hermano.comunidad?.nombre}</p></CardContent></Card>
           {hermano.notas && <Card className="md:col-span-2"><CardContent className="py-3 px-4"><p className="text-xs text-muted-foreground mb-1">Notas</p><p className="text-sm">{hermano.notas}</p></CardContent></Card>}

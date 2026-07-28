@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
 import {
@@ -14,6 +14,7 @@ import { PageSpinner } from '@/components/ui/spinner'
 import { Card, CardContent } from '@/components/ui/card'
 import { ComunidadModal } from './ComunidadModal'
 import { HermanoModal } from '../hermanos/HermanoModal'
+import { PhoneActions } from '@/components/shared/PhoneActions'
 import { ArrowLeft, Edit, MapPin, Clock, Users, Plus, Trash2, Pencil, X, ShieldCheck, Wrench, Calendar } from 'lucide-react'
 
 const TABS = ['Info general', 'Consejo', 'Hermanos', 'Visitas', 'Servicios']
@@ -52,6 +53,7 @@ const inputCls = 'w-full border rounded-md px-3 py-2 text-sm focus:outline-none 
 
 export default function ComunidadDetailPage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { equipoActual } = useAuthStore()
   const qc = useQueryClient()
   const [tab, setTab] = useState(0)
@@ -258,7 +260,12 @@ export default function ComunidadDetailPage() {
                 <CardContent className="py-3 px-4 flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium">{m.nombre}</p>
-                    {m.telefono && <p className="text-sm text-muted-foreground">{m.telefono}</p>}
+                    {m.telefono && (
+                      <div className="flex items-center gap-1">
+                        <p className="text-sm text-muted-foreground">{m.telefono}</p>
+                        <PhoneActions telefono={m.telefono} />
+                      </div>
+                    )}
                     {m.periodo && <p className="text-xs text-muted-foreground mt-0.5">Periodo: {m.periodo}</p>}
                     {m.nota && <Badge variant="secondary" className="mt-1">{m.nota}</Badge>}
                   </div>
@@ -295,12 +302,19 @@ export default function ComunidadDetailPage() {
             <p className="text-muted-foreground text-sm py-8 text-center">Sin hermanos registrados</p>
           ) : (
             data.hermanos?.map((h) => (
-              <Link key={h.id} to={`/hermanos/${h.id}`}>
-                <Card className="hover:shadow-sm cursor-pointer"><CardContent className="py-3 px-4">
-                  <p className="font-medium">{h.nombre} {h.apellido}</p>
-                  {h.telefono && <p className="text-sm text-muted-foreground">{h.telefono}</p>}
-                </CardContent></Card>
-              </Link>
+              <Card
+                key={h.id}
+                className="hover:shadow-sm cursor-pointer"
+                onClick={() => navigate(`/hermanos/${h.id}`)}
+              >
+                <CardContent className="py-3 px-4 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium">{h.nombre} {h.apellido}</p>
+                    {h.telefono && <p className="text-sm text-muted-foreground">{h.telefono}</p>}
+                  </div>
+                  {h.telefono && <PhoneActions telefono={h.telefono} className="shrink-0" />}
+                </CardContent>
+              </Card>
             ))
           )}
         </div>
