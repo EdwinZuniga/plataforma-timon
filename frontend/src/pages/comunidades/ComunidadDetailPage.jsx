@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { PageSpinner } from '@/components/ui/spinner'
 import { Card, CardContent } from '@/components/ui/card'
 import { ComunidadModal } from './ComunidadModal'
+import { HermanoModal } from '../hermanos/HermanoModal'
 import { ArrowLeft, Edit, MapPin, Clock, Users, Plus, Trash2, Pencil, X, ShieldCheck, Wrench, Calendar } from 'lucide-react'
 
 const TABS = ['Info general', 'Consejo', 'Hermanos', 'Visitas', 'Servicios']
@@ -55,6 +56,7 @@ export default function ComunidadDetailPage() {
   const qc = useQueryClient()
   const [tab, setTab] = useState(0)
   const [editModal, setEditModal] = useState(false)
+  const [hermanoModal, setHermanoModal] = useState(false)
 
   // Consejo modal state
   const [consejoModal, setConsejoModal] = useState(false)
@@ -281,8 +283,13 @@ export default function ComunidadDetailPage() {
       {/* ── Hermanos ── */}
       {tab === 2 && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Users className="h-4 w-4" /> {data.hermanos?.length} hermanos
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Users className="h-4 w-4" /> {data.hermanos?.length} hermanos
+            </div>
+            <Button size="sm" onClick={() => setHermanoModal(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Agregar hermano
+            </Button>
           </div>
           {data.hermanos?.length === 0 ? (
             <p className="text-muted-foreground text-sm py-8 text-center">Sin hermanos registrados</p>
@@ -405,6 +412,15 @@ export default function ComunidadDetailPage() {
       {/* ── Edit comunidad modal ── */}
       {editModal && (
         <ComunidadModal comunidad={data} onClose={() => setEditModal(false)} onSaved={() => { setEditModal(false); refetch() }} />
+      )}
+
+      {/* ── Nuevo hermano modal ── */}
+      {hermanoModal && (
+        <HermanoModal
+          comunidadId={Number(id)}
+          onClose={() => setHermanoModal(false)}
+          onSaved={() => { setHermanoModal(false); refetch() }}
+        />
       )}
 
       {/* ── Consejo modal ── */}

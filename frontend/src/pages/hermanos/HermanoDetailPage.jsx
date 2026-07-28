@@ -102,7 +102,7 @@ function TalleresTab({ talleres, onVincular, onDesvincular, onVerResumen }) {
   )
 }
 
-const TABS = ['Datos', 'Talleres', 'Actividades', 'Servicios']
+const TABS = ['Datos', 'Talleres', 'Actividades']
 
 export default function HermanoDetailPage() {
   const { id } = useParams()
@@ -205,21 +205,6 @@ export default function HermanoDetailPage() {
                 {a.presente
                   ? <CheckCircle className="h-5 w-5 text-green-500" />
                   : <XCircle className="h-5 w-5 text-muted-foreground" />}
-              </CardContent></Card>
-            ))
-          )}
-        </div>
-      )}
-
-      {tab === 3 && (
-        <div className="space-y-2">
-          {!historial?.servicios?.length ? (
-            <p className="text-center py-8 text-muted-foreground">Sin servicios registrados</p>
-          ) : (
-            historial.servicios.map((s) => (
-              <Card key={s.id}><CardContent className="py-3 px-4">
-                <p className="font-medium">{s.servicioActividad.catalogoServicio.nombre}</p>
-                <p className="text-xs text-muted-foreground">{s.servicioActividad.actividad.nombre} · {new Date(s.servicioActividad.actividad.fecha).toLocaleDateString('es-SV')}</p>
               </CardContent></Card>
             ))
           )}

@@ -329,6 +329,7 @@ model Actividad {
   lugar       String?
   descripcion String?
   anio        Int
+  generadaPorServicio Boolean @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 

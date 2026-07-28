@@ -105,6 +105,7 @@ export const crearServicioCompleto = async (equipoId, datos) => {
       lugar: lugarServicio || null,
       descripcion: `Solicitado por: ${comunidad.nombre}`,
       anio: fecha.getFullYear(),
+      generadaPorServicio: true,
     },
   })
 

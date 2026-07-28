@@ -5,13 +5,9 @@ const PAGE_SIZE = 20
 export const listarActividades = async (equipoId, { anio, tipo, page = 1 }) => {
   const where = {
     equipoId,
+    generadaPorServicio: false,
     ...(anio && { anio: parseInt(anio) }),
     ...(tipo && { tipo }),
-    // Excluir actividades creadas únicamente por OCR (sin servicios manuales)
-    OR: [
-      { servicios: { none: {} } },
-      { servicios: { some: { origenOCR: false } } },
-    ],
   }
 
   const [total, data] = await Promise.all([

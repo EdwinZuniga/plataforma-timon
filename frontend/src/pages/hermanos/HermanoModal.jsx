@@ -10,7 +10,7 @@ import { Combobox } from '@/components/ui/combobox'
 import { useToast } from '@/components/ui/toast'
 import { X } from 'lucide-react'
 
-export function HermanoModal({ onClose, onSaved, hermano }) {
+export function HermanoModal({ onClose, onSaved, hermano, comunidadId }) {
   const { equipoActual } = useAuthStore()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
@@ -22,7 +22,7 @@ export function HermanoModal({ onClose, onSaved, hermano }) {
   })
 
   const { register, handleSubmit, control, formState: { errors } } = useForm({
-    defaultValues: hermano || {},
+    defaultValues: hermano || (comunidadId ? { comunidadId } : {}),
   })
 
   const comunidadOptions = useMemo(
