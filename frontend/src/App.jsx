@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { ToastProvider } from '@/components/ui/toast'
 import { Layout } from '@/components/shared/Layout'
+import { InactivityLogout } from '@/components/shared/InactivityLogout'
 import { ProtectedRoute, EquipoRoute, SuperAdminRoute } from '@/components/shared/ProtectedRoute'
 
 import AdminLayout from '@/pages/admin/AdminLayout'
@@ -48,40 +49,43 @@ function AppRoutes() {
   }, [])
 
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/seleccionar-equipo" element={<ProtectedRoute><SeleccionarEquipoPage /></ProtectedRoute>} />
+    <>
+      <InactivityLogout />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/seleccionar-equipo" element={<ProtectedRoute><SeleccionarEquipoPage /></ProtectedRoute>} />
 
-      <Route element={<SuperAdminRoute><AdminLayout /></SuperAdminRoute>}>
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/admin/usuarios" element={<AdminUsuariosPage />} />
-        <Route path="/admin/equipos" element={<AdminEquiposPage />} />
-        <Route path="/admin/permisos" element={<AdminPermisosPage />} />
-      </Route>
+        <Route element={<SuperAdminRoute><AdminLayout /></SuperAdminRoute>}>
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/admin/usuarios" element={<AdminUsuariosPage />} />
+          <Route path="/admin/equipos" element={<AdminEquiposPage />} />
+          <Route path="/admin/permisos" element={<AdminPermisosPage />} />
+        </Route>
 
-      <Route element={<EquipoRoute><Layout><Outlet /></Layout></EquipoRoute>}>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/comunidades" element={<ComunidadesPage />} />
-        <Route path="/comunidades/:id" element={<ComunidadDetailPage />} />
-        <Route path="/hermanos" element={<HermanosPage />} />
-        <Route path="/hermanos/:id" element={<HermanoDetailPage />} />
-        <Route path="/actividades" element={<ActividadesPage />} />
-        <Route path="/actividades/:id" element={<ActividadDetailPage />} />
-        <Route path="/reuniones" element={<ReunionesPage />} />
-        <Route path="/reuniones/:id" element={<ReunionDetailPage />} />
-        <Route path="/talleres" element={<TalleresPage />} />
-        <Route path="/talleres/:id" element={<TallerDetailPage />} />
-        <Route path="/talleres/:id/ediciones/:edicionId" element={<TallerEdicionPage />} />
-        <Route path="/servicios" element={<ServiciosPage />} />
-        <Route path="/equipos" element={<EquiposPage />} />
-        <Route path="/tesoreria" element={<TesoreriaPage />} />
-        <Route path="/inventario" element={<InventarioPage />} />
-        <Route path="/perfil" element={<PerfilPage />} />
-      </Route>
+        <Route element={<EquipoRoute><Layout><Outlet /></Layout></EquipoRoute>}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/comunidades" element={<ComunidadesPage />} />
+          <Route path="/comunidades/:id" element={<ComunidadDetailPage />} />
+          <Route path="/hermanos" element={<HermanosPage />} />
+          <Route path="/hermanos/:id" element={<HermanoDetailPage />} />
+          <Route path="/actividades" element={<ActividadesPage />} />
+          <Route path="/actividades/:id" element={<ActividadDetailPage />} />
+          <Route path="/reuniones" element={<ReunionesPage />} />
+          <Route path="/reuniones/:id" element={<ReunionDetailPage />} />
+          <Route path="/talleres" element={<TalleresPage />} />
+          <Route path="/talleres/:id" element={<TallerDetailPage />} />
+          <Route path="/talleres/:id/ediciones/:edicionId" element={<TallerEdicionPage />} />
+          <Route path="/servicios" element={<ServiciosPage />} />
+          <Route path="/equipos" element={<EquiposPage />} />
+          <Route path="/tesoreria" element={<TesoreriaPage />} />
+          <Route path="/inventario" element={<InventarioPage />} />
+          <Route path="/perfil" element={<PerfilPage />} />
+        </Route>
 
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </>
   )
 }
 
