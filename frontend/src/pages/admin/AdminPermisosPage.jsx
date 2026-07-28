@@ -4,7 +4,7 @@ import { getUsuarios, getPermisosUsuario, savePermisosMembresia, clearPermisosMe
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
-import { Search, ShieldCheck, RotateCcw, Save, ChevronDown, ChevronUp } from 'lucide-react'
+import { Search, ShieldCheck, RotateCcw, Save, ChevronDown, ChevronUp, ChevronLeft } from 'lucide-react'
 import { cn } from '@/utils/cn'
 
 // ─── CATÁLOGO DE MÓDULOS ──────────────────────────────────────────────────────
@@ -124,14 +124,17 @@ function PermisoMatrix({ miembro, onClose }) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header usuario seleccionado */}
-      <div className="px-6 py-4 border-b flex items-center justify-between gap-4 shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="px-4 md:px-6 py-4 border-b flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
+          <button onClick={onClose} className="md:hidden -ml-1 p-1 text-muted-foreground shrink-0">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
           <div className="h-9 w-9 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center text-sm font-bold shrink-0">
             {miembro.usuario.nombre?.[0]?.toUpperCase()}
           </div>
-          <div>
-            <p className="font-semibold">{miembro.usuario.nombre}</p>
-            <p className="text-xs text-muted-foreground">
+          <div className="min-w-0">
+            <p className="font-semibold truncate">{miembro.usuario.nombre}</p>
+            <p className="text-xs text-muted-foreground truncate">
               {miembro.equipo.nombre} · <span className="capitalize">{miembro.rol.toLowerCase()}</span>
               {hasExplicit && (
                 <span className="ml-2 text-violet-600 dark:text-violet-400 font-medium">· Permisos configurados</span>
@@ -161,17 +164,17 @@ function PermisoMatrix({ miembro, onClose }) {
 
       {/* Nota informativa */}
       {!hasExplicit && (
-        <div className="mx-6 mt-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2.5 text-sm text-amber-800 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400">
+        <div className="mx-4 md:mx-6 mt-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2.5 text-sm text-amber-800 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400">
           Sin configuración explícita — el acceso se rige por el rol <strong>{miembro.rol}</strong>. Guarda los permisos para aplicar restricciones o ampliar acceso.
         </div>
       )}
 
       {/* Tabla de permisos */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-3 md:p-6">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-3 px-4 font-medium text-muted-foreground w-40">Módulo</th>
+              <th className="text-left py-3 px-4 font-medium text-muted-foreground w-28 md:w-40">Módulo</th>
               {ACCIONES.map(({ key, label }) => (
                 <th key={key} className="py-3 px-4 text-center font-medium">
                   <div className="flex flex-col items-center gap-1">
@@ -331,8 +334,11 @@ export default function AdminPermisosPage() {
 
   return (
     <div className="flex-1 flex overflow-hidden">
-      {/* Panel izquierdo — lista de usuarios */}
-      <div className="w-72 border-r flex flex-col shrink-0">
+      {/* Panel izquierdo — lista de usuarios (en móvil ocupa toda la pantalla hasta seleccionar un equipo) */}
+      <div className={cn(
+        'w-full md:w-72 border-r flex-col shrink-0',
+        selectedMembership ? 'hidden md:flex' : 'flex'
+      )}>
         <div className="px-4 pt-5 pb-3 border-b">
           <h2 className="font-semibold mb-3">Permisos por usuario</h2>
           <div className="relative">
@@ -372,9 +378,9 @@ export default function AdminPermisosPage() {
         </div>
       </div>
 
-      {/* Panel derecho — matriz de permisos */}
+      {/* Panel derecho — matriz de permisos (en móvil solo aparece tras seleccionar un equipo) */}
       {!selectedMembership ? (
-        <div className="flex-1 flex items-center justify-center text-center p-10">
+        <div className="flex-1 hidden md:flex items-center justify-center text-center p-10">
           <div>
             <ShieldCheck className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
             <p className="font-medium text-muted-foreground">Selecciona un usuario y su equipo</p>
