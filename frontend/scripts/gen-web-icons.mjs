@@ -12,8 +12,8 @@ const OUT = path.join(root, 'public/icons')
 const WHITE = { r: 255, g: 255, b: 255, alpha: 1 }
 
 if (!existsSync(SRC)) {
-  console.error(`\n✗ No se encontró ${SRC}\n  Coloca ahí el icono (PNG cuadrado, idealmente 1024x1024) y vuelve a ejecutar.\n`)
-  process.exit(1)
+  console.warn(`\n⚠ No se encontró ${SRC} — se omite la generación de iconos web.\n  Coloca ahí el icono (PNG cuadrado, idealmente 1024x1024) para personalizarlo.\n`)
+  process.exit(0)
 }
 
 await mkdir(OUT, { recursive: true })

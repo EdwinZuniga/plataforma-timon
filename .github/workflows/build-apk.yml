@@ -40,6 +40,12 @@ jobs:
         working-directory: frontend
         run: |
           npm ci
+          if [ -f assets/icon.png ]; then
+            echo "Generando iconos desde assets/icon.png"
+            npm run assets
+          else
+            echo "Sin assets/icon.png -> se usa el icono por defecto de Capacitor"
+          fi
           npm run build
           npx cap sync android
 
