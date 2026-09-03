@@ -1,12 +1,22 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
+import { Fingerprint } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { misEquipos } from '@/api/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
+import { isNative } from '@/utils/native'
+import {
+  biometricDisponible,
+  etiquetaBiometria,
+  huellaActivada,
+  activarHuella,
+  desactivarHuella,
+  obtenerCredencialesConHuella,
+} from '@/utils/biometric'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -15,41 +25,58 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [loadingLabel, setLoadingLabel] = useState('Ingresando...')
 
+  // ── Biometría (solo dentro de la APK) ─────────────────────────────
+  const [bio, setBio] = useState({ disponible: false, tipo: null })
+  const [bioOn, setBioOn] = useState(huellaActivada())
+  const [bioBusy, setBioBusy] = useState(false)
+  const [pendingBio, setPendingBio] = useState(null) // { email, password, dest }
+  const autoTried = useRef(false)
+  const bioLabel = etiquetaBiometria(bio.tipo)
+
   const { register, handleSubmit, formState: { errors } } = useForm()
 
   const DB_RETRY_ATTEMPTS = 2
   const DB_RETRY_DELAY_MS = 3000
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
+  // Corre el login + selección de equipo. Devuelve la ruta destino.
+  const iniciarSesion = useCallback(async (email, password) => {
+    let intento = 0
+    for (;;) {
+      try {
+        await login(email, password)
+        break
+      } catch (err) {
+        const isDbIniciando = err.response?.data?.code === 'DB_INICIANDO'
+        if (isDbIniciando && intento < DB_RETRY_ATTEMPTS) {
+          intento++
+          setLoadingLabel('El sistema se está iniciando...')
+          await sleep(DB_RETRY_DELAY_MS)
+          continue
+        }
+        throw err
+      }
+    }
+
+    const res = await misEquipos()
+    const equipos = res.data.data
+    if (equipos.length === 1) {
+      seleccionarEquipo(equipos[0])
+      return '/dashboard'
+    }
+    return '/seleccionar-equipo'
+  }, [login, seleccionarEquipo])
+
   const onSubmit = async ({ email, password }) => {
     setLoading(true)
     setLoadingLabel('Ingresando...')
     try {
-      let intento = 0
-      for (;;) {
-        try {
-          await login(email, password)
-          break
-        } catch (err) {
-          const isDbIniciando = err.response?.data?.code === 'DB_INICIANDO'
-          if (isDbIniciando && intento < DB_RETRY_ATTEMPTS) {
-            intento++
-            setLoadingLabel('El sistema se está iniciando...')
-            await sleep(DB_RETRY_DELAY_MS)
-            continue
-          }
-          throw err
-        }
-      }
-
-      // Obtener equipos y auto-seleccionar si solo hay uno
-      const res = await misEquipos()
-      const equipos = res.data.data
-      if (equipos.length === 1) {
-        seleccionarEquipo(equipos[0])
-        navigate('/dashboard')
+      const dest = await iniciarSesion(email, password)
+      // En la APK, si hay huella disponible y aún no está activada, ofrecer activarla.
+      if (isNative() && bio.disponible && !bioOn) {
+        setPendingBio({ email, password, dest })
       } else {
-        navigate('/seleccionar-equipo')
+        navigate(dest)
       }
     } catch (err) {
       toast({
@@ -61,6 +88,73 @@ export default function LoginPage() {
       setLoading(false)
     }
   }
+
+  const ingresarConHuella = useCallback(async () => {
+    if (bioBusy) return
+    setBioBusy(true)
+    setLoadingLabel('Ingresando...')
+    try {
+      const { email, password } = await obtenerCredencialesConHuella()
+      const dest = await iniciarSesion(email, password)
+      navigate(dest)
+    } catch (err) {
+      const cancelado = /cancel|user|authentication failed|13/i.test(err?.message || '') && !err?.response
+      if (err?.response?.status === 401 || err?.response?.data?.code === 'CREDENCIALES_INVALIDAS') {
+        await desactivarHuella()
+        setBioOn(false)
+        toast({
+          title: 'Ingresa con tu contraseña',
+          description: 'Tus datos cambiaron. Inicia sesión y vuelve a activar el ingreso con huella.',
+          variant: 'destructive',
+        })
+      } else if (!cancelado) {
+        toast({
+          title: `No se pudo validar la ${bioLabel}`,
+          description: err?.message || 'Intenta de nuevo o usa tu contraseña.',
+          variant: 'destructive',
+        })
+      }
+    } finally {
+      setBioBusy(false)
+    }
+  }, [bioBusy, bioLabel, iniciarSesion, navigate, toast])
+
+  // Detectar biometría disponible al montar.
+  useEffect(() => {
+    if (!isNative()) return
+    biometricDisponible().then(setBio)
+  }, [])
+
+  // Auto-disparar el ingreso con huella una sola vez si ya está activada.
+  useEffect(() => {
+    if (!isNative() || autoTried.current) return
+    if (huellaActivada() && bio.disponible) {
+      autoTried.current = true
+      ingresarConHuella()
+    }
+  }, [ingresarConHuella, bio.disponible])
+
+  const confirmarActivarHuella = async () => {
+    const { email, password, dest } = pendingBio
+    try {
+      await activarHuella(email, password)
+      setBioOn(true)
+      toast({ title: `Ingreso con ${bioLabel} activado`, description: 'La próxima vez podrás entrar sin escribir tu contraseña.' })
+    } catch {
+      toast({ title: 'No se pudo activar', description: 'Inténtalo más tarde desde tu perfil.', variant: 'destructive' })
+    } finally {
+      setPendingBio(null)
+      navigate(dest)
+    }
+  }
+
+  const omitirActivarHuella = () => {
+    const dest = pendingBio.dest
+    setPendingBio(null)
+    navigate(dest)
+  }
+
+  const mostrarBotonHuella = isNative() && bioOn && bio.disponible
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -104,13 +198,56 @@ export default function LoginPage() {
                 {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full" disabled={loading || bioBusy}>
                 {loading ? loadingLabel : 'Ingresar'}
               </Button>
             </form>
+
+            {mostrarBotonHuella && (
+              <>
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">o usa tu {bioLabel}</span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={ingresarConHuella}
+                  disabled={loading || bioBusy}
+                >
+                  <Fingerprint className="h-5 w-5 mr-2" />
+                  {bioBusy ? 'Validando...' : `Entrar con ${bioLabel}`}
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {pendingBio && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
+          <div className="bg-card rounded-t-2xl md:rounded-xl w-full max-w-sm shadow-xl p-5 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="shrink-0 mt-0.5 h-9 w-9 rounded-full bg-primary-700/10 flex items-center justify-center">
+                <Fingerprint className="h-5 w-5 text-primary-700" />
+              </div>
+              <div>
+                <p className="font-semibold text-base">¿Activar ingreso con {bioLabel}?</p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  La próxima vez podrás entrar con tu {bioLabel} sin escribir tu contraseña.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={omitirActivarHuella}>Ahora no</Button>
+              <Button className="flex-1" onClick={confirmarActivarHuella}>Activar</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
@@ -12,9 +12,13 @@ import { Badge } from '@/components/ui/badge'
 import { PageSpinner } from '@/components/ui/spinner'
 import { useToast } from '@/components/ui/toast'
 import {
-  KeyRound, Eye, EyeOff, MapPin, BookOpen, Users,
+  KeyRound, Eye, EyeOff, MapPin, BookOpen, Users, Fingerprint,
   Mic2, Wrench, ClipboardList, Users2, Wallet, ChevronDown, ChevronUp, ChevronRight,
 } from 'lucide-react'
+import { isNative } from '@/utils/native'
+import {
+  biometricDisponible, etiquetaBiometria, huellaActivada, activarHuella, desactivarHuella,
+} from '@/utils/biometric'
 
 const MESES = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const ROL_LABEL = { COORDINADOR: 'Coordinador', MIEMBRO: 'Miembro', SECRETARIO: 'Secretario', CONSULTOR: 'Consultor' }
@@ -250,6 +254,112 @@ function ResumenResponsabilidades({ equipoId }) {
   )
 }
 
+function IngresoHuellaCard() {
+  const { usuario, login } = useAuthStore()
+  const { toast } = useToast()
+  const [bio, setBio] = useState({ disponible: false, tipo: null })
+  const [activada, setActivada] = useState(huellaActivada())
+  const [abrir, setAbrir] = useState(false)
+  const [password, setPassword] = useState('')
+  const [show, setShow] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const label = etiquetaBiometria(bio.tipo)
+
+  useEffect(() => { biometricDisponible().then(setBio) }, [])
+
+  if (!isNative() || !bio.disponible) return null
+
+  const activar = async (e) => {
+    e.preventDefault()
+    if (!password) return
+    setBusy(true)
+    try {
+      await login(usuario.email, password) // valida la contraseña actual
+      await activarHuella(usuario.email, password)
+      setActivada(true)
+      setAbrir(false)
+      setPassword('')
+      toast({ title: `Ingreso con ${label} activado` })
+    } catch (err) {
+      toast({
+        title: 'No se pudo activar',
+        description: err.response?.data?.error || 'Contraseña incorrecta',
+        variant: 'destructive',
+      })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const desactivar = async () => {
+    await desactivarHuella()
+    setActivada(false)
+    toast({ title: `Ingreso con ${label} desactivado` })
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <Fingerprint className="h-4 w-4 text-muted-foreground" />
+        <h2 className="font-semibold">Ingreso con {label}</h2>
+      </div>
+      <Card>
+        <CardContent className="py-4 px-4 space-y-3">
+          {activada ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Activo en este dispositivo. Puedes entrar con tu {label} sin escribir la contraseña.
+              </p>
+              <Button variant="outline" className="w-full" onClick={desactivar}>
+                Desactivar en este dispositivo
+              </Button>
+            </>
+          ) : !abrir ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Guarda tus credenciales de forma cifrada en este dispositivo para entrar con tu {label}.
+              </p>
+              <Button className="w-full" onClick={() => setAbrir(true)}>
+                Activar ingreso con {label}
+              </Button>
+            </>
+          ) : (
+            <form onSubmit={activar} className="space-y-3">
+              <label className="text-sm font-medium">Confirma tu contraseña</label>
+              <div className="relative">
+                <Input
+                  type={show ? 'text' : 'password'}
+                  className="pr-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Tu contraseña actual"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShow((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => { setAbrir(false); setPassword('') }}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="flex-1" disabled={busy || !password}>
+                  {busy ? 'Activando...' : 'Activar'}
+                </Button>
+              </div>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 export default function PerfilPage() {
   const { usuario, equipoActual } = useAuthStore()
   const { toast } = useToast()
@@ -312,6 +422,9 @@ export default function PerfilPage() {
           : <p className="text-sm text-muted-foreground">Selecciona un equipo para ver tus responsabilidades.</p>
         }
       </div>
+
+      {/* Ingreso con huella (solo en la APK) */}
+      <IngresoHuellaCard />
 
       {/* Cambiar contraseña */}
       <div>

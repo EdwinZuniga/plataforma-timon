@@ -11,8 +11,8 @@ Plataforma multiequipo para la gestión de comunidades, hermanos, talleres, acti
 |---|---|
 | Node.js | 20 LTS o superior |
 | SQL Server | 2019+ (local) o Azure SQL |
-| JDK | 17+ (solo para generar APK) |
-| Android Studio | Latest (solo para APK) |
+| JDK | 21 (solo para generar APK en local) |
+| Android Studio | Latest (solo para APK en local) |
 
 ---
 
@@ -147,68 +147,76 @@ plataforma-timon/
 
 ---
 
-## Generar APK con Capacitor
+## APK Android (Capacitor)
 
-### APK de desarrollo
+La APK es una **carcasa remota**: `frontend/capacitor.config.json` tiene
+`server.url = https://plataforma-timon.vercel.app`, así que la app carga el sitio en vivo.
+
+> **Cada deploy a Vercel se ve al instante en la APK, sin reinstalar nada.**
+> Sólo hay que volver a compilar e instalar la APK cuando cambian el icono, los
+> plugins nativos, `capacitor.config.json` o el código de ingreso con huella.
+
+### Ingreso con huella
+
+Dentro de la APK, tras iniciar sesión con contraseña se ofrece **activar el
+ingreso con huella** (o rostro). Las credenciales se guardan cifradas en el
+Keystore de Android (`@capgo/capacitor-native-biometric`); "Entrar con huella"
+hace el login normal sin escribir la contraseña. Se puede activar/desactivar
+también desde **Mi perfil**. En el navegador web no aparece nada de esto.
+Si la contraseña cambia, el ingreso con huella se desactiva solo y pide la contraseña.
+
+### Icono
+
+Colocar el PNG del timón (1024×1024) en `frontend/assets/icon.png` y ejecutar:
 
 ```bash
 cd frontend
-
-# 1. Construir el frontend
-npm run build
-
-# 2. Sincronizar con Capacitor
-npx cap sync android
-
-# 3a. Abrir Android Studio (recomendado para primera vez)
-npx cap open android
-
-# 3b. O compilar sin Android Studio (requiere JDK 17+)
-cd android
-./gradlew assembleDebug
-# APK en: android/app/build/outputs/apk/debug/app-debug.apk
+npm run assets          # regenera iconos Android + PWA
+npm run apk:sync        # build + cap sync android
 ```
 
-### APK de producción (firmado)
+Ver `frontend/assets/README.md`.
+
+### Compilar en local
 
 ```bash
-# 1. Generar keystore (una sola vez)
-keytool -genkey -v -keystore timon-release.keystore -alias timon -keyalg RSA -keysize 2048 -validity 10000
-
-# 2. En android/app/build.gradle, agregar en android { signingConfigs { ... } }
-# Ver: https://developer.android.com/studio/publish/app-signing
-
-# 3. Compilar APK de release
-cd android
-./gradlew assembleRelease
-# APK en: android/app/build/outputs/apk/release/app-release.apk
+cd frontend
+npm run apk:sync        # npm run build + npx cap sync android
+npm run apk:open        # abre Android Studio  (o:)
+npm run apk:debug       # gradlew assembleDebug -> android/app/build/outputs/apk/debug/app-debug.apk
 ```
+
+Necesita JDK 21 (el que trae Android Studio sirve) y el Android SDK.
+
+### Compilar APK firmada (GitHub Actions)
+
+Workflow `.github/workflows/build-apk.yml` — se dispara manualmente
+(**Actions → Build APK Android → Run workflow**) o al empujar un tag `v*`.
+Produce la APK firmada como artefacto descargable (y la adjunta al Release si es un tag).
+
+**Keystore (una sola vez):**
+
+```bash
+keytool -genkeypair -v -keystore timon-release.jks -alias timon \
+  -keyalg RSA -keysize 2048 -validity 10000
+base64 -w0 timon-release.jks       # -> secret ANDROID_KEYSTORE_BASE64
+```
+
+Guardar el `.jks` **fuera del repo** y respaldarlo (sin él no se pueden firmar
+actualizaciones instalables sobre la misma app).
+
+**Secrets del repo** (Settings → Secrets and variables → Actions):
+`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
+
+Para compilar firmado en local: copiar `frontend/android/keystore.properties.example`
+a `frontend/android/keystore.properties` y rellenarlo, luego `npm run apk:sync && cd android && ./gradlew assembleRelease`.
 
 ### Distribución sin Play Store
 
-El APK puede distribuirse directamente (instalación directa):
-1. Enviar el APK por WhatsApp, email o link de descarga
-2. En el dispositivo: Configuración → Seguridad → Fuentes desconocidas (activar)
-3. Abrir el APK y seguir las instrucciones de instalación
-
-### Configurar URL de producción en Capacitor
-
-Editar `frontend/capacitor.config.json`:
-
-```json
-{
-  "appId": "org.renovacioncarismatica.timon",
-  "appName": "Plataforma Timón",
-  "webDir": "dist",
-  "server": {
-    "url": "https://timon.tudominio.com",
-    "cleartext": false,
-    "androidScheme": "https"
-  }
-}
-```
-
-**Nota:** Durante desarrollo local, omitir `server.url` para que Capacitor sirva desde `dist/`.
+1. Enviar la APK por WhatsApp, correo o link de descarga.
+2. En el dispositivo: activar "Instalar apps desconocidas" para esa fuente.
+3. Abrir la APK e instalar. Las siguientes actualizaciones de contenido ya no
+   requieren reinstalar (llegan por el deploy de Vercel).
 
 ---
 
@@ -230,7 +238,7 @@ NOTAS: Disponible desde las 7am
 
 **Backend:** Node.js 20 · Express · Prisma · SQL Server · JWT · Multer · Tesseract.js · Zod
 
-**Frontend:** React 18 · Vite · Tailwind CSS v3 · TanStack Query v5 · Zustand · React Router v6 · Recharts · Capacitor v6 (PWA + APK)
+**Frontend:** React 19 · Vite · Tailwind CSS v3 · TanStack Query v5 · Zustand · React Router v7 · Recharts · Capacitor v8 (PWA + APK con carcasa remota + ingreso con huella)
 
 ---
 
