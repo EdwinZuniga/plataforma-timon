@@ -40,7 +40,7 @@ export default function SeleccionarEquipoPage() {
   if (loading) return <PageSpinner />
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 pt-safe pb-safe">
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold">Selecciona un equipo</h1>

@@ -157,7 +157,7 @@ export default function LoginPage() {
   const mostrarBotonHuella = isNative() && bioOn && bio.disponible
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 pt-safe pb-safe">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-700 mb-4">

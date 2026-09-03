@@ -148,7 +148,7 @@ export function Layout({ children }) {
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-card shadow-xl flex flex-col">
+          <aside className="pt-safe absolute left-0 top-0 bottom-0 w-72 bg-card shadow-xl flex flex-col">
             <div className="flex items-center justify-between px-4 py-4 border-b">
               <span className="font-semibold" style={{ color: 'var(--color-equipo)' }}>
                 {equipoActual?.nombre || 'Plataforma Timón'}
@@ -190,7 +190,7 @@ export function Layout({ children }) {
 
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Header móvil */}
-        <header className="flex md:hidden items-center gap-3 px-4 py-3 border-b bg-card shrink-0">
+        <header className="header-safe flex md:hidden items-center gap-3 px-4 py-3 border-b bg-card shrink-0">
           <button onClick={() => setSidebarOpen(true)} className="min-h-0 h-auto p-1 -ml-1">
             <Menu className="h-5 w-5" />
           </button>
@@ -205,7 +205,7 @@ export function Layout({ children }) {
         </main>
 
         {/* Bottom navigation móvil */}
-        <nav className="flex md:hidden items-center border-t bg-card fixed bottom-0 left-0 right-0 z-30">
+        <nav className="bottomnav-safe flex md:hidden items-center border-t bg-card fixed bottom-0 left-0 right-0 z-30">
           {visibleBottomItems.map((item) => (
             <NavLink key={item.to} {...item} mobile />
           ))}

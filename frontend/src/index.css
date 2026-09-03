@@ -71,3 +71,17 @@
 button { min-height: 44px; }
 input, select, textarea { min-height: 44px; }
 a[role="button"] { min-height: 44px; display: inline-flex; align-items: center; }
+
+/* ── Safe area (barra de estado / gestos en la APK Android/iOS) ──────
+   Capacitor expone env(safe-area-inset-*) porque index.html usa
+   viewport-fit=cover. En navegador de escritorio los valores son 0. */
+@layer utilities {
+  .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .min-h-screen-safe { min-height: calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
+}
+
+/* Cabecera móvil: respeta la barra de estado sin perder su padding propio */
+.header-safe { padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)); }
+/* Barra de navegación inferior móvil: respeta la barra de gestos */
+.bottomnav-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
