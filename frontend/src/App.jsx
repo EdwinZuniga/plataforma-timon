@@ -2,6 +2,8 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useThemeStore } from '@/stores/useThemeStore'
+import { syncStatusBar } from '@/utils/statusBar'
 import { ToastProvider } from '@/components/ui/toast'
 import { Layout } from '@/components/shared/Layout'
 import { InactivityLogout } from '@/components/shared/InactivityLogout'
@@ -46,6 +48,8 @@ function AppRoutes() {
 
   useEffect(() => {
     initializeAuth()
+    // Re-aplica el ajuste de barra de estado cuando el bridge nativo ya está listo.
+    syncStatusBar(useThemeStore.getState().theme)
   }, [])
 
   return (

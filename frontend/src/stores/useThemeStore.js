@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { syncStatusBar } from '@/utils/statusBar'
 
 const STORAGE_KEY = 'theme'
 
@@ -7,6 +8,7 @@ const getSistemaPrefiereOscuro = () =>
 
 const aplicarTema = (theme) => {
   document.documentElement.classList.toggle('dark', theme === 'dark')
+  syncStatusBar(theme) // en la APK: color/íconos de la barra de estado
 }
 
 const temaInicial = (() => {
