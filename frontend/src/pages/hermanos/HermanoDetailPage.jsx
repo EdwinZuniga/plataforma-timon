@@ -18,6 +18,12 @@ import { formatCalendarDate } from '@/utils/dates'
 
 const fmt = (d) => formatCalendarDate(d, { year: 'numeric', month: 'numeric', day: 'numeric' })
 
+const hoyISO = new Date().toISOString().slice(0, 10)
+const edicionFinalizada = (ins) => {
+  const fin = ins.edicionTaller?.fechaFin
+  return !!fin && new Date(fin).toISOString().slice(0, 10) < hoyISO
+}
+
 function RangoFecha({ inicio, fin }) {
   if (!inicio) return null
   if (fin) return <span>{fmt(inicio)} → {fmt(fin)}</span>
@@ -45,7 +51,11 @@ function TallerCard({ ins, onDesvincular, onVerResumen }) {
             {ins.aprobado === true && <Badge variant="success">Aprobado</Badge>}
             {ins.aprobado === false && <Badge variant="destructive">No aprobado</Badge>}
             {ins.aprobado === null && (
-              ins.asistio ? <Badge variant="secondary">Asistiendo</Badge> : <Badge variant="outline">Inscrito</Badge>
+              edicionFinalizada(ins)
+                ? <Badge variant="secondary">Finalizado</Badge>
+                : ins.asistio
+                  ? <Badge variant="secondary">Asistiendo</Badge>
+                  : <Badge variant="outline">Inscrito</Badge>
             )}
             {ins.certificado && <Badge variant="default">Certificado</Badge>}
             <button
@@ -63,8 +73,8 @@ function TallerCard({ ins, onDesvincular, onVerResumen }) {
 }
 
 function TalleresTab({ talleres, onVincular, onDesvincular, onVerResumen }) {
-  const actuales = talleres.filter((ins) => ins.aprobado === null)
-  const cursados = talleres.filter((ins) => ins.aprobado !== null)
+  const actuales = talleres.filter((ins) => ins.aprobado === null && !edicionFinalizada(ins))
+  const cursados = talleres.filter((ins) => ins.aprobado !== null || edicionFinalizada(ins))
 
   return (
     <div className="space-y-4">

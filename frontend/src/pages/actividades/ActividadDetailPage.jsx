@@ -16,15 +16,17 @@ import { PageSpinner } from '@/components/ui/spinner'
 import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { useDebounce } from '@/hooks/useDebounce'
+import { formatCalendarDate } from '@/utils/dates'
 import { buildGoogleCalendarUrl } from '@/utils/googleCalendar'
-import { ArrowLeft, Search, Check, X as XIcon, CalendarPlus } from 'lucide-react'
+import { ArrowLeft, Search, Check, X as XIcon, CalendarPlus, Edit } from 'lucide-react'
+import { ActividadModal } from './ActividadModal'
 
 const TIPO_LABEL = { RETIRO: 'Retiro', ASAMBLEA: 'Asamblea', ENCUENTRO: 'Encuentro', MISION: 'Misión', FORMACION: 'Formación', OTRO: 'Otro' }
 const ROL_LABEL = { COORDINADOR: 'Coordinador', MIEMBRO: 'Miembro', SECRETARIO: 'Secretario', CONSULTOR: 'Consultor' }
 
 const TABS = [
-  { key: 'hermanos', label: 'Hermanos' },
   { key: 'equipo', label: 'Equipo' },
+  { key: 'hermanos', label: 'Hermanos' },
 ]
 
 function AsistenciaLista({ equipoId, actividadId, idField, secondaryLabel, queryKeyPrefix, getFn, saveFn, buscarPlaceholder }) {
@@ -121,7 +123,9 @@ function AsistenciaLista({ equipoId, actividadId, idField, secondaryLabel, query
 export default function ActividadDetailPage() {
   const { id } = useParams()
   const { equipoActual } = useAuthStore()
-  const [tab, setTab] = useState('hermanos')
+  const qc = useQueryClient()
+  const [tab, setTab] = useState('equipo')
+  const [editModal, setEditModal] = useState(false)
 
   const { data: actividad, isLoading } = useQuery({
     queryKey: ['actividad', id],
@@ -136,17 +140,27 @@ export default function ActividadDetailPage() {
     <div className="p-4 md:p-6 space-y-4 max-w-3xl mx-auto">
       <div className="flex items-center gap-3">
         <Link to="/actividades"><button className="min-h-0 h-auto p-1 text-muted-foreground"><ArrowLeft className="h-5 w-5" /></button></Link>
-        <div className="flex-1">
-          <h1 className="text-xl font-bold">{actividad.nombre}</h1>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl font-bold truncate">{actividad.nombre}</h1>
           <p className="text-sm text-muted-foreground">
-            {new Date(actividad.fecha).toLocaleDateString('es-SV')} · {TIPO_LABEL[actividad.tipo]}
+            {formatCalendarDate(actividad.fecha)} · {TIPO_LABEL[actividad.tipo]}
             {actividad.lugar && ` · ${actividad.lugar}`}
           </p>
         </div>
-        <a href={buildGoogleCalendarUrl(actividad)} target="_blank" rel="noopener noreferrer">
-          <Button size="sm" variant="outline"><CalendarPlus className="h-4 w-4" /> Google Calendar</Button>
-        </a>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button size="sm" variant="outline" onClick={() => setEditModal(true)} title="Editar">
+            <Edit className="h-4 w-4" />
+            <span className="hidden md:inline ml-1">Editar</span>
+          </Button>
+          <a href={buildGoogleCalendarUrl(actividad)} target="_blank" rel="noopener noreferrer">
+            <Button size="sm" variant="outline"><CalendarPlus className="h-4 w-4" /><span className="hidden md:inline ml-1">Google Calendar</span></Button>
+          </a>
+        </div>
       </div>
+
+      {actividad.descripcion && (
+        <p className="text-sm text-muted-foreground whitespace-pre-line">{actividad.descripcion}</p>
+      )}
 
       <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
         {TABS.map((t) => (
@@ -180,6 +194,18 @@ export default function ActividadDetailPage() {
           getFn={getAsistenciaMiembros}
           saveFn={saveAsistenciaMiembros}
           buscarPlaceholder="Buscar miembro..."
+        />
+      )}
+
+      {editModal && (
+        <ActividadModal
+          actividad={actividad}
+          onClose={() => setEditModal(false)}
+          onSaved={() => {
+            setEditModal(false)
+            qc.invalidateQueries({ queryKey: ['actividad', id] })
+            qc.invalidateQueries({ queryKey: ['actividades'] })
+          }}
         />
       )}
     </div>

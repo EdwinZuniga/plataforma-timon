@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { requireAuth, requireEquipo, requireRolMinimo, requirePermiso } from '../../middlewares/auth.js'
+import { requireAuth, requireEquipo, requireRolMinimo, requirePermiso, requireSuperAdmin } from '../../middlewares/auth.js'
 import { registerIntParams } from '../../middlewares/parseIntParams.js'
 import * as ctrl from './talleres.controller.js'
 import * as svc from './talleres.service.js'
@@ -17,7 +17,9 @@ router.get('/:id/ediciones', requireAuth, requireEquipo, requirePermiso('tallere
 router.post('/:id/ediciones', requireAuth, requireEquipo, requirePermiso('talleres', 'crear'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.crearEdicion)
 router.get('/:id/ediciones/:edicionId', requireAuth, requireEquipo, requirePermiso('talleres', 'ver'), ctrl.obtenerEdicion)
 router.put('/:id/ediciones/:edicionId', requireAuth, requireEquipo, requirePermiso('talleres', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.actualizarEdicion)
-router.delete('/:id/ediciones/:edicionId', requireAuth, requireEquipo, requirePermiso('talleres', 'eliminar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.eliminarEdicion)
+// Eliminar una edición queda restringido a SuperAdmin, y el servicio además
+// rechaza ediciones que ya tienen hermanos inscritos (historial de asistencia).
+router.delete('/:id/ediciones/:edicionId', requireAuth, requireEquipo, requireSuperAdmin, ctrl.eliminarEdicion)
 
 router.post('/:id/ediciones/:edicionId/equipo-apoyo', requireAuth, requireEquipo, requirePermiso('talleres', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
   try {

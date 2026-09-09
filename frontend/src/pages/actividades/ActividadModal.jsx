@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { createActividad, updateActividad } from '@/api/actividades'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import { useToast } from '@/components/ui/toast'
 import { X } from 'lucide-react'
 
@@ -15,8 +16,16 @@ export function ActividadModal({ onClose, onSaved, actividad }) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
-    defaultValues: actividad ? { ...actividad, fecha: actividad.fecha?.slice(0, 10) } : {},
+  const { register, handleSubmit, control, formState: { errors } } = useForm({
+    defaultValues: actividad
+      ? {
+          nombre: actividad.nombre ?? '',
+          tipo: actividad.tipo ?? '',
+          fecha: actividad.fecha?.slice(0, 10) ?? '',
+          lugar: actividad.lugar ?? '',
+          descripcion: actividad.descripcion ?? '',
+        }
+      : {},
   })
 
   const onSubmit = async (data) => {
@@ -60,7 +69,14 @@ export function ActividadModal({ onClose, onSaved, actividad }) {
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Fecha *</label>
-              <Input type="date" {...register('fecha', { required: 'Requerido' })} />
+              <Controller
+                control={control}
+                name="fecha"
+                rules={{ required: 'Requerido' }}
+                render={({ field }) => (
+                  <DatePicker value={field.value || ''} onChange={field.onChange} />
+                )}
+              />
               {errors.fecha && <p className="text-xs text-destructive">{errors.fecha.message}</p>}
             </div>
           </div>

@@ -88,25 +88,55 @@ export default function TallerEdicionPage() {
     enabled: !!equipoActual?.id,
   })
 
-  const { mutate: registrarAsistencia, variables: pendingAsistencia } = useMutation({
+  // Actualización optimista: refleja el cambio en la caché al instante y
+  // revierte si el servidor falla. `campo` es la colección mensual de la
+  // inscripción; `construir` arma el registro nuevo a partir de las variables.
+  const mutacionMensual = (campo, construir, tituloError) => ({
+    onMutate: async (vars) => {
+      await qc.cancelQueries({ queryKey: ['edicion', edicionId] })
+      const previo = qc.getQueryData(['edicion', edicionId])
+      qc.setQueryData(['edicion', edicionId], (old) => {
+        if (!old?.inscripciones) return old
+        return {
+          ...old,
+          inscripciones: old.inscripciones.map((ins) =>
+            ins.id !== vars.inscripcionId
+              ? ins
+              : {
+                  ...ins,
+                  [campo]: [
+                    ...(ins[campo] ?? []).filter((r) => !(r.mes === vars.mes && r.anio === vars.anio)),
+                    construir(vars),
+                  ],
+                },
+          ),
+        }
+      })
+      return { previo }
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previo) qc.setQueryData(['edicion', edicionId], ctx.previo)
+      toast({ title: tituloError, variant: 'destructive' })
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['edicion', edicionId] }),
+  })
+
+  const { mutate: registrarAsistencia } = useMutation({
     mutationFn: ({ inscripcionId, mes, anio, estado }) =>
       upsertAsistenciaMes(equipoActual.id, inscripcionId, { mes, anio, estado }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['edicion', edicionId] }),
-    onError: () => toast({ title: 'Error al guardar asistencia', variant: 'destructive' }),
+    ...mutacionMensual('asistenciasMes', ({ mes, anio, estado }) => ({ mes, anio, estado }), 'Error al guardar asistencia'),
   })
 
-  const { mutate: registrarTarea, variables: pendingTarea } = useMutation({
+  const { mutate: registrarTarea } = useMutation({
     mutationFn: ({ inscripcionId, mes, anio, entrego }) =>
       upsertTareaEntrega(equipoActual.id, inscripcionId, { mes, anio, entrego }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['edicion', edicionId] }),
-    onError: () => toast({ title: 'Error al guardar tarea', variant: 'destructive' }),
+    ...mutacionMensual('tareasEntrega', ({ mes, anio, entrego }) => ({ mes, anio, entrego }), 'Error al guardar tarea'),
   })
 
-  const { mutate: registrarParticipacion, variables: pendingParticipacion } = useMutation({
+  const { mutate: registrarParticipacion } = useMutation({
     mutationFn: ({ inscripcionId, mes, anio, participo }) =>
       upsertParticipacionMes(equipoActual.id, inscripcionId, { mes, anio, participo }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['edicion', edicionId] }),
-    onError: () => toast({ title: 'Error al guardar participación', variant: 'destructive' }),
+    ...mutacionMensual('participaciones', ({ mes, anio, participo }) => ({ mes, anio, participo }), 'Error al guardar participación'),
   })
 
   if (isLoading) return <PageSpinner />
@@ -267,18 +297,6 @@ export default function TallerEdicionPage() {
               const estado = getEstado(ins, activeMes.mes, activeMes.anio)
               const tarea = getTarea(ins, activeMes.mes, activeMes.anio)
               const participo = getParticipacion(ins, activeMes.mes, activeMes.anio)
-              const isPendingAsist =
-                pendingAsistencia?.inscripcionId === ins.id &&
-                pendingAsistencia?.mes === activeMes.mes &&
-                pendingAsistencia?.anio === activeMes.anio
-              const isPendingTarea =
-                pendingTarea?.inscripcionId === ins.id &&
-                pendingTarea?.mes === activeMes.mes &&
-                pendingTarea?.anio === activeMes.anio
-              const isPendingPartic =
-                pendingParticipacion?.inscripcionId === ins.id &&
-                pendingParticipacion?.mes === activeMes.mes &&
-                pendingParticipacion?.anio === activeMes.anio
 
               return (
                 <div key={ins.id} className="flex items-center gap-2 px-3 py-3 bg-card">
@@ -297,7 +315,6 @@ export default function TallerEdicionPage() {
                       onClick={() =>
                         registrarTarea({ inscripcionId: ins.id, mes: activeMes.mes, anio: activeMes.anio, entrego: !tarea })
                       }
-                      disabled={isPendingTarea}
                       title={tarea ? 'Tarea entregada — clic para quitar' : 'No entregó tarea — clic para marcar'}
                       className={cn(
                         'h-8 w-8 flex items-center justify-center rounded-lg border transition-colors text-xs font-bold',
@@ -314,7 +331,6 @@ export default function TallerEdicionPage() {
                       onClick={() =>
                         registrarParticipacion({ inscripcionId: ins.id, mes: activeMes.mes, anio: activeMes.anio, participo: !participo })
                       }
-                      disabled={isPendingPartic}
                       title={participo ? 'Participó — clic para quitar' : 'No participó — clic para marcar'}
                       className={cn(
                         'h-8 w-8 flex items-center justify-center rounded-lg border transition-colors',
@@ -329,7 +345,6 @@ export default function TallerEdicionPage() {
                     {/* Asistencia */}
                     <EstadoControl
                       estado={estado}
-                      disabled={isPendingAsist}
                       onChange={(nuevoEstado) =>
                         registrarAsistencia({ inscripcionId: ins.id, mes: activeMes.mes, anio: activeMes.anio, estado: nuevoEstado })
                       }
@@ -475,12 +490,11 @@ function TemaDelMes({ tema, mes, anio, onEdit }) {
 
 // ─── EstadoControl ────────────────────────────────────────────────────────────
 
-function EstadoControl({ estado, onChange, disabled }) {
+function EstadoControl({ estado, onChange }) {
   return (
     <div className="flex items-center rounded-full border border-input overflow-hidden shrink-0">
       <button
         onClick={() => onChange('AUSENTE')}
-        disabled={disabled}
         title="Ausente"
         className={cn(
           'h-8 w-8 flex items-center justify-center transition-colors',
@@ -493,7 +507,6 @@ function EstadoControl({ estado, onChange, disabled }) {
       </button>
       <button
         onClick={() => onChange('PRESENTE')}
-        disabled={disabled}
         title="Presente"
         className={cn(
           'h-8 w-8 flex items-center justify-center transition-colors border-x border-input',
@@ -506,7 +519,6 @@ function EstadoControl({ estado, onChange, disabled }) {
       </button>
       <button
         onClick={() => onChange('PERMISO')}
-        disabled={disabled}
         title="Permiso"
         className={cn(
           'h-8 w-8 flex items-center justify-center transition-colors',

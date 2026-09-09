@@ -16,6 +16,9 @@ const labelEdicion = (edicion) => {
   return `${inicio}${fin}${lugar}`
 }
 
+const hoyISO = new Date().toISOString().slice(0, 10)
+const edicionFinalizada = (e) => !!e.fechaFin && new Date(e.fechaFin).toISOString().slice(0, 10) < hoyISO
+
 export function VincularTallerModal({ hermanoId, inscripcionesActuales = [], onClose, onSaved }) {
   const { equipoActual } = useAuthStore()
   const { toast } = useToast()
@@ -32,7 +35,7 @@ export function VincularTallerModal({ hermanoId, inscripcionesActuales = [], onC
   const tallerSeleccionado = talleres.find((t) => t.id === tallerId)
 
   const edicionesDisponibles = (tallerSeleccionado?.ediciones ?? []).filter(
-    (e) => !inscripcionesActuales.some((ins) => ins.edicionTallerId === e.id)
+    (e) => !edicionFinalizada(e) && !inscripcionesActuales.some((ins) => ins.edicionTallerId === e.id)
   )
 
   const handleSubmit = async (e) => {
@@ -87,7 +90,7 @@ export function VincularTallerModal({ hermanoId, inscripcionesActuales = [], onC
               <label className="text-sm font-medium">Edición *</label>
               {edicionesDisponibles.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-2">
-                  Este hermano ya está inscrito en todas las ediciones de este taller.
+                  No hay ediciones vigentes disponibles: ya está inscrito en ellas o han finalizado.
                 </p>
               ) : (
                 <select

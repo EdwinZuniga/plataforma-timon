@@ -13,24 +13,9 @@ export const crearTaller = async (equipoId, body) => {
 }
 
 export const obtenerTaller = async (equipoId, id) => {
-  const taller = await prisma.taller.findFirst({
-    where: { id, equipoId },
-    include: {
-      ediciones: {
-        include: {
-          coordinador: { include: { usuario: { select: { id: true, nombre: true } } } },
-          inscripciones: {
-            include: {
-              hermano: { select: { id: true, nombre: true, apellido: true, comunidad: { select: { nombre: true } } } },
-              asistenciasMes: { orderBy: [{ anio: 'asc' }, { mes: 'asc' }] },
-            },
-            orderBy: { createdAt: 'asc' },
-          },
-        },
-        orderBy: { fecha: 'desc' },
-      },
-    },
-  })
+  // Las ediciones ya no se traen aquí: la pantalla de detalle las pide paginadas
+  // por estado (en curso / finalizadas) vía listarEdiciones.
+  const taller = await prisma.taller.findFirst({ where: { id, equipoId } })
   if (!taller) throw { status: 404, message: 'Taller no encontrado', code: 'TALLER_NO_ENCONTRADO' }
   return taller
 }
@@ -41,16 +26,38 @@ export const actualizarTaller = async (equipoId, id, body) => {
   return prisma.taller.update({ where: { id }, data: body })
 }
 
-export const listarEdiciones = async (equipoId, tallerId) => {
-  return prisma.edicionTaller.findMany({
-    where: { tallerId, taller: { equipoId } },
-    include: {
-      inscripciones: {
-        include: { hermano: { select: { id: true, nombre: true, apellido: true, comunidad: { select: { nombre: true } } } } },
+const PAGE_SIZE_EDICIONES = 10
+
+// estado: 'actual' (en curso: sin fecha de fin o aún no termina) |
+//         'finalizada' (con fecha de fin ya pasada) | undefined (todas)
+export const listarEdiciones = async (equipoId, tallerId, { estado, page = 1, limit } = {}) => {
+  const hoy = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`)
+  const filtroEstado =
+    estado === 'actual'
+      ? { OR: [{ fechaFin: null }, { fechaFin: { gte: hoy } }] }
+      : estado === 'finalizada'
+        ? { fechaFin: { not: null, lt: hoy } }
+        : {}
+
+  const where = { tallerId, taller: { equipoId }, ...filtroEstado }
+  const take = Math.min(parseInt(limit) || PAGE_SIZE_EDICIONES, 100)
+  const pageNum = Math.max(parseInt(page) || 1, 1)
+
+  const [total, data] = await Promise.all([
+    prisma.edicionTaller.count({ where }),
+    prisma.edicionTaller.findMany({
+      where,
+      include: {
+        coordinador: { include: { usuario: { select: { id: true, nombre: true } } } },
+        _count: { select: { inscripciones: true } },
       },
-    },
-    orderBy: { fecha: 'desc' },
-  })
+      orderBy: { fecha: 'desc' },
+      skip: (pageNum - 1) * take,
+      take,
+    }),
+  ])
+
+  return { data, pagination: { page: pageNum, limit: take, total, pages: Math.ceil(total / take) } }
 }
 
 export const crearEdicion = async (equipoId, tallerId, body) => {
@@ -103,22 +110,37 @@ export const actualizarEdicion = async (equipoId, tallerId, edicionId, body) => 
 export const eliminarEdicion = async (equipoId, tallerId, edicionId) => {
   const edicion = await prisma.edicionTaller.findFirst({
     where: { id: edicionId, tallerId, taller: { equipoId } },
+    include: { _count: { select: { inscripciones: true } } },
   })
   if (!edicion) throw { status: 404, message: 'Edición no encontrada', code: 'EDICION_NO_ENCONTRADA' }
+  if (edicion._count.inscripciones > 0) {
+    throw {
+      status: 409,
+      message: 'No se puede eliminar una edición con hermanos inscritos. Desvincula a los hermanos primero.',
+      code: 'EDICION_CON_INSCRIPCIONES',
+    }
+  }
+  // equipoApoyo y temasMes se borran en cascada; sin inscripciones no hay historial que perder.
   return prisma.edicionTaller.delete({ where: { id: edicionId } })
 }
 
 export const listarParaInscripcion = async (equipoId) => {
-  return prisma.taller.findMany({
+  // Solo ediciones vigentes: sin fecha de fin (en curso) o que aún no terminan.
+  // Una edición finalizada no debe ofrecerse para nuevas inscripciones.
+  const hoy = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`)
+  const talleres = await prisma.taller.findMany({
     where: { equipoId, activo: true },
     include: {
       ediciones: {
+        where: { OR: [{ fechaFin: null }, { fechaFin: { gte: hoy } }] },
         include: { _count: { select: { inscripciones: true } } },
         orderBy: { fecha: 'desc' },
       },
     },
     orderBy: { nombre: 'asc' },
   })
+  // Oculta talleres sin ninguna edición vigente.
+  return talleres.filter((t) => t.ediciones.length > 0)
 }
 
 export const inscribirHermanos = async (equipoId, edicionId, hermanoIds) => {
@@ -221,6 +243,7 @@ export const resumenInscripcion = async (equipoId, inscripcionId) => {
   const inscripcion = await prisma.inscripcion.findFirst({
     where: { id: inscripcionId, edicionTaller: { taller: { equipoId } } },
     include: {
+      edicionTaller: { select: { fecha: true, fechaFin: true } },
       asistenciasMes: { orderBy: [{ anio: 'asc' }, { mes: 'asc' }] },
       tareasEntrega: { orderBy: [{ anio: 'asc' }, { mes: 'asc' }] },
       participaciones: { orderBy: [{ anio: 'asc' }, { mes: 'asc' }] },
@@ -228,12 +251,32 @@ export const resumenInscripcion = async (equipoId, inscripcionId) => {
   })
   if (!inscripcion) throw { status: 404, message: 'Inscripción no encontrada', code: 'INSCRIPCION_NO_ENCONTRADA' }
 
+  // La asistencia se lleva por mes. Las sesiones previstas son los meses que
+  // abarca la edición (inicio → fin, o inicio → mes actual si sigue en curso).
+  // Los meses sin registro se cuentan como ausencia para reflejar las faltas.
+  const ed = inscripcion.edicionTaller
+  const inicio = ed?.fecha ? new Date(ed.fecha) : null
+  const fin = ed?.fechaFin ? new Date(ed.fechaFin) : new Date()
+  const mesesEdicion = inicio
+    ? (fin.getUTCFullYear() - inicio.getUTCFullYear()) * 12 + (fin.getUTCMonth() - inicio.getUTCMonth()) + 1
+    : 0
+  const registradas = inscripcion.asistenciasMes.length
+  const esperadas = Math.max(mesesEdicion, registradas)
+  const presentes = inscripcion.asistenciasMes.filter((a) => a.estado === 'PRESENTE').length
+  const permisos = inscripcion.asistenciasMes.filter((a) => a.estado === 'PERMISO').length
+  const ausentesRegistrados = inscripcion.asistenciasMes.filter((a) => a.estado === 'AUSENTE').length
+  const sinRegistrar = Math.max(esperadas - registradas, 0)
+
   return {
     asistencia: {
-      total: inscripcion.asistenciasMes.length,
-      presentes: inscripcion.asistenciasMes.filter((a) => a.estado === 'PRESENTE').length,
-      ausentes: inscripcion.asistenciasMes.filter((a) => a.estado === 'AUSENTE').length,
-      permisos: inscripcion.asistenciasMes.filter((a) => a.estado === 'PERMISO').length,
+      total: esperadas,
+      esperadas,
+      registradas,
+      presentes,
+      permisos,
+      ausentes: ausentesRegistrados + sinRegistrar,
+      ausentesRegistrados,
+      sinRegistrar,
       detalle: inscripcion.asistenciasMes,
     },
     tareas: {

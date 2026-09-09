@@ -32,8 +32,8 @@ export const actualizar = async (req, res, next) => {
 
 export const listarEdiciones = async (req, res, next) => {
   try {
-    const data = await svc.listarEdiciones(req.params.equipoId, req.params.id)
-    res.json({ success: true, data })
+    const result = await svc.listarEdiciones(req.params.equipoId, req.params.id, req.query)
+    res.json({ success: true, ...result })
   } catch (err) { next(err) }
 }
 

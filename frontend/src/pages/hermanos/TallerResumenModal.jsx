@@ -1,9 +1,28 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { getInscripcionResumen } from '@/api/talleres'
 import { X, BookOpen, CalendarCheck, MessageCircle, ClipboardList } from 'lucide-react'
 
 const MESES = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+// Lista completa de meses de la edición, marcando los que no tienen registro.
+function mesesDeLaEdicion(edicion, detalle) {
+  const inicio = edicion?.fecha ? new Date(edicion.fecha) : null
+  if (!inicio) return detalle
+  const fin = edicion?.fechaFin ? new Date(edicion.fechaFin) : new Date()
+  const registros = new Map(detalle.map((d) => [`${d.anio}-${d.mes}`, d]))
+  const out = []
+  const cur = new Date(Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), 1))
+  const tope = new Date(Date.UTC(fin.getUTCFullYear(), fin.getUTCMonth(), 1))
+  while (cur <= tope) {
+    const mes = cur.getUTCMonth() + 1
+    const anio = cur.getUTCFullYear()
+    out.push(registros.get(`${anio}-${mes}`) ?? { mes, anio, estado: 'SIN_REGISTRO' })
+    cur.setUTCMonth(cur.getUTCMonth() + 1)
+  }
+  return out
+}
 
 function StatRow({ label, value, total, colorClass }) {
   return (
@@ -45,6 +64,11 @@ export function TallerResumenModal({ ins, onClose }) {
 
   const taller = ins.edicionTaller.taller
 
+  const mesesAsistencia = useMemo(
+    () => (resumen ? mesesDeLaEdicion(ins.edicionTaller, resumen.asistencia.detalle) : []),
+    [resumen, ins.edicionTaller],
+  )
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50" onClick={onClose}>
       <div
@@ -72,27 +96,35 @@ export function TallerResumenModal({ ins, onClose }) {
                 <div className="flex items-center gap-2 mb-1">
                   <CalendarCheck className="h-4 w-4 text-primary-700 dark:text-primary-500" />
                   <h3 className="text-sm font-semibold">Asistencia</h3>
-                  {resumen.asistencia.total > 0 && (
-                    <span className="ml-auto text-xs text-muted-foreground">{resumen.asistencia.total} sesiones</span>
+                  {resumen.asistencia.esperadas > 0 && (
+                    <span className="ml-auto text-xs text-muted-foreground">{resumen.asistencia.esperadas} sesiones</span>
                   )}
                 </div>
-                {resumen.asistencia.total === 0 ? (
+                {resumen.asistencia.esperadas === 0 ? (
                   <p className="text-xs text-muted-foreground pl-1">Sin registros de asistencia</p>
                 ) : (
                   <>
                     <div className="divide-y">
-                      <StatRow label="Presente" value={resumen.asistencia.presentes} total={resumen.asistencia.total} colorClass="text-green-700 dark:text-green-400" />
-                      <StatRow label="Permiso" value={resumen.asistencia.permisos} total={resumen.asistencia.total} colorClass="text-yellow-600 dark:text-yellow-400" />
-                      <StatRow label="Ausente" value={resumen.asistencia.ausentes} total={resumen.asistencia.total} colorClass="text-red-600 dark:text-red-400" />
+                      <StatRow label="Presente" value={resumen.asistencia.presentes} total={resumen.asistencia.esperadas} colorClass="text-green-700 dark:text-green-400" />
+                      <StatRow label="Permiso" value={resumen.asistencia.permisos} total={resumen.asistencia.esperadas} colorClass="text-yellow-600 dark:text-yellow-400" />
+                      <StatRow label="Ausente" value={resumen.asistencia.ausentes} total={resumen.asistencia.esperadas} colorClass="text-red-600 dark:text-red-400" />
                     </div>
+                    {resumen.asistencia.sinRegistrar > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1.5 pl-1">
+                        {resumen.asistencia.sinRegistrar} {resumen.asistencia.sinRegistrar === 1 ? 'mes' : 'meses'} sin registrar,
+                        contado{resumen.asistencia.sinRegistrar === 1 ? '' : 's'} como ausencia
+                      </p>
+                    )}
                     <MonthlyBadges
-                      items={resumen.asistencia.detalle}
+                      items={mesesAsistencia}
                       getColor={(item) =>
                         item.estado === 'PRESENTE'
                           ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                           : item.estado === 'PERMISO'
                           ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          : item.estado === 'AUSENTE'
+                          ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          : 'bg-muted text-muted-foreground'
                       }
                     />
                   </>

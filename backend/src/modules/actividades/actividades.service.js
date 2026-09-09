@@ -2,12 +2,20 @@ import prisma from '../../config/database.js'
 
 const PAGE_SIZE = 20
 
-export const listarActividades = async (equipoId, { anio, tipo, page = 1 }) => {
+export const listarActividades = async (equipoId, { anio, tipo, q, desde, hasta, page = 1 }) => {
+  // desde/hasta llegan como 'YYYY-MM-DD'. La fecha se guarda como medianoche UTC,
+  // así que comparamos contra límites UTC para no correr un día por la zona horaria.
+  const fecha = {}
+  if (desde) fecha.gte = new Date(`${desde}T00:00:00.000Z`)
+  if (hasta) fecha.lte = new Date(`${hasta}T23:59:59.999Z`)
+
   const where = {
     equipoId,
     generadaPorServicio: false,
     ...(anio && { anio: parseInt(anio) }),
     ...(tipo && { tipo }),
+    ...(q && { OR: [{ nombre: { contains: q } }, { lugar: { contains: q } }] }),
+    ...(Object.keys(fecha).length && { fecha }),
   }
 
   const [total, data] = await Promise.all([
