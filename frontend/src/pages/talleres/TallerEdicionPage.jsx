@@ -21,11 +21,12 @@ import { Input } from '@/components/ui/input'
 import { PageSpinner } from '@/components/ui/spinner'
 import { useToast } from '@/components/ui/toast'
 import {
-  ArrowLeft, Users, User, MapPin, Check, Plus, X,
+  ArrowLeft, Users, User, MapPin, Check, Plus, X, Download,
   BookOpen, FileText, ExternalLink, Pencil, ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { formatCalendarDate, getCalendarMonth } from '@/utils/dates'
+import { exportarEdicionExcel } from '@/utils/exportarTaller'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -81,6 +82,7 @@ export default function TallerEdicionPage() {
   const [showApoyoModal, setShowApoyoModal] = useState(false)
   const [showTemaModal, setShowTemaModal] = useState(null) // { mes, anio }
   const [showVincularModal, setShowVincularModal] = useState(false)
+  const [exportando, setExportando] = useState(false)
 
   const { data: edicion, isLoading } = useQuery({
     queryKey: ['edicion', edicionId],
@@ -150,6 +152,17 @@ export default function TallerEdicionPage() {
 
   const activeMes = activeTab !== 'general' ? months[Number(activeTab)] : null
 
+  const onExportar = async () => {
+    setExportando(true)
+    try {
+      await exportarEdicionExcel({ edicion, months, multiAnio })
+    } catch (err) {
+      toast({ title: 'No se pudo exportar', description: err?.message, variant: 'destructive' })
+    } finally {
+      setExportando(false)
+    }
+  }
+
   const stats = activeMes
     ? inscripciones.reduce(
         (acc, ins) => {
@@ -185,9 +198,21 @@ export default function TallerEdicionPage() {
             )}
           </h1>
         </div>
-        <Badge variant="secondary" className="shrink-0">
-          <Users className="h-3 w-3 mr-1" />{total}
-        </Badge>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onExportar}
+            disabled={exportando || total === 0}
+            title="Exportar asistencia, participaciones y tareas a Excel"
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline ml-1">{exportando ? 'Exportando…' : 'Exportar'}</span>
+          </Button>
+          <Badge variant="secondary">
+            <Users className="h-3 w-3 mr-1" />{total}
+          </Badge>
+        </div>
       </div>
 
       {/* Meta info: coordinador + equipo de apoyo */}
