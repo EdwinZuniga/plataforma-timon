@@ -8,6 +8,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { errorHandler } from './middlewares/errorHandler.js'
+import { pingDb } from './config/database.js'
 import adminRoutes from './modules/admin/admin.routes.js'
 import authRoutes from './modules/auth/auth.routes.js'
 import equiposRoutes from './modules/equipos/equipos.routes.js'
@@ -55,6 +56,14 @@ app.use(express.static(FRONTEND_DIST))
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
+// Readiness de la base de datos. El frontend lo sondea antes de enviar
+// credenciales; la primera petición despierta a Azure SQL desde auto-pause.
+app.get('/api/health/db', async (req, res) => {
+  const warm = await pingDb()
+  if (warm) return res.json({ warm: true })
+  res.status(503).json({ warm: false, code: 'DB_INICIANDO' })
 })
 
 app.use('/api/auth', authRoutes)

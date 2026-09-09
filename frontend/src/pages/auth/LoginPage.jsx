@@ -4,6 +4,8 @@ import { useForm } from 'react-hook-form'
 import { Fingerprint } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { misEquipos } from '@/api/auth'
+import { pingDb } from '@/api/health'
+import DespertandoServidor from '@/components/shared/DespertandoServidor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -24,6 +26,9 @@ export default function LoginPage() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [loadingLabel, setLoadingLabel] = useState('Ingresando...')
+  const [esperandoServidor, setEsperandoServidor] = useState(false)
+  const [waitSecs, setWaitSecs] = useState(0)
+  const dbWarmRef = useRef(false)
 
   // ── Biometría (solo dentro de la APK) ─────────────────────────────
   const [bio, setBio] = useState({ disponible: false, tipo: null })
@@ -37,20 +42,60 @@ export default function LoginPage() {
 
   const DB_RETRY_ATTEMPTS = 2
   const DB_RETRY_DELAY_MS = 3000
+  const MAX_WAIT_MS = 90_000      // tope de espera mientras el servidor despierta
+  const POLL_INTERVAL_MS = 3000   // cada cuánto sondeamos /health/db
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+  // Sondea /health/db hasta que la base de datos responda o se agote el tope.
+  // Devuelve true si quedó lista. Muestra la animación de espera solo si el
+  // primer intento no la encuentra ya despierta (evita parpadeo).
+  const esperarServidor = useCallback(async () => {
+    if (dbWarmRef.current) return true
+    const inicio = Date.now()
+
+    try {
+      const { data } = await pingDb()
+      if (data?.warm) { dbWarmRef.current = true; return true }
+    } catch { /* 503 / red: sigue despertando */ }
+
+    setWaitSecs(0)
+    setEsperandoServidor(true)
+    try {
+      for (;;) {
+        if (Date.now() - inicio > MAX_WAIT_MS) return false
+        await sleep(POLL_INTERVAL_MS)
+        try {
+          const { data } = await pingDb()
+          if (data?.warm) { dbWarmRef.current = true; return true }
+        } catch { /* sigue despertando */ }
+      }
+    } finally {
+      setEsperandoServidor(false)
+    }
+  }, [])
 
   // Corre el login + selección de equipo. Devuelve la ruta destino.
   const iniciarSesion = useCallback(async (email, password) => {
+    // 1. No enviamos credenciales hasta que el servidor pueda atenderlas.
+    if (!(await esperarServidor())) {
+      const e = new Error('SERVER_TIMEOUT')
+      e.code = 'SERVER_TIMEOUT'
+      throw e
+    }
+
+    // 2. Login real. Reintento corto por si volvió a dormirse entre el sondeo y aquí.
     let intento = 0
     for (;;) {
       try {
         await login(email, password)
         break
       } catch (err) {
-        const isDbIniciando = err.response?.data?.code === 'DB_INICIANDO'
+        const isDbIniciando =
+          err.response?.data?.code === 'DB_INICIANDO' || err.response?.status === 503
         if (isDbIniciando && intento < DB_RETRY_ATTEMPTS) {
           intento++
-          setLoadingLabel('El sistema se está iniciando...')
+          dbWarmRef.current = false
+          await esperarServidor()
           await sleep(DB_RETRY_DELAY_MS)
           continue
         }
@@ -65,7 +110,7 @@ export default function LoginPage() {
       return '/dashboard'
     }
     return '/seleccionar-equipo'
-  }, [login, seleccionarEquipo])
+  }, [esperarServidor, login, seleccionarEquipo])
 
   const onSubmit = async ({ email, password }) => {
     setLoading(true)
@@ -79,11 +124,20 @@ export default function LoginPage() {
         navigate(dest)
       }
     } catch (err) {
-      toast({
-        title: 'Error de acceso',
-        description: err.response?.data?.error || 'Credenciales incorrectas',
-        variant: 'destructive',
-      })
+      setEsperandoServidor(false)
+      if (err.code === 'SERVER_TIMEOUT') {
+        toast({
+          title: 'El servidor está tardando en responder',
+          description: 'La base de datos aún se está reactivando. Espera unos segundos y vuelve a intentar.',
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: 'Error de acceso',
+          description: err.response?.data?.error || 'Credenciales incorrectas',
+          variant: 'destructive',
+        })
+      }
     } finally {
       setLoading(false)
     }
@@ -98,8 +152,15 @@ export default function LoginPage() {
       const dest = await iniciarSesion(email, password)
       navigate(dest)
     } catch (err) {
+      setEsperandoServidor(false)
       const cancelado = /cancel|user|authentication failed|13/i.test(err?.message || '') && !err?.response
-      if (err?.response?.status === 401 || err?.response?.data?.code === 'CREDENCIALES_INVALIDAS') {
+      if (err?.code === 'SERVER_TIMEOUT') {
+        toast({
+          title: 'El servidor está tardando en responder',
+          description: 'La base de datos aún se está reactivando. Espera unos segundos y vuelve a intentar.',
+          variant: 'destructive',
+        })
+      } else if (err?.response?.status === 401 || err?.response?.data?.code === 'CREDENCIALES_INVALIDAS') {
         await desactivarHuella()
         setBioOn(false)
         toast({
@@ -118,6 +179,21 @@ export default function LoginPage() {
       setBioBusy(false)
     }
   }, [bioBusy, bioLabel, iniciarSesion, navigate, toast])
+
+  // Al abrir el login empezamos a despertar el servidor en segundo plano,
+  // mientras la persona escribe sus credenciales.
+  useEffect(() => {
+    pingDb()
+      .then(({ data }) => { if (data?.warm) dbWarmRef.current = true })
+      .catch(() => {})
+  }, [])
+
+  // Contador de segundos para la animación de espera.
+  useEffect(() => {
+    if (!esperandoServidor) return
+    const t = setInterval(() => setWaitSecs((s) => s + 1), 1000)
+    return () => clearInterval(t)
+  }, [esperandoServidor])
 
   // Detectar biometría disponible al montar.
   useEffect(() => {
@@ -173,6 +249,9 @@ export default function LoginPage() {
             <CardDescription>Ingresa tus credenciales para acceder</CardDescription>
           </CardHeader>
           <CardContent>
+            {esperandoServidor && <DespertandoServidor segundos={waitSecs} />}
+            {/* El form sigue montado (oculto) para no perder lo ya escrito si hay timeout. */}
+            <div className={esperandoServidor ? 'hidden' : undefined}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium" htmlFor="email">Correo electrónico</label>
@@ -223,6 +302,7 @@ export default function LoginPage() {
                 </Button>
               </>
             )}
+            </div>
           </CardContent>
         </Card>
       </div>

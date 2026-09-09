@@ -11,6 +11,17 @@ const basePrisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
 })
 
+// Sonda rápida para el endpoint de readiness (/api/health/db). Usa el cliente
+// base (sin los reintentos largos del $extends) y un timeout corto, para que el
+// frontend pueda sondear cada pocos segundos mientras anima la espera. La propia
+// consulta despierta a Azure SQL si está en auto-pause.
+export const pingDb = async ({ timeoutMs = 4000 } = {}) => {
+  // Evita que un rechazo tardío de la consulta quede sin manejar tras el timeout.
+  const consulta = basePrisma.$queryRaw`SELECT 1`.then(() => true, () => false)
+  const timeout = new Promise((resolve) => setTimeout(() => resolve(false), timeoutMs))
+  return Promise.race([consulta, timeout])
+}
+
 const prisma = basePrisma.$extends({
   query: {
     async $allOperations({ args, query }) {
