@@ -23,6 +23,7 @@ import {
 export default function LoginPage() {
   const navigate = useNavigate()
   const { login, seleccionarEquipo } = useAuthStore()
+  const usuario = useAuthStore((s) => s.usuario)
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [loadingLabel, setLoadingLabel] = useState('Ingresando...')
@@ -36,6 +37,7 @@ export default function LoginPage() {
   const [bioBusy, setBioBusy] = useState(false)
   const [pendingBio, setPendingBio] = useState(null) // { email, password, dest }
   const autoTried = useRef(false)
+  const flujoManual = useRef(false)   // el usuario inició sesión desde este formulario
   const bioLabel = etiquetaBiometria(bio.tipo)
 
   const { register, handleSubmit, formState: { errors } } = useForm()
@@ -113,6 +115,7 @@ export default function LoginPage() {
   }, [esperarServidor, login, seleccionarEquipo])
 
   const onSubmit = async ({ email, password }) => {
+    flujoManual.current = true
     setLoading(true)
     setLoadingLabel('Ingresando...')
     try {
@@ -145,6 +148,7 @@ export default function LoginPage() {
 
   const ingresarConHuella = useCallback(async () => {
     if (bioBusy) return
+    flujoManual.current = true
     setBioBusy(true)
     setLoadingLabel('Ingresando...')
     try {
@@ -179,6 +183,13 @@ export default function LoginPage() {
       setBioBusy(false)
     }
   }, [bioBusy, bioLabel, iniciarSesion, navigate, toast])
+
+  // Si el refresco de arranque (en segundo plano) encuentra una sesión válida
+  // mientras estamos en el login, entramos directo. No aplica si el usuario
+  // está usando este formulario (ese flujo navega por su cuenta).
+  useEffect(() => {
+    if (usuario && !flujoManual.current) navigate('/dashboard', { replace: true })
+  }, [usuario, navigate])
 
   // Al abrir el login empezamos a despertar el servidor en segundo plano,
   // mientras la persona escribe sus credenciales.

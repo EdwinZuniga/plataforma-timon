@@ -12,6 +12,19 @@ const rawApi = axios.create({
 
 let initializingPromise = null
 
+// Pista local de "este dispositivo ya tuvo sesión". El refresh token vive en una
+// cookie httpOnly que el JS no puede leer, así que sin esta pista el arranque no
+// sabe si vale la pena esperar a /auth/refresh (que con el backend/BD dormidos
+// tarda). Sin pista → mostramos el login de una vez.
+const HINT_KEY = 'auth.hint'
+const leerHint = () => { try { return localStorage.getItem(HINT_KEY) === '1' } catch { return false } }
+const marcarHint = (v) => {
+  try {
+    if (v) localStorage.setItem(HINT_KEY, '1')
+    else localStorage.removeItem(HINT_KEY)
+  } catch { /* storage no disponible */ }
+}
+
 // Convierte array [{modulo, ver, crear, editar, eliminar}] en objeto keyed por modulo
 const indexarPermisos = (arr) =>
   arr.reduce((acc, p) => { acc[p.modulo] = p; return acc }, {})
@@ -22,6 +35,8 @@ export const useAuthStore = create((set, get) => ({
   equipoActual: null,
   permisos: {},   // { comunidades: { ver, crear, editar, eliminar }, ... }
   isLoading: true,
+  // ¿este dispositivo ya inició sesión antes? Si no, el arranque no espera.
+  sesionProbable: leerHint(),
 
   login: async (email, password) => {
     const { data } = await authApi.login(email, password)
@@ -29,14 +44,16 @@ export const useAuthStore = create((set, get) => ({
     setAccessToken(accessToken)
     // superAdmin viene en el JWT; lo extraemos del payload decodificado
     const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]))
-    set({ usuario: { ...usuario, superAdmin: tokenPayload.superAdmin ?? false }, accessToken })
+    marcarHint(true)
+    set({ usuario: { ...usuario, superAdmin: tokenPayload.superAdmin ?? false }, accessToken, sesionProbable: true })
   },
 
   logout: async () => {
     try { await authApi.logout() } catch {}
     clearAccessToken()
     localStorage.removeItem('equipoActual')
-    set({ usuario: null, accessToken: null, equipoActual: null, permisos: {} })
+    marcarHint(false)
+    set({ usuario: null, accessToken: null, equipoActual: null, permisos: {}, sesionProbable: false })
   },
 
   seleccionarEquipo: async (equipo) => {
@@ -84,18 +101,21 @@ export const useAuthStore = create((set, get) => ({
         } catch { /* sin permisos explícitos */ }
       }
 
+      marcarHint(true)
       set({
         usuario: { ...usuario, superAdmin: tokenPayload.superAdmin ?? false },
         accessToken,
         equipoActual: equipoGuardado,
         permisos,
         isLoading: false,
+        sesionProbable: true,
       })
     } catch {
       // 401 esperado cuando no hay cookie — no es un error
       clearAccessToken()
       localStorage.removeItem('equipoActual')
-      set({ usuario: null, accessToken: null, equipoActual: null, isLoading: false })
+      marcarHint(false)
+      set({ usuario: null, accessToken: null, equipoActual: null, isLoading: false, sesionProbable: false })
     } finally {
       initializingPromise = null
     }
