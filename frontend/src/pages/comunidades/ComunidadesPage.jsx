@@ -56,12 +56,18 @@ export default function ComunidadesPage() {
       .map((m) => ({ value: m.id, label: m.usuario.nombre })),
   ], [miembros])
 
+  const total = data?.pagination?.total
+  const hayFiltro = !!(debouncedQ || estado || enlaceId)
+
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-4xl mx-auto">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Comunidades</h1>
-          <p className="text-sm text-muted-foreground">{data?.pagination?.total ?? '—'} comunidades registradas</p>
+          <p className="text-sm text-muted-foreground">
+            {total ?? '—'} {total === 1 ? 'comunidad' : 'comunidades'}
+            {hayFiltro ? ' coinciden con el filtro' : ' registradas'}
+          </p>
         </div>
         <Button onClick={() => setShowModal(true)} size="sm">
           <Plus className="h-4 w-4" /> Nueva
