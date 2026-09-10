@@ -224,8 +224,8 @@ export default function EquiposPage() {
     <div className="p-4 md:p-6 space-y-4 max-w-3xl mx-auto">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Miembros · {equipoActual?.nombre}</h1>
-          <p className="text-sm text-muted-foreground">Equipo Timón de Jóvenes</p>
+          <h1 className="text-2xl font-bold">Equipo · {equipoActual?.nombre}</h1>
+          <p className="text-sm text-muted-foreground">Gestión de miembros</p>
         </div>
         {canEdit && (
           <Button size="sm" onClick={() => setShowInviteModal(true)}><Plus className="h-4 w-4" /> Invitar</Button>

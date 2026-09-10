@@ -51,11 +51,9 @@ export default function ComunidadesPage() {
   const enlaceOpts = useMemo(() => [
     { value: '', label: 'Todos los enlaces' },
     { value: 'sin', label: 'Sin enlace asignado' },
-    ...miembros.map((m) => ({
-      value: m.id,
-      label: m.usuario.nombre,
-      sublabel: m.activo ? undefined : 'inactivo',
-    })),
+    ...miembros
+      .filter((m) => m.activo)
+      .map((m) => ({ value: m.id, label: m.usuario.nombre })),
   ], [miembros])
 
   return (

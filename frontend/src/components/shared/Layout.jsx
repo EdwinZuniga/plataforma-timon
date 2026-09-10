@@ -25,7 +25,7 @@ const moreItems = [
   { to: '/servicios', icon: Wrench, label: 'Servicios', modulo: 'servicios' },
   { to: '/tesoreria', icon: Landmark, label: 'Tesorería', modulo: 'tesoreria' },
   { to: '/inventario', icon: Package, label: 'Inventario', modulo: 'inventario' },
-  { to: '/equipos', icon: ShipWheel, label: 'Miembros', modulo: null },
+  { to: '/equipos', icon: ShipWheel, label: 'Equipo', modulo: null },
 ]
 
 const bottomNavItems = [

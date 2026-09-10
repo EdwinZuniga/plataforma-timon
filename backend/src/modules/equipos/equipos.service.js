@@ -9,43 +9,55 @@ const generarContrasenaTemp = () => {
 // Usuarios administrativos globales que no deben pertenecer a ningún equipo.
 export const NOMBRE_USUARIO_GLOBAL = 'Administrador'
 
+const inicioDeHoy = () => new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`)
+
 // Datos que necesita la ficha del miembro (Equipos) y "Mi perfil". Incluye los
 // ids necesarios para que cada elemento sea un acceso directo a su pantalla.
-const PERFIL_INCLUDE = {
-  usuario: { select: { id: true, nombre: true, email: true } },
-  comunidadOrigen: { select: { id: true, numero: true, nombre: true, departamento: true, estado: true } },
-  comunidades: {
-    select: { id: true, numero: true, nombre: true, departamento: true, estado: true },
-    orderBy: { nombre: 'asc' },
-  },
-  edicionesCoordinadas: {
-    include: { taller: { select: { id: true, nombre: true } } },
-    orderBy: { fecha: 'desc' },
-  },
-  equipoApoyoEdiciones: {
-    include: {
-      edicion: { include: { taller: { select: { id: true, nombre: true } } } },
+// Las responsabilidades con fecha ya pasada se excluyen para que no se acumulen;
+// las que no tienen fecha (comunidades como enlace) se mantienen siempre.
+const perfilInclude = () => {
+  const hoy = inicioDeHoy()
+  const edicionVigente = { OR: [{ fechaFin: null }, { fechaFin: { gte: hoy } }] }
+  return {
+    usuario: { select: { id: true, nombre: true, email: true } },
+    comunidadOrigen: { select: { id: true, numero: true, nombre: true, departamento: true, estado: true } },
+    comunidades: {
+      select: { id: true, numero: true, nombre: true, departamento: true, estado: true },
+      orderBy: { nombre: 'asc' },
     },
-    orderBy: { createdAt: 'desc' },
-  },
-  temasMesExpuestos: {
-    include: {
-      edicion: { include: { taller: { select: { id: true, nombre: true } } } },
+    edicionesCoordinadas: {
+      where: edicionVigente,
+      include: { taller: { select: { id: true, nombre: true } } },
+      orderBy: { fecha: 'desc' },
     },
-    orderBy: [{ anio: 'desc' }, { mes: 'desc' }],
-  },
-  serviciosAsignados: {
-    include: {
-      servicioActividad: {
-        include: {
-          actividad: { select: { id: true, nombre: true, fecha: true, tipo: true } },
-          catalogoServicio: { select: { nombre: true } },
+    equipoApoyoEdiciones: {
+      where: { edicion: { is: edicionVigente } },
+      include: {
+        edicion: { include: { taller: { select: { id: true, nombre: true } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+    },
+    temasMesExpuestos: {
+      where: { edicion: { is: edicionVigente } },
+      include: {
+        edicion: { include: { taller: { select: { id: true, nombre: true } } } },
+      },
+      orderBy: [{ anio: 'desc' }, { mes: 'desc' }],
+    },
+    serviciosAsignados: {
+      where: { servicioActividad: { is: { actividad: { is: { fecha: { gte: hoy } } } } } },
+      include: {
+        servicioActividad: {
+          include: {
+            actividad: { select: { id: true, nombre: true, fecha: true, tipo: true } },
+            catalogoServicio: { select: { nombre: true } },
+          },
         },
       },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
     },
-    orderBy: { createdAt: 'desc' },
-    take: 20,
-  },
+  }
 }
 
 // Resumen de ofrendas de un miembro: total, nº de entregas y desglose por año.
@@ -177,7 +189,7 @@ export const desactivarMiembro = async (miembroId) => {
 export const obtenerMiPerfil = async (miembroId, equipoId) => {
   const miembro = await prisma.miembroEquipo.findUnique({
     where: { id: miembroId },
-    include: PERFIL_INCLUDE,
+    include: perfilInclude(),
   })
 
   if (!miembro) throw { status: 404, message: 'Miembro no encontrado', code: 'MIEMBRO_NO_ENCONTRADO' }
@@ -198,9 +210,10 @@ export const obtenerMiPerfil = async (miembroId, equipoId) => {
     orderBy: { reunion: { fecha: 'desc' } },
   })
 
-  // Comisiones: JSON guardado en Reunion.comisiones
+  // Comisiones: JSON guardado en Reunion.comisiones. Solo reuniones vigentes
+  // (fecha no pasada) para que las comisiones no se acumulen en el perfil.
   const reunionesConComisiones = await prisma.reunion.findMany({
-    where: { equipoId, comisiones: { not: null } },
+    where: { equipoId, comisiones: { not: null }, fecha: { gte: inicioDeHoy() } },
     select: { id: true, titulo: true, fecha: true, comisiones: true },
     orderBy: { fecha: 'desc' },
   })
@@ -233,7 +246,7 @@ export const obtenerMiPerfil = async (miembroId, equipoId) => {
 export const obtenerPerfilMiembro = async (miembroId) => {
   const miembro = await prisma.miembroEquipo.findUnique({
     where: { id: miembroId },
-    include: PERFIL_INCLUDE,
+    include: perfilInclude(),
   })
 
   if (!miembro) throw { status: 404, message: 'Miembro no encontrado', code: 'MIEMBRO_NO_ENCONTRADO' }
