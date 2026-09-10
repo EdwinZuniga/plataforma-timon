@@ -64,7 +64,17 @@ model MiembroEquipo {
   activo      Boolean     @default(true)
   createdAt   DateTime    @default(now())
 
-  comunidades            Comunidad[]
+  // Datos personales del miembro (ficha de la sección Equipos)
+  nombreCompleto   String?
+  telefono         String?
+  direccion        String?
+  fechaNacimiento  DateTime?
+  profesion        String?
+  ingresoETJ       DateTime?
+  comunidadOrigenId Int?
+  comunidadOrigen  Comunidad? @relation("MiembroComunidadOrigen", fields: [comunidadOrigenId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  comunidades            Comunidad[]          @relation("ComunidadEnlace")
   edicionesCoordinadas   EdicionTaller[]
   equipoApoyoEdiciones   EquipoApoyoEdicion[]
   temasMesExpuestos      TemaMes[]             @relation("TemaMesExpositor")
@@ -118,7 +128,7 @@ model Comunidad {
   departamento    String
   estado          String         @default("ACTIVA")
   enlaceId        Int?
-  enlace          MiembroEquipo? @relation(fields: [enlaceId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  enlace          MiembroEquipo? @relation("ComunidadEnlace", fields: [enlaceId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   enlaceConsejo   String?
   fechaEleccion   String?
   lugarAsamblea   String?
@@ -132,6 +142,7 @@ model Comunidad {
   miembrosConsejo MiembroConsejo[]
   visitas         Visita[]
   servicios       ServicioActividad[]
+  miembrosOrigen  MiembroEquipo[]  @relation("MiembroComunidadOrigen")
 
   @@map("Comunidad")
 }

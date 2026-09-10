@@ -38,6 +38,8 @@ export const requireEquipo = async (req, res, next) => {
 }
 
 export const requireRolMinimo = (rolesPermitidos) => (req, res, next) => {
+  // El SuperAdmin no tiene restricciones de rol dentro de un equipo.
+  if (req.usuario?.superAdmin) return next()
   // Si requirePermiso ya concedió acceso explícito, omitir verificación de rol
   if (req.permisoExplicito) return next()
   if (!rolesPermitidos.includes(req.membresia.rol)) {

@@ -218,12 +218,14 @@ export default function ComunidadDetailPage() {
               <div><p className="text-xs text-muted-foreground">Horario</p><p className="font-medium">{data.horarioAsamblea}</p></div>
             </CardContent></Card>
           )}
-          {data.enlace && (
-            <Card><CardContent className="py-3 px-4">
-              <p className="text-xs text-muted-foreground">Enlace asignado</p>
+          <Card><CardContent className="py-3 px-4">
+            <p className="text-xs text-muted-foreground">Enlace asignado</p>
+            {data.enlace?.activo ? (
               <p className="font-medium">{data.enlace.usuario?.nombre}</p>
-            </CardContent></Card>
-          )}
+            ) : (
+              <p className="font-medium text-muted-foreground">Sin enlace asignado</p>
+            )}
+          </CardContent></Card>
           {data.notas && (
             <Card className="md:col-span-2"><CardContent className="py-3 px-4">
               <p className="text-xs text-muted-foreground mb-1">Notas</p>
@@ -369,7 +371,7 @@ export default function ComunidadDetailPage() {
                   </div>
                 </CardContent>
               </Card>
-            ))
+            ))  
           )}
         </div>
       )}

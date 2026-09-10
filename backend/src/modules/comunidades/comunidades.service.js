@@ -6,8 +6,16 @@ export const listarComunidades = async ({ q, departamento, enlaceId, estado, pag
   const where = {
     ...(q && { nombre: { contains: q } }),
     ...(departamento && { departamento }),
-    ...(enlaceId && { enlaceId }),
     ...(estado && { estado }),
+  }
+
+  // enlaceId: 'sin' / 'null' → comunidades que necesitan enlace (sin asignar o con
+  // enlace desactivado). Un id numérico → filtra por ese miembro, activo o no,
+  // para poder consultar el historial de un enlace inactivo.
+  if (enlaceId === 'sin' || enlaceId === 'null') {
+    where.OR = [{ enlaceId: null }, { enlace: { is: { activo: false } } }]
+  } else if (enlaceId && Number.isFinite(Number(enlaceId))) {
+    where.enlaceId = Number(enlaceId)
   }
 
   const take = Math.min(parseInt(limit) || PAGE_SIZE, 500)
@@ -16,7 +24,7 @@ export const listarComunidades = async ({ q, departamento, enlaceId, estado, pag
     prisma.comunidad.count({ where }),
     prisma.comunidad.findMany({
       where,
-      include: { enlace: { include: { usuario: { select: { nombre: true } } } } },
+      include: { enlace: { select: { id: true, activo: true, usuario: { select: { nombre: true } } } } },
       orderBy: { nombre: 'asc' },
       skip: (page - 1) * take,
       take,

@@ -100,6 +100,7 @@ export function DateRangePicker({ desde = '', hasta = '', onChange, className })
             vy={vy}
             vm={vm}
             irMes={irMes}
+            setMesAnio={(y, m) => { setVy(y); setVm(m) }}
             esBorde={(k) => k === desde || k === hasta || k === anchor}
             enRango={enRango}
             onDia={clicDia}

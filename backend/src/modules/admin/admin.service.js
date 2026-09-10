@@ -157,6 +157,9 @@ export const actualizarEquipo = async (id, { nombre, descripcion, color, activo 
 export const asignarMiembro = async (equipoId, usuarioId, rol = 'COORDINADOR') => {
   const usuario = await prisma.usuario.findUnique({ where: { id: usuarioId } })
   if (!usuario) throw { status: 404, message: 'Usuario no encontrado', code: 'USUARIO_NO_ENCONTRADO' }
+  if (usuario.nombre === 'Administrador') {
+    throw { status: 400, message: 'Los usuarios administrativos globales no pueden pertenecer a un equipo', code: 'USUARIO_GLOBAL' }
+  }
 
   const existente = await prisma.miembroEquipo.findUnique({
     where: { usuarioId_equipoId: { usuarioId, equipoId } },
