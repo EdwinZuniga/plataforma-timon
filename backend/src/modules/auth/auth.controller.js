@@ -17,7 +17,10 @@ export const login = async (req, res, next) => {
     if (!email || !password) {
       return next({ status: 400, message: 'Email y contraseña requeridos', code: 'DATOS_REQUERIDOS' })
     }
-    const { usuario, accessToken, refreshToken } = await svc.loginService(email, password)
+    const { usuario, accessToken, refreshToken } = await svc.loginService(email, password, {
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+    })
     res.cookie('refreshToken', refreshToken, COOKIE_OPTS)
     res.json({ success: true, data: { usuario, accessToken } })
   } catch (err) {
@@ -28,7 +31,10 @@ export const login = async (req, res, next) => {
 export const refresh = async (req, res, next) => {
   try {
     const token = req.cookies?.refreshToken
-    const { usuario, accessToken, refreshToken } = await svc.refreshService(token)
+    const { usuario, accessToken, refreshToken } = await svc.refreshService(token, {
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+    })
     res.cookie('refreshToken', refreshToken, COOKIE_OPTS)
     res.json({ success: true, data: { usuario, accessToken } })
   } catch (err) {

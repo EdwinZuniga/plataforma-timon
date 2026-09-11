@@ -222,3 +222,44 @@ export const guardarPermisosMembresia = async (miembroId, permisos) => {
 export const limpiarPermisosMembresia = async (miembroId) => {
   await prisma.permisoUsuario.deleteMany({ where: { miembroId } })
 }
+
+// ─── SESIONES ACTIVAS ─────────────────────────────────────────────────────────
+
+export const listarSesiones = async ({ search, page = 1, limit = 20 } = {}) => {
+  const skip = (page - 1) * limit
+  const where = {
+    expiresAt: { gt: new Date() },
+    ...(search
+      ? { usuario: { OR: [{ nombre: { contains: search } }, { email: { contains: search } }] } }
+      : {}),
+  }
+
+  const [total, items] = await Promise.all([
+    prisma.refreshToken.count({ where }),
+    prisma.refreshToken.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { lastUsedAt: 'desc' },
+      select: {
+        id: true,
+        ip: true,
+        userAgent: true,
+        createdAt: true,
+        lastUsedAt: true,
+        expiresAt: true,
+        usuario: { select: { id: true, nombre: true, email: true, superAdmin: true } },
+      },
+    }),
+  ])
+  return { total, page, limit, items }
+}
+
+export const expulsarSesion = async (id) => {
+  try {
+    await prisma.refreshToken.delete({ where: { id } })
+  } catch (err) {
+    if (err.code === 'P2025') throw { status: 404, message: 'Sesión no encontrada', code: 'SESION_NO_ENCONTRADA' }
+    throw err
+  }
+}

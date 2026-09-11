@@ -32,4 +32,8 @@ router.get('/permisos/usuario/:id', ctrl.obtenerPermisosUsuario)
 router.put('/permisos/membresia/:miembroId', ctrl.guardarPermisosMembresia)
 router.delete('/permisos/membresia/:miembroId', ctrl.limpiarPermisosMembresia)
 
+// Sesiones activas
+router.get('/sesiones', ctrl.listarSesiones)
+router.delete('/sesiones/:id', ctrl.expulsarSesion)
+
 export default router

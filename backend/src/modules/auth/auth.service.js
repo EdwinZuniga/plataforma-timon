@@ -5,7 +5,7 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../con
 
 const REFRESH_EXPIRES_DAYS = 7
 
-export const loginService = async (email, password) => {
+export const loginService = async (email, password, meta = {}) => {
   const usuario = await prisma.usuario.findUnique({ where: { email } })
   if (!usuario || !usuario.activo) {
     throw { status: 401, message: 'Credenciales incorrectas', code: 'CREDENCIALES_INVALIDAS' }
@@ -21,12 +21,14 @@ export const loginService = async (email, password) => {
 
   const expiresAt = new Date()
   expiresAt.setDate(expiresAt.getDate() + REFRESH_EXPIRES_DAYS)
-  await prisma.refreshToken.create({ data: { token: refreshToken, usuarioId: usuario.id, expiresAt } })
+  await prisma.refreshToken.create({
+    data: { token: refreshToken, usuarioId: usuario.id, expiresAt, ip: meta.ip, userAgent: meta.userAgent },
+  })
 
   return { usuario: payload, accessToken, refreshToken }
 }
 
-export const refreshService = async (token) => {
+export const refreshService = async (token, meta = {}) => {
   if (!token) throw { status: 401, message: 'Refresh token requerido', code: 'REFRESH_REQUERIDO' }
 
   let payload
@@ -54,12 +56,20 @@ export const refreshService = async (token) => {
   expiresAt.setDate(expiresAt.getDate() + REFRESH_EXPIRES_DAYS)
 
   try {
-    await prisma.$transaction([
-      prisma.refreshToken.delete({ where: { token } }),
-      prisma.refreshToken.create({ data: { token: newRefreshToken, usuarioId: usuario.id, expiresAt } }),
-    ])
+    // Se actualiza la misma fila (en vez de borrar+crear) para conservar createdAt
+    // como fecha de inicio de sesión y así poder listar "sesiones activas" en el admin.
+    await prisma.refreshToken.update({
+      where: { id: stored.id },
+      data: {
+        token: newRefreshToken,
+        expiresAt,
+        lastUsedAt: new Date(),
+        ip: meta.ip ?? stored.ip,
+        userAgent: meta.userAgent ?? stored.userAgent,
+      },
+    })
   } catch (err) {
-    // P2025 = token ya eliminado por otra petición concurrente
+    // P2025 = la sesión fue expulsada/borrada por otra petición concurrente (p. ej. desde el admin)
     // P2002 = nuevo token duplicado (colisión de jti, prácticamente imposible)
     if (err.code === 'P2025' || err.code === 'P2002') {
       throw { status: 401, message: 'Sesión inválida, por favor inicia sesión de nuevo', code: 'REFRESH_INVALIDO' }

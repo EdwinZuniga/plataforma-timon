@@ -28,6 +28,9 @@ import inventarioRoutes from './modules/inventario/inventario.routes.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 
+// Detrás del proxy de Azure/App Service: necesario para que req.ip refleje la IP real del cliente.
+app.set('trust proxy', 1)
+
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
 
 app.use(cors({

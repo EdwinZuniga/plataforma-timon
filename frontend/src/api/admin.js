@@ -26,3 +26,7 @@ export const savePermisosMembresia = (miembroId, permisos) =>
   api.put(`/admin/permisos/membresia/${miembroId}`, { permisos })
 export const clearPermisosMembresia = (miembroId) =>
   api.delete(`/admin/permisos/membresia/${miembroId}`)
+
+// Sesiones activas
+export const getSesiones = (params) => api.get('/admin/sesiones', { params })
+export const expulsarSesion = (id) => api.delete(`/admin/sesiones/${id}`)

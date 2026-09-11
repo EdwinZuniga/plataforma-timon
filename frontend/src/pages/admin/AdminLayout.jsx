@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { LayoutDashboard, Users, Building2, ShieldCheck, LogOut, ChevronLeft, KeyRound, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Users, Building2, ShieldCheck, LogOut, ChevronLeft, KeyRound, Menu, X, MonitorSmartphone } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { Button } from '@/components/ui/button'
 
@@ -10,6 +10,7 @@ const navItems = [
   { to: '/admin/usuarios', icon: Users, label: 'Usuarios' },
   { to: '/admin/equipos', icon: Building2, label: 'Equipos' },
   { to: '/admin/permisos', icon: KeyRound, label: 'Permisos' },
+  { to: '/admin/sesiones', icon: MonitorSmartphone, label: 'Sesiones activas' },
 ]
 
 function NavItem({ to, icon: Icon, label, exact, onClick }) {

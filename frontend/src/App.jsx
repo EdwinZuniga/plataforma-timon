@@ -14,6 +14,7 @@ import AdminPage from '@/pages/admin/AdminPage'
 import AdminUsuariosPage from '@/pages/admin/AdminUsuariosPage'
 import AdminEquiposPage from '@/pages/admin/AdminEquiposPage'
 import AdminPermisosPage from '@/pages/admin/AdminPermisosPage'
+import AdminSesionesPage from '@/pages/admin/AdminSesionesPage'
 import LoginPage from '@/pages/auth/LoginPage'
 import SeleccionarEquipoPage from '@/pages/auth/SeleccionarEquipoPage'
 import DashboardPage from '@/pages/dashboard/DashboardPage'
@@ -64,6 +65,7 @@ function AppRoutes() {
           <Route path="/admin/usuarios" element={<AdminUsuariosPage />} />
           <Route path="/admin/equipos" element={<AdminEquiposPage />} />
           <Route path="/admin/permisos" element={<AdminPermisosPage />} />
+          <Route path="/admin/sesiones" element={<AdminSesionesPage />} />
         </Route>
 
         <Route element={<EquipoRoute><Layout><Outlet /></Layout></EquipoRoute>}>

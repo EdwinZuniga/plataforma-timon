@@ -113,3 +113,19 @@ export const limpiarPermisosMembresia = async (req, res, next) => {
     res.json({ success: true })
   } catch (err) { next(err) }
 }
+
+// ─── SESIONES ACTIVAS ─────────────────────────────────────────────────────────
+
+export const listarSesiones = async (req, res, next) => {
+  try {
+    const { search, page, limit } = req.query
+    res.json({ success: true, data: await svc.listarSesiones({ search, page: +page || 1, limit: +limit || 20 }) })
+  } catch (err) { next(err) }
+}
+
+export const expulsarSesion = async (req, res, next) => {
+  try {
+    await svc.expulsarSesion(req.params.id)
+    res.json({ success: true })
+  } catch (err) { next(err) }
+}
