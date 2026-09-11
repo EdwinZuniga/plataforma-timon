@@ -138,7 +138,7 @@ export const agregarMiembro = async (equipoId, email, rol, nombreCorto, nombre) 
   if (existente) {
     await prisma.miembroEquipo.update({
       where: { id: existente.id },
-      data: { rol, nombreCorto, activo: true },
+      data: { rol, nombreCorto, activo: true, fechaFinalizacion: null },
     })
   } else {
     await prisma.miembroEquipo.create({ data: { usuarioId: usuario.id, equipoId, rol, nombreCorto } })
@@ -153,12 +153,22 @@ export const actualizarMiembro = async (miembroId, {
 }) => {
   const fecha = (v) => (v ? new Date(v) : null)
   return prisma.$transaction(async (tx) => {
+    // Solo se toca fechaFinalizacion cuando activo realmente cambia de valor,
+    // para no reiniciar la fecha cada vez que se edita la ficha de un miembro ya inactivo.
+    let cambioActivo = {}
+    if (activo !== undefined) {
+      const actual = await tx.miembroEquipo.findUnique({ where: { id: miembroId }, select: { activo: true } })
+      if (actual && actual.activo !== activo) {
+        cambioActivo = { fechaFinalizacion: activo ? null : new Date() }
+      }
+    }
     const miembro = await tx.miembroEquipo.update({
       where: { id: miembroId },
       data: {
         ...(rol !== undefined && { rol }),
         ...(nombreCorto !== undefined && { nombreCorto }),
         ...(activo !== undefined && { activo }),
+        ...cambioActivo,
         ...(nombreCompleto !== undefined && { nombreCompleto: nombreCompleto || null }),
         ...(telefono !== undefined && { telefono: telefono || null }),
         ...(direccion !== undefined && { direccion: direccion || null }),
@@ -183,7 +193,7 @@ export const actualizarMiembro = async (miembroId, {
 }
 
 export const desactivarMiembro = async (miembroId) => {
-  return prisma.miembroEquipo.update({ where: { id: miembroId }, data: { activo: false } })
+  return prisma.miembroEquipo.update({ where: { id: miembroId }, data: { activo: false, fechaFinalizacion: new Date() } })
 }
 
 export const obtenerMiPerfil = async (miembroId, equipoId) => {

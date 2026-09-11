@@ -62,6 +62,7 @@ model MiembroEquipo {
   rol         String      @default("CONSULTOR")
   nombreCorto String?
   activo      Boolean     @default(true)
+  fechaFinalizacion DateTime?
   createdAt   DateTime    @default(now())
 
   // Datos personales del miembro (ficha de la sección Equipos)

@@ -30,14 +30,16 @@ function formatMonto(n) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n ?? 0)
 }
 
-// Años completos entre una fecha (UTC) y hoy — para edad y años en el ETJ.
-function aniosDesde(fecha) {
+// Años completos entre una fecha (UTC) y un límite (por defecto hoy) — para edad
+// y años en el ETJ. Si el miembro está inactivo, el límite debe ser su fechaFinalizacion
+// para que el contador no siga sumando después de que se fue.
+function aniosDesde(fecha, hasta) {
   if (!fecha) return null
   const d = new Date(fecha)
-  const hoy = new Date()
-  let n = hoy.getUTCFullYear() - d.getUTCFullYear()
-  const md = hoy.getUTCMonth() - d.getUTCMonth()
-  if (md < 0 || (md === 0 && hoy.getUTCDate() < d.getUTCDate())) n--
+  const limite = hasta ? new Date(hasta) : new Date()
+  let n = limite.getUTCFullYear() - d.getUTCFullYear()
+  const md = limite.getUTCMonth() - d.getUTCMonth()
+  if (md < 0 || (md === 0 && limite.getUTCDate() < d.getUTCDate())) n--
   return Math.max(n, 0)
 }
 
@@ -172,11 +174,14 @@ export default function MiembroPerfilModal({ miembro, onClose }) {
               <Dato label="Profesión">{perfil?.profesion}</Dato>
               <Dato label="Años en el ETJ">
                 {perfil?.ingresoETJ
-                  ? `${aniosDesde(perfil.ingresoETJ)} años · desde ${formatFecha(perfil.ingresoETJ)}`
+                  ? `${aniosDesde(perfil.ingresoETJ, miembro.activo ? null : perfil.fechaFinalizacion)} años · desde ${formatFecha(perfil.ingresoETJ)}`
                   : null}
               </Dato>
               <Dato label="Rol">{ROL_LABEL[miembro.rol]}</Dato>
               <Dato label="Estado">{miembro.activo ? 'Activo' : 'Inactivo'}</Dato>
+              {!miembro.activo && perfil?.fechaFinalizacion && (
+                <Dato label="Fecha finalización">{formatFecha(perfil.fechaFinalizacion)}</Dato>
+              )}
             </div>
           ) : totalResponsabilidades === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">

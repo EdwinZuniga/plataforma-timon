@@ -167,7 +167,7 @@ export const asignarMiembro = async (equipoId, usuarioId, rol = 'COORDINADOR') =
   if (existente) {
     return prisma.miembroEquipo.update({
       where: { id: existente.id },
-      data: { activo: true, rol },
+      data: { activo: true, rol, fechaFinalizacion: null },
     })
   }
   return prisma.miembroEquipo.create({ data: { usuarioId, equipoId, rol } })
@@ -176,7 +176,15 @@ export const asignarMiembro = async (equipoId, usuarioId, rol = 'COORDINADOR') =
 export const actualizarMembresia = async (miembroId, { rol, activo }) => {
   const data = {}
   if (rol !== undefined) data.rol = rol
-  if (activo !== undefined) data.activo = activo
+  if (activo !== undefined) {
+    // Solo se toca fechaFinalizacion cuando activo realmente cambia de valor,
+    // para no reiniciar la fecha ante guardados repetidos del mismo estado.
+    const actual = await prisma.miembroEquipo.findUnique({ where: { id: miembroId }, select: { activo: true } })
+    if (actual && actual.activo !== activo) {
+      data.fechaFinalizacion = activo ? null : new Date()
+    }
+    data.activo = activo
+  }
   return prisma.miembroEquipo.update({ where: { id: miembroId }, data })
 }
 
