@@ -264,11 +264,11 @@ export default function EquiposPage() {
                   onClick={() => setPerfilTarget(m)}
                   title="Ver perfil y responsabilidades"
                 >
-                  <div className="h-9 w-9 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-sm font-bold text-primary-700 dark:text-primary-500 shrink-0">
+                  <div className="h-9 w-9 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-sm font-bold text-primary-700 dark:text-primary-400 shrink-0">
                     {m.usuario.nombre[0]}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate hover:text-primary-700 dark:hover:text-primary-500 transition-colors">{m.usuario.nombre}</p>
+                    <p className="font-medium truncate hover:text-primary-700 dark:hover:text-primary-400 transition-colors">{m.usuario.nombre}</p>
                     <p className="text-xs text-muted-foreground truncate">{m.usuario.email}</p>
                   </div>
                 </button>

@@ -77,7 +77,7 @@ export function TallerResumenModal({ ins, onClose }) {
       >
         <div className="flex items-center justify-between p-4 border-b shrink-0">
           <div className="flex items-center gap-2 min-w-0">
-            <BookOpen className="h-5 w-5 text-primary-700 dark:text-primary-500 shrink-0" />
+            <BookOpen className="h-5 w-5 text-primary-700 dark:text-primary-400 shrink-0" />
             <h2 className="font-semibold text-lg truncate">{taller.nombre}</h2>
           </div>
           <button onClick={onClose} className="min-h-0 h-auto p-1 text-muted-foreground ml-2 shrink-0">
@@ -94,7 +94,7 @@ export function TallerResumenModal({ ins, onClose }) {
             <>
               <section>
                 <div className="flex items-center gap-2 mb-1">
-                  <CalendarCheck className="h-4 w-4 text-primary-700 dark:text-primary-500" />
+                  <CalendarCheck className="h-4 w-4 text-primary-700 dark:text-primary-400" />
                   <h3 className="text-sm font-semibold">Asistencia</h3>
                   {resumen.asistencia.esperadas > 0 && (
                     <span className="ml-auto text-xs text-muted-foreground">{resumen.asistencia.esperadas} sesiones</span>
@@ -133,7 +133,7 @@ export function TallerResumenModal({ ins, onClose }) {
 
               <section>
                 <div className="flex items-center gap-2 mb-1">
-                  <MessageCircle className="h-4 w-4 text-primary-700 dark:text-primary-500" />
+                  <MessageCircle className="h-4 w-4 text-primary-700 dark:text-primary-400" />
                   <h3 className="text-sm font-semibold">Participaciones</h3>
                   {resumen.participacion.total > 0 && (
                     <span className="ml-auto text-xs text-muted-foreground">{resumen.participacion.total} sesiones</span>
@@ -157,7 +157,7 @@ export function TallerResumenModal({ ins, onClose }) {
 
               <section>
                 <div className="flex items-center gap-2 mb-1">
-                  <ClipboardList className="h-4 w-4 text-primary-700 dark:text-primary-500" />
+                  <ClipboardList className="h-4 w-4 text-primary-700 dark:text-primary-400" />
                   <h3 className="text-sm font-semibold">Tareas</h3>
                   {resumen.tareas.total > 0 && (
                     <span className="ml-auto text-xs text-muted-foreground">{resumen.tareas.total} tareas</span>

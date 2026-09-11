@@ -39,6 +39,12 @@
     --primary-foreground: 210 40% 98%;
     --radius: 0.5rem;
     --color-equipo: #6D28D9;
+    /* Variantes del color de marca del equipo, ajustadas en luminosidad
+       para mantener contraste legible como texto sobre fondo claro/oscuro
+       sin importar qué color arbitrario haya elegido el equipo.
+       Las recalcula useAuthStore al cargar el equipo (ver utils/color.js). */
+    --color-equipo-onlight: #6D28D9;
+    --color-equipo-ondark: #A78BFA;
   }
 
   .dark {
@@ -80,6 +86,12 @@ a[role="button"] { min-height: 44px; display: inline-flex; align-items: center; 
   .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
   .min-h-screen-safe { min-height: calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
 }
+
+/* Color de marca del equipo con contraste garantizado como texto/acento */
+.text-equipo { color: var(--color-equipo-onlight); }
+.dark .text-equipo { color: var(--color-equipo-ondark); }
+.border-l-equipo { border-left-color: var(--color-equipo-onlight); }
+.dark .border-l-equipo { border-left-color: var(--color-equipo-ondark); }
 
 /* Cabecera móvil: respeta la barra de estado sin perder su padding propio */
 .header-safe { padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)); }

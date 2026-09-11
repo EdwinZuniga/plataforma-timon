@@ -195,7 +195,7 @@ export default function ComunidadDetailPage() {
             key={t}
             onClick={() => setTab(i)}
             className={`px-4 py-2 text-sm font-medium whitespace-nowrap min-h-[44px] transition-colors border-b-2 ${
-              tab === i ? 'border-primary-700 text-primary-700 dark:border-primary-500 dark:text-primary-500' : 'border-transparent text-muted-foreground hover:text-foreground'
+              tab === i ? 'border-primary-700 text-primary-700 dark:border-primary-500 dark:text-primary-400' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {t}
@@ -241,9 +241,9 @@ export default function ComunidadDetailPage() {
           {data.enlaceConsejo && (
             <Card className="border-primary-200 bg-primary-50/50 dark:border-primary-800/50 dark:bg-primary-900/20">
               <CardContent className="py-3 px-4 flex gap-2 items-start">
-                <ShieldCheck className="h-4 w-4 text-primary-700 dark:text-primary-500 mt-0.5 shrink-0" />
+                <ShieldCheck className="h-4 w-4 text-primary-700 dark:text-primary-400 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-xs text-primary-700 dark:text-primary-500 font-medium">Enlace Consejo Asesor</p>
+                  <p className="text-xs text-primary-700 dark:text-primary-400 font-medium">Enlace Consejo Asesor</p>
                   <p className="font-medium">{data.enlaceConsejo}</p>
                 </div>
               </CardContent>

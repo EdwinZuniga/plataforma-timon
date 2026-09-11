@@ -249,7 +249,7 @@ function UserMembershipItem({ membership, selected, onClick }) {
         <p className="text-xs text-muted-foreground capitalize">{membership.rol.toLowerCase()}</p>
       </div>
       {membership.permisos?.length > 0 && (
-        <ShieldCheck className="h-3.5 w-3.5 text-violet-500 shrink-0" title="Permisos configurados" />
+        <ShieldCheck className="h-3.5 w-3.5 text-violet-500 dark:text-violet-400 shrink-0" title="Permisos configurados" />
       )}
     </button>
   )

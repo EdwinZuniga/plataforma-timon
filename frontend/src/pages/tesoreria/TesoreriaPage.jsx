@@ -700,7 +700,7 @@ export default function TesoreriaPage() {
               ) : (
                 <button
                   onClick={() => { if (esCoordinador) { setMontoTmp(String(montoPorSemana)); setEditandoMonto(true) } }}
-                  className={cn('font-semibold', esCoordinador ? 'underline decoration-dashed cursor-pointer hover:text-primary-700 dark:hover:text-primary-500' : 'cursor-default')}
+                  className={cn('font-semibold', esCoordinador ? 'underline decoration-dashed cursor-pointer hover:text-primary-700 dark:hover:text-primary-400' : 'cursor-default')}
                   title={esCoordinador ? 'Click para cambiar' : undefined}
                 >
                   ${montoPorSemana.toFixed(2)}
@@ -757,7 +757,7 @@ export default function TesoreriaPage() {
                 className={cn(
                   'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
                   subTabChica === key
-                    ? 'border-primary-700 text-primary-700 dark:border-primary-500 dark:text-primary-500'
+                    ? 'border-primary-700 text-primary-700 dark:border-primary-500 dark:text-primary-400'
                     : 'border-transparent text-muted-foreground hover:text-foreground',
                 )}
               >

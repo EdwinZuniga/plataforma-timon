@@ -52,7 +52,7 @@ function NavLink({ to, icon: Icon, label, mobile }) {
         'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors min-h-[44px]',
         mobile ? 'flex-col gap-0.5 text-xs px-1 py-2 flex-1 justify-center' : '',
         active
-          ? 'bg-primary-700/10 text-primary-700 dark:text-primary-500'
+          ? 'bg-primary-700/10 text-primary-700 dark:text-primary-400'
           : 'text-muted-foreground hover:bg-accent hover:text-foreground'
       )}
     >
@@ -93,12 +93,12 @@ export function Layout({ children }) {
       {/* Sidebar desktop */}
       <aside className="hidden md:flex flex-col w-64 border-r bg-card shrink-0">
         <div
-          className="flex items-center gap-2 px-4 py-4 border-b"
-          style={{ borderLeftColor: 'var(--color-equipo)', borderLeftWidth: 4 }}
+          className="flex items-center gap-2 px-4 py-4 border-b border-l-equipo"
+          style={{ borderLeftWidth: 4 }}
         >
           <div className="flex-1 min-w-0">
             <p className="text-xs text-muted-foreground">Equipo activo</p>
-            <p className="font-semibold truncate" style={{ color: 'var(--color-equipo)' }}>
+            <p className="font-semibold truncate text-equipo">
               {equipoActual?.nombre || 'Sin equipo'}
             </p>
           </div>
@@ -150,7 +150,7 @@ export function Layout({ children }) {
           <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
           <aside className="pt-safe absolute left-0 top-0 bottom-0 w-72 bg-card shadow-xl flex flex-col">
             <div className="flex items-center justify-between px-4 py-4 border-b">
-              <span className="font-semibold" style={{ color: 'var(--color-equipo)' }}>
+              <span className="font-semibold text-equipo">
                 {equipoActual?.nombre || 'Plataforma Timón'}
               </span>
               <button onClick={() => setSidebarOpen(false)} className="min-h-0 h-auto p-1">
@@ -194,7 +194,7 @@ export function Layout({ children }) {
           <button onClick={() => setSidebarOpen(true)} className="min-h-0 h-auto p-1 -ml-1">
             <Menu className="h-5 w-5" />
           </button>
-          <span className="font-semibold" style={{ color: 'var(--color-equipo)' }}>
+          <span className="font-semibold text-equipo">
             {equipoActual?.nombre || 'Plataforma Timón'}
           </span>
         </header>

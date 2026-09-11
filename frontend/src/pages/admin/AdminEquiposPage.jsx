@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { Plus, Search, Pencil, X, ChevronRight, Users, UserPlus } from 'lucide-react'
 import { cn } from '@/utils/cn'
+import { useThemeStore } from '@/stores/useThemeStore'
+import { getReadableTeamColors } from '@/utils/color'
 
 const ROLES = ['COORDINADOR', 'MIEMBRO', 'SECRETARIO', 'CONSULTOR']
 const ROLES_LABEL = { COORDINADOR: 'Coordinador', MIEMBRO: 'Miembro', SECRETARIO: 'Secretario', CONSULTOR: 'Consultor' }
@@ -240,8 +242,8 @@ function EquipoDetailModal({ equipoId, onClose }) {
                         className={cn(
                           'text-xs px-2 py-0.5 rounded-full font-medium transition-colors',
                           m.activo
-                            ? 'bg-emerald-100 text-emerald-700 hover:bg-red-100 hover:text-red-600'
-                            : 'bg-red-100 text-red-600 hover:bg-emerald-100 hover:text-emerald-700'
+                            ? 'bg-emerald-100 text-emerald-700 hover:bg-red-100 hover:text-red-600 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-red-900/30 dark:hover:text-red-400'
+                            : 'bg-red-100 text-red-600 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-400'
                         )}
                         title={m.activo ? 'Desactivar' : 'Activar'}
                       >
@@ -262,6 +264,7 @@ function EquipoDetailModal({ equipoId, onClose }) {
 // ─── PÁGINA ───────────────────────────────────────────────────────────────────
 
 export default function AdminEquiposPage() {
+  const { theme } = useThemeStore()
   const [search, setSearch] = useState('')
   const [modalEquipo, setModalEquipo] = useState(null)
   const [detailEquipoId, setDetailEquipoId] = useState(null)
@@ -305,20 +308,22 @@ export default function AdminEquiposPage() {
             No se encontraron equipos
           </div>
         ) : (
-          data?.items?.map((eq) => (
+          data?.items?.map((eq) => {
+            const equipoColor = getReadableTeamColors(eq.color)[theme === 'dark' ? 'onDark' : 'onLight']
+            return (
             <div
               key={eq.id}
               className="rounded-xl border bg-card p-4 flex flex-col gap-3 hover:shadow-sm transition-shadow"
-              style={{ borderLeftColor: eq.color, borderLeftWidth: 4 }}
+              style={{ borderLeftColor: equipoColor, borderLeftWidth: 4 }}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-semibold truncate" style={{ color: eq.color }}>{eq.nombre}</p>
+                  <p className="font-semibold truncate" style={{ color: equipoColor }}>{eq.nombre}</p>
                   <p className="text-xs text-muted-foreground truncate">{eq.descripcion || 'Sin descripción'}</p>
                 </div>
                 <span className={cn(
                   'text-xs px-2 py-0.5 rounded-full font-medium shrink-0',
-                  eq.activo ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'
+                  eq.activo ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
                 )}>
                   {eq.activo ? 'Activo' : 'Inactivo'}
                 </span>
@@ -347,7 +352,8 @@ export default function AdminEquiposPage() {
                 </button>
               </div>
             </div>
-          ))
+            )
+          })
         )}
       </div>
 

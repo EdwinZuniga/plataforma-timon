@@ -18,7 +18,7 @@ function ToolbarBtn({ onClick, active, title, children }) {
       title={title}
       className={`p-1.5 rounded transition-colors ${
         active
-          ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-500'
+          ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground'
       }`}
     >

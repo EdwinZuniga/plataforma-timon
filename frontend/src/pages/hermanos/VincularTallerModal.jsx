@@ -58,7 +58,7 @@ export function VincularTallerModal({ hermanoId, inscripcionesActuales = [], onC
       <div className="bg-card rounded-t-2xl md:rounded-xl w-full max-w-md shadow-xl">
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-primary-700 dark:text-primary-500" />
+            <BookOpen className="h-5 w-5 text-primary-700 dark:text-primary-400" />
             <h2 className="font-semibold text-lg">Vincular a taller</h2>
           </div>
           <button onClick={onClose} className="min-h-0 h-auto p-1 text-muted-foreground">

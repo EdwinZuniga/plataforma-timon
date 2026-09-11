@@ -205,7 +205,7 @@ export default function ReunionDetailPage() {
           <CardContent className="py-3 px-4 space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold flex items-center gap-1.5">
-                <StickyNote className="h-4 w-4 text-primary-700 dark:text-primary-500" /> Notas
+                <StickyNote className="h-4 w-4 text-primary-700 dark:text-primary-400" /> Notas
               </p>
               <button
                 onClick={() => setNotasEditando(true)}
@@ -251,7 +251,7 @@ export default function ReunionDetailPage() {
               <div className="flex items-center justify-between">
                 <label className="text-xs font-medium text-muted-foreground">Responsables</label>
                 {selectedResponsables.length > 0 && (
-                  <span className="text-xs text-primary-700 dark:text-primary-500 font-medium">{selectedResponsables.length} seleccionados</span>
+                  <span className="text-xs text-primary-700 dark:text-primary-400 font-medium">{selectedResponsables.length} seleccionados</span>
                 )}
               </div>
               <div className="border rounded-md divide-y max-h-32 overflow-y-auto">

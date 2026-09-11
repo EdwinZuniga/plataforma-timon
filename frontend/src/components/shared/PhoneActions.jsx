@@ -21,7 +21,7 @@ export function PhoneActions({ telefono, className }) {
         href={`tel:${digitos}`}
         onClick={(e) => e.stopPropagation()}
         title="Llamar"
-        className="p-1 rounded text-muted-foreground hover:text-primary-700 dark:hover:text-primary-500 hover:bg-muted transition-colors"
+        className="p-1 rounded text-muted-foreground hover:text-primary-700 dark:hover:text-primary-400 hover:bg-muted transition-colors"
       >
         <Phone className="h-5 w-5" />
       </a>

@@ -9,7 +9,32 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const COLORS = ['#6D28D9', '#7C3AED', '#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE', '#4C1D95', '#5B21B6']
 
-function MetricCard({ icon: Icon, label, value, color = 'text-primary-700 dark:text-primary-500' }) {
+// Estilos de los gráficos (Recharts) enlazados a las CSS vars del tema para
+// que ejes, tooltip y etiquetas se vean bien tanto en claro como en oscuro
+// en vez de usar los grises/blancos por defecto de la librería.
+const axisTick = { fontSize: 11, fill: 'hsl(var(--muted-foreground))' }
+const axisLine = { stroke: 'hsl(var(--border))' }
+const tooltipStyle = {
+  contentStyle: {
+    backgroundColor: 'hsl(var(--popover))',
+    borderColor: 'hsl(var(--border))',
+    borderRadius: '0.5rem',
+    color: 'hsl(var(--popover-foreground))',
+    fontSize: '0.75rem',
+  },
+  labelStyle: { color: 'hsl(var(--popover-foreground))' },
+  itemStyle: { color: 'hsl(var(--popover-foreground))' },
+}
+
+function PieSliceLabel({ x, y, textAnchor, name, percent }) {
+  return (
+    <text x={x} y={y} textAnchor={textAnchor} dominantBaseline="middle" fontSize={11} fill="hsl(var(--foreground))">
+      {`${name} ${(percent * 100).toFixed(0)}%`}
+    </text>
+  )
+}
+
+function MetricCard({ icon: Icon, label, value, color = 'text-primary-700 dark:text-primary-400' }) {
   return (
     <Card>
       <CardContent className="flex items-center gap-4 py-5">
@@ -63,21 +88,23 @@ export default function DashboardPage() {
             <CardTitle className="text-base">Asistencia en talleres por mes ({new Date().getFullYear()})</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={asistenciaTalleresMes}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip formatter={(val) => [val, 'Asistentes']} />
-                <Bar dataKey="total" fill="var(--color-equipo)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="text-equipo">
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={asistenciaTalleresMes}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="mes" tick={axisTick} axisLine={axisLine} tickLine={axisLine} />
+                  <YAxis tick={axisTick} axisLine={axisLine} tickLine={axisLine} allowDecimals={false} />
+                  <Tooltip formatter={(val) => [val, 'Asistentes']} {...tooltipStyle} />
+                  <Bar dataKey="total" fill="currentColor" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Hermanos por departamento</CardTitle>
+            <CardTitle className="text-base">Comunidades por departamento</CardTitle>
           </CardHeader>
           <CardContent>
             {herPorDep.length === 0 ? (
@@ -87,10 +114,10 @@ export default function DashboardPage() {
             ) : (
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
-                  <Pie data={herPorDep} dataKey="total" nameKey="departamento" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                  <Pie data={herPorDep} dataKey="total" nameKey="departamento" cx="50%" cy="50%" outerRadius={80} label={PieSliceLabel} labelLine={false}>
                     {herPorDep.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip {...tooltipStyle} />
                 </PieChart>
               </ResponsiveContainer>
             )}

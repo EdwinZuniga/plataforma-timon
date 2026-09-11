@@ -88,7 +88,7 @@ export function EditarReunionModal({ reunion, onClose, onSaved }) {
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">Asistentes</label>
                 {selectedMiembros.length > 0 && (
-                  <span className="text-xs text-primary-700 dark:text-primary-500 font-medium">{selectedMiembros.length} seleccionados</span>
+                  <span className="text-xs text-primary-700 dark:text-primary-400 font-medium">{selectedMiembros.length} seleccionados</span>
                 )}
               </div>
               {activosSorted.length === 0 ? (

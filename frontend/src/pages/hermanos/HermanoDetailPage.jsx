@@ -86,8 +86,8 @@ function TalleresTab({ talleres, onVincular, onDesvincular, onVerResumen }) {
 
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <BookOpen className="h-4 w-4 text-primary-700 dark:text-primary-500" />
-          <h3 className="text-sm font-semibold text-primary-700 dark:text-primary-500">Taller actual</h3>
+          <BookOpen className="h-4 w-4 text-primary-700 dark:text-primary-400" />
+          <h3 className="text-sm font-semibold text-primary-700 dark:text-primary-400">Taller actual</h3>
         </div>
         {actuales.length === 0 ? (
           <p className="text-sm text-muted-foreground pl-6">Sin taller activo registrado</p>
@@ -175,7 +175,7 @@ export default function HermanoDetailPage() {
             key={t}
             onClick={() => setTab(i)}
             className={`px-4 py-2 text-sm font-medium whitespace-nowrap min-h-[44px] border-b-2 transition-colors ${
-              tab === i ? 'border-primary-700 text-primary-700 dark:border-primary-500 dark:text-primary-500' : 'border-transparent text-muted-foreground hover:text-foreground'
+              tab === i ? 'border-primary-700 text-primary-700 dark:border-primary-500 dark:text-primary-400' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {t}

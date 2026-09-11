@@ -297,14 +297,14 @@ export default function TallerEdicionPage() {
               {MESES[activeMes.mes - 1]}
             </p>
             <div className="flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1 text-green-600 font-medium" title="Presentes">
+              <span className="flex items-center gap-1 text-green-600 dark:text-green-400 font-medium" title="Presentes">
                 <Check className="h-3 w-3" /> {stats.presentes}
               </span>
-              <span className="text-yellow-600 font-bold" title="Permisos">P {stats.permisos}</span>
-              <span className="flex items-center gap-1 text-blue-600 font-medium" title="Tareas entregadas">
+              <span className="text-yellow-600 dark:text-yellow-400 font-bold" title="Permisos">P {stats.permisos}</span>
+              <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium" title="Tareas entregadas">
                 <ClipboardList className="h-3 w-3" /> {stats.tareas}
               </span>
-              <span className="flex items-center gap-1 text-purple-600 font-medium" title="Participaciones">
+              <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400 font-medium" title="Participaciones">
                 <BookOpen className="h-3 w-3" /> {stats.participaciones}
               </span>
               <span className="text-muted-foreground">/ {total}</span>
@@ -344,8 +344,8 @@ export default function TallerEdicionPage() {
                       className={cn(
                         'h-8 w-8 flex items-center justify-center rounded-lg border transition-colors text-xs font-bold',
                         tarea
-                          ? 'bg-blue-100 border-blue-300 text-blue-700'
-                          : 'border-input text-muted-foreground/40 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-500'
+                          ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-400'
+                          : 'border-input text-muted-foreground/40 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-500 dark:hover:bg-blue-950/40 dark:hover:border-blue-800 dark:hover:text-blue-400'
                       )}
                     >
                       T
@@ -360,8 +360,8 @@ export default function TallerEdicionPage() {
                       className={cn(
                         'h-8 w-8 flex items-center justify-center rounded-lg border transition-colors',
                         participo
-                          ? 'bg-purple-100 border-purple-300 text-purple-700'
-                          : 'border-input text-muted-foreground/40 hover:bg-purple-50 hover:border-purple-200 hover:text-purple-500'
+                          ? 'bg-purple-100 border-purple-300 text-purple-700 dark:bg-purple-900/30 dark:border-purple-700 dark:text-purple-400'
+                          : 'border-input text-muted-foreground/40 hover:bg-purple-50 hover:border-purple-200 hover:text-purple-500 dark:hover:bg-purple-950/40 dark:hover:border-purple-800 dark:hover:text-purple-400'
                       )}
                     >
                       <BookOpen className="h-3.5 w-3.5" />
@@ -536,8 +536,8 @@ function EstadoControl({ estado, onChange }) {
         className={cn(
           'h-8 w-8 flex items-center justify-center transition-colors border-x border-input',
           estado === 'PRESENTE'
-            ? 'bg-green-100 text-green-600'
-            : 'text-muted-foreground/40 hover:bg-green-50 hover:text-green-500'
+            ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+            : 'text-muted-foreground/40 hover:bg-green-50 hover:text-green-500 dark:hover:bg-green-950/40 dark:hover:text-green-400'
         )}
       >
         <Check className="h-3.5 w-3.5" />
@@ -548,8 +548,8 @@ function EstadoControl({ estado, onChange }) {
         className={cn(
           'h-8 w-8 flex items-center justify-center transition-colors',
           estado === 'PERMISO'
-            ? 'bg-yellow-100 text-yellow-700'
-            : 'text-muted-foreground/40 hover:bg-yellow-50 hover:text-yellow-600'
+            ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+            : 'text-muted-foreground/40 hover:bg-yellow-50 hover:text-yellow-600 dark:hover:bg-yellow-950/40 dark:hover:text-yellow-400'
         )}
       >
         <span className="text-xs font-bold leading-none">P</span>
@@ -619,8 +619,8 @@ function GeneralTab({ inscripciones, months, multiAnio, onVincular }) {
                   return (
                     <td key={i} className="py-2.5 px-3 text-center">
                       <div className="flex flex-col items-center gap-0.5">
-                        {estado === 'PRESENTE' && <Check className="h-4 w-4 text-green-600" />}
-                        {estado === 'PERMISO' && <span className="text-sm font-bold text-yellow-600">P</span>}
+                        {estado === 'PRESENTE' && <Check className="h-4 w-4 text-green-600 dark:text-green-400" />}
+                        {estado === 'PERMISO' && <span className="text-sm font-bold text-yellow-600 dark:text-yellow-400">P</span>}
                         {estado === 'AUSENTE' && <span className="text-muted-foreground/40">—</span>}
                         <div className="flex gap-0.5">
                           {tarea && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" title="Tarea entregada" />}
@@ -643,11 +643,11 @@ function GeneralTab({ inscripciones, months, multiAnio, onVincular }) {
             {totalesMes.map((t, i) => (
               <td key={i} className="py-2 px-3 text-center">
                 <div className="flex flex-col items-center gap-0.5 text-xs">
-                  <span className="text-green-600 font-medium">{t.presentes}✓</span>
-                  {t.permisos > 0 && <span className="text-yellow-600">{t.permisos}P</span>}
+                  <span className="text-green-600 dark:text-green-400 font-medium">{t.presentes}✓</span>
+                  {t.permisos > 0 && <span className="text-yellow-600 dark:text-yellow-400">{t.permisos}P</span>}
                   <div className="flex gap-1">
-                    {t.tareas > 0 && <span className="text-blue-600">{t.tareas}T</span>}
-                    {t.participaciones > 0 && <span className="text-purple-600">{t.participaciones}★</span>}
+                    {t.tareas > 0 && <span className="text-blue-600 dark:text-blue-400">{t.tareas}T</span>}
+                    {t.participaciones > 0 && <span className="text-purple-600 dark:text-purple-400">{t.participaciones}★</span>}
                   </div>
                 </div>
               </td>

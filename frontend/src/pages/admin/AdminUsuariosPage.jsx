@@ -8,6 +8,8 @@ import { useToast } from '@/components/ui/toast'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { Plus, Search, Pencil, Trash2, ShieldCheck, X, Eye, EyeOff } from 'lucide-react'
 import { cn } from '@/utils/cn'
+import { useThemeStore } from '@/stores/useThemeStore'
+import { getReadableTeamColors } from '@/utils/color'
 
 const ROLES_LABEL = { COORDINADOR: 'Coordinador', MIEMBRO: 'Miembro', SECRETARIO: 'Secretario', CONSULTOR: 'Consultor' }
 const ROLES = Object.keys(ROLES_LABEL)
@@ -171,6 +173,7 @@ function UsuarioModal({ usuario, onClose }) {
 export default function AdminUsuariosPage() {
   const qc = useQueryClient()
   const { toast } = useToast()
+  const { theme } = useThemeStore()
   const [search, setSearch] = useState('')
   const [modalUsuario, setModalUsuario] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
@@ -257,15 +260,18 @@ export default function AdminUsuariosPage() {
                   <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{u.email}</td>
                   <td className="px-4 py-3 hidden sm:table-cell">
                     <div className="flex flex-wrap gap-1">
-                      {u.equipos?.slice(0, 3).map((m) => (
-                        <span
-                          key={m.id}
-                          className="text-xs px-1.5 py-0.5 rounded-full"
-                          style={{ backgroundColor: m.equipo.color + '20', color: m.equipo.color }}
-                        >
-                          {m.equipo.nombre}
-                        </span>
-                      ))}
+                      {u.equipos?.slice(0, 3).map((m) => {
+                        const equipoColor = getReadableTeamColors(m.equipo.color)[theme === 'dark' ? 'onDark' : 'onLight']
+                        return (
+                          <span
+                            key={m.id}
+                            className="text-xs px-1.5 py-0.5 rounded-full"
+                            style={{ backgroundColor: equipoColor.replace(')', ' / 0.15)'), color: equipoColor }}
+                          >
+                            {m.equipo.nombre}
+                          </span>
+                        )
+                      })}
                       {u.equipos?.length > 3 && (
                         <span className="text-xs text-muted-foreground">+{u.equipos.length - 3}</span>
                       )}
@@ -274,7 +280,7 @@ export default function AdminUsuariosPage() {
                   <td className="px-4 py-3">
                     <span className={cn(
                       'text-xs px-2 py-0.5 rounded-full font-medium',
-                      u.activo ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'
+                      u.activo ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
                     )}>
                       {u.activo ? 'Activo' : 'Inactivo'}
                     </span>

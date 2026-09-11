@@ -3,6 +3,7 @@ import axios from 'axios'
 import { setAccessToken, clearAccessToken } from '@/api/client'
 import * as authApi from '@/api/auth'
 import api from '@/api/client'
+import { getReadableTeamColors } from '@/utils/color'
 
 // Cliente limpio sin interceptores para el refresh inicial de arranque
 const rawApi = axios.create({
@@ -28,6 +29,15 @@ const marcarHint = (v) => {
 // Convierte array [{modulo, ver, crear, editar, eliminar}] en objeto keyed por modulo
 const indexarPermisos = (arr) =>
   arr.reduce((acc, p) => { acc[p.modulo] = p; return acc }, {})
+
+// Aplica el color de marca del equipo y sus variantes con contraste legible
+// (--color-equipo-onlight/-ondark, ver utils/color.js) como CSS vars globales.
+const aplicarColorEquipo = (color) => {
+  document.documentElement.style.setProperty('--color-equipo', color)
+  const { onLight, onDark } = getReadableTeamColors(color)
+  document.documentElement.style.setProperty('--color-equipo-onlight', onLight)
+  document.documentElement.style.setProperty('--color-equipo-ondark', onDark)
+}
 
 export const useAuthStore = create((set, get) => ({
   usuario: null,
@@ -61,7 +71,7 @@ export const useAuthStore = create((set, get) => ({
     if (equipo) {
       localStorage.setItem('equipoActual', JSON.stringify(equipo))
       if (equipo.color) {
-        document.documentElement.style.setProperty('--color-equipo', equipo.color)
+        aplicarColorEquipo(equipo.color)
       }
       // Cargar permisos del usuario para este equipo
       try {
@@ -89,7 +99,7 @@ export const useAuthStore = create((set, get) => ({
         try { return JSON.parse(localStorage.getItem('equipoActual')) } catch { return null }
       })()
       if (equipoGuardado?.color) {
-        document.documentElement.style.setProperty('--color-equipo', equipoGuardado.color)
+        aplicarColorEquipo(equipoGuardado.color)
       }
 
       // Cargar permisos si ya tenía un equipo seleccionado

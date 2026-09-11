@@ -101,7 +101,7 @@ function AsistenciaLista({ equipoId, actividadId, idField, secondaryLabel, query
                 <CardContent className="flex items-center gap-3 py-3 px-4">
                   <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${presente ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'}`}>
                     {presente
-                      ? <Check className="h-4 w-4 text-green-600" />
+                      ? <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
                       : <XIcon className="h-4 w-4 text-muted-foreground" />}
                   </div>
                   <div className="flex-1 min-w-0">

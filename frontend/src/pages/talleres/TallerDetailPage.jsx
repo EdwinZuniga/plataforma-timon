@@ -155,8 +155,8 @@ export default function TallerDetailPage() {
       {!sinEdiciones && (
         <section className="space-y-2">
           <div className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4 text-primary-700 dark:text-primary-500" />
-            <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-500">En curso</h2>
+            <BookOpen className="h-4 w-4 text-primary-700 dark:text-primary-400" />
+            <h2 className="text-sm font-semibold text-primary-700 dark:text-primary-400">En curso</h2>
           </div>
           {loadingActuales ? (
             <p className="text-sm text-muted-foreground pl-6">Cargando...</p>
