@@ -26,11 +26,11 @@ const ESTADO_BADGE = {
 }
 
 const TABS = [
-  { key: '', label: 'Todos' },
-  { key: 'PENDIENTE', label: 'Pendientes' },
-  { key: 'ASIGNADO', label: 'Asignados' },
-  { key: 'CONFIRMADO', label: 'Confirmados' },
-  { key: 'FINALIZADO', label: 'Finalizados' },
+  { key: '', label: 'Todos', short: 'Todos' },
+  { key: 'PENDIENTE', label: 'Pendientes', short: 'Pend.' },
+  { key: 'ASIGNADO', label: 'Asignados', short: 'Asign.' },
+  { key: 'CONFIRMADO', label: 'Confirmados', short: 'Conf.' },
+  { key: 'FINALIZADO', label: 'Finalizados', short: 'Final.' },
 ]
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
@@ -395,7 +395,7 @@ export default function ServiciosPage() {
     <div className="p-4 md:p-6 space-y-4 max-w-4xl mx-auto">
 
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold">Servicios</h1>
           <p className="text-sm text-muted-foreground">
             {total > 0 ? `${total} servicio${total !== 1 ? 's' : ''}` : 'Gestión de servicios del Equipo'}
@@ -403,25 +403,26 @@ export default function ServiciosPage() {
         </div>
         <div className="flex gap-2 shrink-0">
           <Button variant="outline" size="sm" onClick={() => setModalCatalogo(true)} title="Gestionar tipos de servicio">
-            <Settings className="h-4 w-4 mr-1" /> Catálogo
+            <Settings className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Catálogo</span>
           </Button>
-          <Button variant="outline" onClick={() => setModalManual(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Registrar manualmente
+          <Button variant="outline" onClick={() => setModalManual(true)} title="Registrar manualmente">
+            <Plus className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Registrar manualmente</span>
           </Button>
-          <Button onClick={() => setModalCarta(true)}>
-            <Upload className="h-4 w-4 mr-1" /> Subir carta
+          <Button onClick={() => setModalCarta(true)} title="Subir carta">
+            <Upload className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Subir carta</span>
           </Button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
+      <div className="flex gap-0.5 sm:gap-1 p-1 bg-muted rounded-lg w-fit">
         {TABS.map((t) => (
           <button key={t.key} onClick={() => setTabEstado(t.key)}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
               tabEstado === t.key ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}>
-            {t.label}
+            <span className="sm:hidden">{t.short}</span>
+            <span className="hidden sm:inline">{t.label}</span>
           </button>
         ))}
       </div>
@@ -466,8 +467,8 @@ export default function ServiciosPage() {
           {servicios.map((s) => (
             <Card key={s.id} className={s.origenOCR ? 'border-primary/20' : ''}>
               <CardContent className="py-4 px-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex-1 min-w-[180px] space-y-2">
 
                     <div className="flex items-center gap-2 flex-wrap">
                       <Wrench className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -570,7 +571,7 @@ export default function ServiciosPage() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0 mt-1">
+                  <div className="flex items-center flex-wrap gap-1 basis-full justify-end mt-1 sm:basis-auto sm:justify-normal sm:shrink-0">
                     {confirmFinalizar === s.id ? (
                       <>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">¿Finalizar?</span>

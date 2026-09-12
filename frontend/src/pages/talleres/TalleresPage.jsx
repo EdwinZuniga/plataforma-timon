@@ -87,12 +87,12 @@ export default function TalleresPage() {
               <Card className="hover:shadow-md transition-shadow cursor-pointer">
                 <CardContent className="flex items-center gap-3 py-3 px-4">
                   <BookOpen className="h-5 w-5 text-muted-foreground shrink-0" />
-                  <div className="flex-1">
-                    <p className="font-medium">{t.nombre}</p>
-                    {t.descripcion && <p className="text-sm text-muted-foreground">{t.descripcion}</p>}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{t.nombre}</p>
+                    {t.descripcion && <p className="text-sm text-muted-foreground truncate">{t.descripcion}</p>}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant="secondary">{t._count?.ediciones} ediciones</Badge>
+                    <Badge variant="secondary" className="whitespace-nowrap">{t._count?.ediciones} ediciones</Badge>
                     {canEdit && (
                       <button
                         onClick={(e) => openEdit(e, t)}

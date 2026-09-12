@@ -259,13 +259,13 @@ function EdicionCard({ e, finalizada, puedeEliminar, onNavigate, onEdit, onDelet
       onClick={() => onNavigate(e)}
     >
       <CardContent className="py-4 px-4">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <div className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${finalizada ? 'bg-muted' : 'bg-primary/10'}`}>
             <Calendar className={`h-5 w-5 ${finalizada ? 'text-muted-foreground' : 'text-primary'}`} />
           </div>
 
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm leading-tight">
+          <div className="flex-1 min-w-[140px]">
+            <p className="font-semibold text-sm leading-tight break-words">
               {formatCalendarDate(e.fecha)}
               {e.fechaFin && (
                 <span className="font-normal text-muted-foreground"> → {formatCalendarDate(e.fechaFin)}</span>
@@ -285,7 +285,7 @@ function EdicionCard({ e, finalizada, puedeEliminar, onNavigate, onEdit, onDelet
             </div>
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center flex-wrap justify-end gap-1 basis-full sm:basis-auto sm:justify-normal">
             {finalizada && <Badge variant="secondary" className="text-xs">Finalizada</Badge>}
             <Badge variant="secondary" className="text-xs">
               <Users className="h-3 w-3 mr-1" />{total}
