@@ -66,6 +66,32 @@
     --primary: 263 70% 65%;
     --primary-foreground: 222.2 47.4% 11.2%;
   }
+
+  /* Alto contraste: negro puro, texto blanco, bordes marcados y acento amarillo.
+     Se aplica junto con .dark (para conservar las variantes dark:) y va después
+     para sobreescribir sus variables. */
+  .hc {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 85%;
+    --accent: 0 0% 16%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 100% 62%;
+    --destructive-foreground: 0 0% 0%;
+    --border: 0 0% 75%;
+    --input: 0 0% 75%;
+    --ring: 54 100% 55%;
+    --primary: 54 100% 55%;
+    --primary-foreground: 0 0% 0%;
+    --color-equipo-ondark: #FFE600;
+  }
+  .hc *:focus-visible { outline: 3px solid #FFE600; outline-offset: 2px; }
+  .hc a { text-decoration: underline; }
 }
 
 @layer base {

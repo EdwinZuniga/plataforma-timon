@@ -309,7 +309,7 @@ export default function AdminEquiposPage() {
           </div>
         ) : (
           data?.items?.map((eq) => {
-            const equipoColor = getReadableTeamColors(eq.color)[theme === 'dark' ? 'onDark' : 'onLight']
+            const equipoColor = getReadableTeamColors(eq.color)[theme !== 'light' ? 'onDark' : 'onLight']
             return (
             <div
               key={eq.id}

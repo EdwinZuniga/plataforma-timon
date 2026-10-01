@@ -6,7 +6,7 @@ import {
   Home, Users, UserCheck, Calendar, FileText,
   ShipWheel, LogOut, Menu, X, ChevronRight,
   Wrench, BookOpen, MoreHorizontal, UserCircle, ShieldCheck, Landmark, Package,
-  Sun, Moon,
+  Sun, Moon, Contrast,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { Button } from '@/components/ui/button'
@@ -62,19 +62,27 @@ function NavLink({ to, icon: Icon, label, mobile }) {
   )
 }
 
+const TEMAS = {
+  light: { label: 'Modo claro', icon: Sun },
+  dark: { label: 'Modo oscuro', icon: Moon },
+  contrast: { label: 'Alto contraste', icon: Contrast },
+}
+
+// Un clic avanza al siguiente tema: claro → oscuro → alto contraste → claro
 function ThemeToggle({ className }) {
   const { theme, toggleTheme } = useThemeStore()
-  const isDark = theme === 'dark'
+  const { label, icon: Icon } = TEMAS[theme]
   return (
     <button
       onClick={toggleTheme}
+      title="Cambiar tema"
       className={cn(
         'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors',
         className
       )}
     >
-      {isDark ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
-      {isDark ? 'Modo claro' : 'Modo oscuro'}
+      <Icon className="h-4 w-4 shrink-0" />
+      {label}
     </button>
   )
 }

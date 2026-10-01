@@ -11,7 +11,7 @@ export async function syncStatusBar(theme) {
   try {
     const { StatusBar, Style } = await import('@capacitor/status-bar')
     // Style.Dark = íconos claros (para fondo oscuro); Style.Light = íconos oscuros (fondo claro).
-    await StatusBar.setStyle({ style: theme === 'dark' ? Style.Dark : Style.Light })
+    await StatusBar.setStyle({ style: theme !== 'light' ? Style.Dark : Style.Light })
   } catch {
     /* plugin no disponible (p. ej. en web) */
   }

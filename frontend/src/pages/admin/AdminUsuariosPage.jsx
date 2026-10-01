@@ -261,7 +261,7 @@ export default function AdminUsuariosPage() {
                   <td className="px-4 py-3 hidden sm:table-cell">
                     <div className="flex flex-wrap gap-1">
                       {u.equipos?.slice(0, 3).map((m) => {
-                        const equipoColor = getReadableTeamColors(m.equipo.color)[theme === 'dark' ? 'onDark' : 'onLight']
+                        const equipoColor = getReadableTeamColors(m.equipo.color)[theme !== 'light' ? 'onDark' : 'onLight']
                         return (
                           <span
                             key={m.id}
