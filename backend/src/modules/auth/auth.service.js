@@ -4,6 +4,7 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../con
 
 
 const REFRESH_EXPIRES_DAYS = 7
+const HISTORIAL_RETENCION_DIAS = 90
 
 export const loginService = async (email, password, meta = {}) => {
   const usuario = await prisma.usuario.findUnique({ where: { email } })
@@ -25,6 +26,13 @@ export const loginService = async (email, password, meta = {}) => {
     data: { token: refreshToken, usuarioId: usuario.id, expiresAt, ip: meta.ip, userAgent: meta.userAgent },
   })
 
+  // Poda del historial de sesiones antiguo (best-effort, no bloquea el login)
+  const limite = new Date()
+  limite.setDate(limite.getDate() - HISTORIAL_RETENCION_DIAS)
+  prisma.refreshToken
+    .deleteMany({ where: { OR: [{ expiresAt: { lt: limite } }, { revokedAt: { lt: limite } }] } })
+    .catch(() => {})
+
   return { usuario: payload, accessToken, refreshToken }
 }
 
@@ -39,7 +47,7 @@ export const refreshService = async (token, meta = {}) => {
   }
 
   const stored = await prisma.refreshToken.findUnique({ where: { token } })
-  if (!stored || stored.expiresAt < new Date()) {
+  if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
     throw { status: 401, message: 'Refresh token inválido o expirado', code: 'REFRESH_INVALIDO' }
   }
 
@@ -55,11 +63,12 @@ export const refreshService = async (token, meta = {}) => {
   const expiresAt = new Date()
   expiresAt.setDate(expiresAt.getDate() + REFRESH_EXPIRES_DAYS)
 
+  // Se actualiza la misma fila (en vez de borrar+crear) para conservar createdAt
+  // como fecha de inicio de sesión y así listar sesiones activas e historial en el admin.
+  // El filtro revokedAt: null evita "resucitar" una sesión expulsada por una petición concurrente.
   try {
-    // Se actualiza la misma fila (en vez de borrar+crear) para conservar createdAt
-    // como fecha de inicio de sesión y así poder listar "sesiones activas" en el admin.
-    await prisma.refreshToken.update({
-      where: { id: stored.id },
+    const { count } = await prisma.refreshToken.updateMany({
+      where: { id: stored.id, revokedAt: null },
       data: {
         token: newRefreshToken,
         expiresAt,
@@ -68,10 +77,12 @@ export const refreshService = async (token, meta = {}) => {
         userAgent: meta.userAgent ?? stored.userAgent,
       },
     })
+    if (count === 0) {
+      throw { status: 401, message: 'Sesión inválida, por favor inicia sesión de nuevo', code: 'REFRESH_INVALIDO' }
+    }
   } catch (err) {
-    // P2025 = la sesión fue expulsada/borrada por otra petición concurrente (p. ej. desde el admin)
     // P2002 = nuevo token duplicado (colisión de jti, prácticamente imposible)
-    if (err.code === 'P2025' || err.code === 'P2002') {
+    if (err.code === 'P2002') {
       throw { status: 401, message: 'Sesión inválida, por favor inicia sesión de nuevo', code: 'REFRESH_INVALIDO' }
     }
     throw err
@@ -83,9 +94,13 @@ export const refreshService = async (token, meta = {}) => {
 export const logoutService = async (token) => {
   if (!token) return
   try {
-    await prisma.refreshToken.delete({ where: { token } })
+    // Soft-delete: la fila queda como historial. Si ya estaba cerrada no se toca.
+    await prisma.refreshToken.updateMany({
+      where: { token, revokedAt: null },
+      data: { revokedAt: new Date(), motivoFin: 'LOGOUT' },
+    })
   } catch {
-    // ya expirado o inexistente — no es error
+    // no es error si no se pudo registrar el cierre
   }
 }
 

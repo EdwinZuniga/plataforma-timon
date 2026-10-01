@@ -233,13 +233,15 @@ export const limpiarPermisosMembresia = async (miembroId) => {
 
 // ─── SESIONES ACTIVAS ─────────────────────────────────────────────────────────
 
+const filtroBusquedaUsuario = (search) =>
+  search ? { usuario: { OR: [{ nombre: { contains: search } }, { email: { contains: search } }] } } : {}
+
 export const listarSesiones = async ({ search, page = 1, limit = 20 } = {}) => {
   const skip = (page - 1) * limit
   const where = {
+    revokedAt: null,
     expiresAt: { gt: new Date() },
-    ...(search
-      ? { usuario: { OR: [{ nombre: { contains: search } }, { email: { contains: search } }] } }
-      : {}),
+    ...filtroBusquedaUsuario(search),
   }
 
   const [total, items] = await Promise.all([
@@ -263,11 +265,61 @@ export const listarSesiones = async ({ search, page = 1, limit = 20 } = {}) => {
   return { total, page, limit, items }
 }
 
-export const expulsarSesion = async (id) => {
-  try {
-    await prisma.refreshToken.delete({ where: { id } })
-  } catch (err) {
-    if (err.code === 'P2025') throw { status: 404, message: 'Sesión no encontrada', code: 'SESION_NO_ENCONTRADA' }
-    throw err
+// Historial: todas las sesiones (activas y finalizadas). estado: ACTIVA | LOGOUT | EXPULSADA | EXPIRADA
+const ESTADOS_HISTORIAL = ['ACTIVA', 'LOGOUT', 'EXPULSADA', 'EXPIRADA']
+
+export const listarHistorialSesiones = async ({ search, estado, page = 1, limit = 20 } = {}) => {
+  const skip = (page - 1) * limit
+  const ahora = new Date()
+  const filtroEstado = {
+    ACTIVA: { revokedAt: null, expiresAt: { gt: ahora } },
+    EXPIRADA: { revokedAt: null, expiresAt: { lte: ahora } },
+    LOGOUT: { revokedAt: { not: null }, motivoFin: 'LOGOUT' },
+    EXPULSADA: { revokedAt: { not: null }, motivoFin: 'EXPULSADA' },
   }
+  const where = {
+    ...(ESTADOS_HISTORIAL.includes(estado) ? filtroEstado[estado] : {}),
+    ...filtroBusquedaUsuario(search),
+  }
+
+  const [total, rows] = await Promise.all([
+    prisma.refreshToken.count({ where }),
+    prisma.refreshToken.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        ip: true,
+        userAgent: true,
+        createdAt: true,
+        lastUsedAt: true,
+        expiresAt: true,
+        revokedAt: true,
+        motivoFin: true,
+        usuario: { select: { id: true, nombre: true, email: true, superAdmin: true } },
+      },
+    }),
+  ])
+
+  const items = rows.map(({ expiresAt, revokedAt, motivoFin, ...s }) => {
+    const activa = !revokedAt && expiresAt > ahora
+    return {
+      ...s,
+      estado: revokedAt ? (motivoFin ?? 'LOGOUT') : activa ? 'ACTIVA' : 'EXPIRADA',
+      // Fin real de la sesión: cierre explícito, o el vencimiento del token si expiró sola
+      finalizadaAt: revokedAt ?? (activa ? null : expiresAt),
+    }
+  })
+  return { total, page, limit, items }
+}
+
+export const expulsarSesion = async (id) => {
+  // Soft-delete: la sesión queda en el historial con motivo EXPULSADA
+  const { count } = await prisma.refreshToken.updateMany({
+    where: { id, revokedAt: null },
+    data: { revokedAt: new Date(), motivoFin: 'EXPULSADA' },
+  })
+  if (count === 0) throw { status: 404, message: 'Sesión no encontrada', code: 'SESION_NO_ENCONTRADA' }
 }

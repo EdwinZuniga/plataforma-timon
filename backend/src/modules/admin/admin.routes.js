@@ -34,6 +34,7 @@ router.delete('/permisos/membresia/:miembroId', ctrl.limpiarPermisosMembresia)
 
 // Sesiones activas
 router.get('/sesiones', ctrl.listarSesiones)
+router.get('/sesiones/historial', ctrl.listarHistorialSesiones)
 router.delete('/sesiones/:id', ctrl.expulsarSesion)
 
 export default router

@@ -118,6 +118,9 @@ model RefreshToken {
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   lastUsedAt DateTime @default(now())
+  // Cierre de sesión (soft-delete para conservar el historial): LOGOUT | EXPULSADA
+  revokedAt  DateTime?
+  motivoFin  String?
 
   @@map("RefreshToken")
 }
@@ -171,10 +174,10 @@ model Visita {
   equipoId      Int
   equipo        EquipoTimon    @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   fecha         DateTime
+  fechaFin      DateTime?
   responsableId Int?
   responsable   MiembroEquipo? @relation("VisitaResponsable", fields: [responsableId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   apoyo         String?
-  fechaFin      DateTime?
   encargados    String?
   horario       String?
   notas         String?

@@ -29,4 +29,5 @@ export const clearPermisosMembresia = (miembroId) =>
 
 // Sesiones activas
 export const getSesiones = (params) => api.get('/admin/sesiones', { params })
+export const getHistorialSesiones = (params) => api.get('/admin/sesiones/historial', { params })
 export const expulsarSesion = (id) => api.delete(`/admin/sesiones/${id}`)

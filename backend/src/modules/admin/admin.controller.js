@@ -123,6 +123,13 @@ export const listarSesiones = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
+export const listarHistorialSesiones = async (req, res, next) => {
+  try {
+    const { search, estado, page, limit } = req.query
+    res.json({ success: true, data: await svc.listarHistorialSesiones({ search, estado, page: +page || 1, limit: +limit || 20 }) })
+  } catch (err) { next(err) }
+}
+
 export const expulsarSesion = async (req, res, next) => {
   try {
     await svc.expulsarSesion(req.params.id)
