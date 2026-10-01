@@ -1,9 +1,9 @@
 import prisma from '../../config/database.js'
+import { hoyElSalvador } from '../servicios/servicio-estado.js'
 
 export const obtenerDashboard = async (equipoId) => {
   const anioActual = new Date().getFullYear()
-  // Medianoche UTC del día actual en El Salvador: las fechas de visita se guardan como fecha pura (UTC)
-  const hoy = new Date(`${new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' })}T00:00:00.000Z`)
+  const hoy = hoyElSalvador()
 
   const [
     totalComunidades,
@@ -14,6 +14,8 @@ export const obtenerDashboard = async (equipoId) => {
     asistenciaTalleresMes,
     hermanosPorDepartamento,
     visitasProgramadas,
+    serviciosAsignados,
+    totalServiciosAsignados,
   ] = await Promise.all([
     prisma.comunidad.count({ where: { estado: 'ACTIVA' } }),
     prisma.hermano.count({ where: { equipoId, activo: true } }),
@@ -47,6 +49,19 @@ export const obtenerDashboard = async (equipoId) => {
         responsable: { include: { usuario: { select: { nombre: true } } } },
       },
     }),
+    // Servicios con hermanos asignados cuya actividad aún no ha pasado
+    prisma.servicioActividad.findMany({
+      where: { actividad: { equipoId, fecha: { gte: hoy } }, estado: { in: ['ASIGNADO', 'CONFIRMADO'] } },
+      orderBy: { actividad: { fecha: 'asc' } },
+      take: 3,
+      include: {
+        catalogoServicio: { select: { nombre: true } },
+        actividad: { select: { fecha: true, lugar: true } },
+        comunidad: { select: { nombre: true } },
+        asignados: { include: { miembro: { include: { usuario: { select: { nombre: true } } } } } },
+      },
+    }),
+    prisma.servicioActividad.count({ where: { actividad: { equipoId, fecha: { gte: hoy } }, estado: { in: ['ASIGNADO', 'CONFIRMADO'] } } }),
   ])
 
   const asistenciaPorMesData = Array.from({ length: 12 }, (_, i) => {
@@ -63,6 +78,8 @@ export const obtenerDashboard = async (equipoId) => {
       serviciosPendientes,
     },
     visitasProgramadas,
+    serviciosAsignados,
+    totalServiciosAsignados,
     graficas: {
       asistenciaTalleresMes: asistenciaPorMesData,
       hermanosPorDepartamento: hermanosPorDepartamento.map((d) => ({

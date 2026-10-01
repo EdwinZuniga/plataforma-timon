@@ -52,8 +52,8 @@ export const listarServicios = async (req, res, next) => {
 
 export const listarTodos = async (req, res, next) => {
   try {
-    const { estado, page, origenOCR, anio, mes, catalogoServicioId } = req.query
-    const data = await svc.listarTodos(req.params.equipoId, { estado, page, origenOCR, anio, mes, catalogoServicioId })
+    const { estado, page, origenOCR, anio, mes, catalogoServicioId, buscar } = req.query
+    const data = await svc.listarTodos(req.params.equipoId, { estado, page, origenOCR, anio, mes, catalogoServicioId, buscar })
     res.json({ success: true, ...data })
   } catch (err) { next(err) }
 }

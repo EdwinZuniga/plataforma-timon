@@ -7,6 +7,7 @@ import { getComunidades } from '@/api/comunidades'
 import { getMiembros } from '@/api/equipos'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { RangoHoraPicker } from '@/components/ui/time-picker'
 import { Combobox } from '@/components/ui/combobox'
 import { useToast } from '@/components/ui/toast'
 import { X, Upload, Loader2, FileText, Users, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
@@ -309,11 +310,10 @@ export function SubirCartaModal({ onClose, onSaved }) {
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-muted-foreground">Hora</label>
-                    <Input
-                      value={form.horaServicio}
-                      onChange={(e) => setForm((f) => ({ ...f, horaServicio: e.target.value }))}
-                      placeholder="Ej: 8:00 AM a 3:30 PM"
-                    />
+                    <RangoHoraPicker
+                  value={form.horaServicio}
+                  onChange={(v) => setForm((f) => ({ ...f, horaServicio: v }))}
+                />
                   </div>
                   <div className="space-y-1 sm:col-span-2">
                     <label className="text-xs font-medium text-muted-foreground">Lugar</label>

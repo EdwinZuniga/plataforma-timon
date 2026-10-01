@@ -23,6 +23,23 @@ const fmt = (v) => {
   return p ? `${p.h12}:${pad(p.min)} ${p.pm ? 'PM' : 'AM'}` : ''
 }
 
+// Texto de horario ("10:00 AM", "8 am") <-> valor 'HH:mm' del reloj
+export const horarioATime = (h) => {
+  const m = /^\s*(\d{1,2})(?::(\d{2}))?\s*([ap])\.?\s*m?\.?\s*$/i.exec(h || '')
+  if (m) {
+    let hh = Number(m[1]) % 12
+    if (m[3].toLowerCase() === 'p') hh += 12
+    return `${pad(hh)}:${m[2] || '00'}`
+  }
+  const m24 = /^\s*(\d{1,2}):(\d{2})\s*$/.exec(h || '')
+  return m24 ? `${pad(Number(m24[1]))}:${m24[2]}` : ''
+}
+export const timeAHorario = (t) => {
+  if (!t) return null
+  const [hh, mm] = t.split(':').map(Number)
+  return `${hh % 12 || 12}:${pad(mm)} ${hh >= 12 ? 'PM' : 'AM'}`
+}
+
 const posEnEsfera = (grados) => {
   const rad = (grados - 90) * Math.PI / 180
   return { left: TAM / 2 + R_NUM * Math.cos(rad), top: TAM / 2 + R_NUM * Math.sin(rad) }
@@ -31,7 +48,7 @@ const posEnEsfera = (grados) => {
 // Selector de hora con reloj: primero se toca la hora y luego los minutos,
 // con AM/PM aparte. Valor 'HH:mm'. El panel va en un portal para no
 // recortarse dentro de modales con scroll (igual que DatePicker).
-export function TimePicker({ value = '', onChange, id, className, clearable = true, placeholder = 'Seleccionar hora' }) {
+export function TimePicker({ value = '', onChange, id, className, clearable = true, disabled = false, placeholder = 'Seleccionar hora' }) {
   const [open, setOpen] = useState(false)
   const [modo, setModo] = useState('hora') // 'hora' | 'min'
   const [pos, setPos] = useState(null)
@@ -131,7 +148,8 @@ export function TimePicker({ value = '', onChange, id, className, clearable = tr
           type="button"
           id={id}
           onClick={() => (open ? setOpen(false) : abrir())}
-          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          disabled={disabled}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="Abrir reloj"
         >
           <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -237,6 +255,47 @@ export function TimePicker({ value = '', onChange, id, className, clearable = tr
         </div>,
         document.body,
       )}
+    </div>
+  )
+}
+
+// Rango "8:00 AM a 3:30 PM" con dos relojes (Desde / Hasta). 'Hasta' es opcional:
+// solo con 'Desde' el valor queda como "8:00 AM".
+const SEP_RANGO = /\s+(?:a|al|hasta|-|–)\s+/i
+const partirRango = (texto) => {
+  const [d = '', h = ''] = (texto || '').split(SEP_RANGO)
+  return { desde: horarioATime(d), hasta: horarioATime(h) }
+}
+const unirRango = ({ desde, hasta }) => {
+  if (!desde) return ''
+  return hasta ? `${timeAHorario(desde)} a ${timeAHorario(hasta)}` : timeAHorario(desde)
+}
+
+export function RangoHoraPicker({ value = '', onChange, className }) {
+  const [rango, setRango] = useState(() => partirRango(value))
+
+  // Sincroniza cuando el valor cambia desde fuera (p. ej. datos leídos de una carta)
+  useEffect(() => {
+    if (value !== unirRango(rango)) setRango(partirRango(value))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
+
+  const cambiar = (campo) => (t) => {
+    const nuevo = { ...rango, [campo]: t }
+    if (campo === 'desde' && !t) nuevo.hasta = ''
+    setRango(nuevo)
+    onChange(unirRango(nuevo))
+  }
+
+  return (
+    <div className={cn('grid grid-cols-2 gap-2', className)}>
+      <TimePicker value={rango.desde} onChange={cambiar('desde')} placeholder="Desde" />
+      <TimePicker
+        value={rango.hasta}
+        onChange={cambiar('hasta')}
+        placeholder="Hasta"
+        disabled={!rango.desde}
+      />
     </div>
   )
 }

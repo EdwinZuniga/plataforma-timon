@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { getDashboard } from '@/api/dashboard'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageSpinner } from '@/components/ui/spinner'
-import { Link } from 'react-router-dom'
-import { Users, UserCheck, Calendar, BookOpen, Wrench, MapPin } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Users, UserCheck, Calendar, BookOpen, Wrench, MapPin, ArrowRight } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
@@ -61,6 +62,7 @@ function MetricCard({ icon: Icon, label, value, color = 'text-primary-700 dark:t
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate()
   const { equipoActual } = useAuthStore()
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard', equipoActual?.id],
@@ -77,6 +79,8 @@ export default function DashboardPage() {
   }))
   const herPorDep = data?.graficas?.hermanosPorDepartamento || []
   const visitas = data?.visitasProgramadas || []
+  const servicios = data?.serviciosAsignados || []
+  const totalServicios = data?.totalServiciosAsignados || 0
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
@@ -121,6 +125,41 @@ export default function DashboardPage() {
                 </div>
               </Link>
             ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {servicios.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Wrench className="h-4 w-4 text-primary-700 dark:text-primary-400" /> Servicios asignados
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y">
+            {servicios.map((s) => {
+              const nombres = s.asignados.map((a) => a.miembro.nombreCorto || a.miembro.usuario?.nombre).filter(Boolean)
+              return (
+                <div key={s.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{s.catalogoServicio?.nombre}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {s.comunidad?.nombre || s.comunidadSolicitante || s.actividad?.lugar || 'Sin lugar'}
+                      {nombres.length > 0 && ` · ${nombres.join(', ')}`}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-medium">{fmtFechaVisita(s.actividad.fecha)}</p>
+                    {s.horaServicio && <p className="text-xs text-muted-foreground">{s.horaServicio}</p>}
+                  </div>
+                </div>
+              )
+            })}
+            <div className="pt-3 flex justify-end">
+              <Button variant="outline" size="sm" onClick={() => navigate('/servicios')}>
+                Ver más{totalServicios > servicios.length && ` (${totalServicios})`} <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

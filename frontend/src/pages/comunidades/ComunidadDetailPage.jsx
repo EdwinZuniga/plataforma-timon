@@ -14,7 +14,7 @@ import { PageSpinner } from '@/components/ui/spinner'
 import { Card, CardContent } from '@/components/ui/card'
 import { ComunidadModal } from './ComunidadModal'
 import { HermanoModal } from '../hermanos/HermanoModal'
-import { TimePicker } from '@/components/ui/time-picker'
+import { TimePicker, horarioATime, timeAHorario } from '@/components/ui/time-picker'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { PhoneActions } from '@/components/shared/PhoneActions'
 import { ArrowLeft, Edit, MapPin, Clock, Users, Plus, Trash2, Pencil, X, ShieldCheck, Wrench, Calendar } from 'lucide-react'
@@ -35,22 +35,6 @@ const rangoVisita = (v) => {
   return mismoMes
     ? `${fmtFecha(v.fecha, { day: '2-digit' })} al ${fmtFecha(v.fechaFin)}`
     : `${fmtFecha(v.fecha)} al ${fmtFecha(v.fechaFin)}`
-}
-// El horario se guarda como texto "10:00 AM"; el selector de hora usa "HH:mm" (24 h)
-const horarioATime = (h) => {
-  const m = /^\s*(\d{1,2})(?::(\d{2}))?\s*([ap])\.?\s*m?\.?\s*$/i.exec(h || '')
-  if (m) {
-    let hh = Number(m[1]) % 12
-    if (m[3].toLowerCase() === 'p') hh += 12
-    return `${String(hh).padStart(2, '0')}:${m[2] || '00'}`
-  }
-  const m24 = /^\s*(\d{1,2}):(\d{2})\s*$/.exec(h || '')
-  return m24 ? `${m24[1].padStart(2, '0')}:${m24[2]}` : ''
-}
-const timeAHorario = (t) => {
-  if (!t) return null
-  const [hh, mm] = t.split(':').map(Number)
-  return `${hh % 12 || 12}:${String(mm).padStart(2, '0')} ${hh >= 12 ? 'PM' : 'AM'}`
 }
 const hoyLocal = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' })
 const visitaVigente = (v) => (v.fechaFin || v.fecha).slice(0, 10) >= hoyLocal()

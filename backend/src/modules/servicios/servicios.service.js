@@ -1,6 +1,7 @@
 import prisma from '../../config/database.js'
+import { conEstadoEfectivo, filtroEstado } from './servicio-estado.js'
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 10
 
 const MESES_ES = {
   ene: 0, enero: 0, feb: 1, febrero: 1, mar: 2, marzo: 2,
@@ -146,7 +147,7 @@ export const listarServicios = async (equipoId, actividadId) => {
   })
 }
 
-export const listarTodos = async (equipoId, { estado, page = 1, origenOCR, anio, mes, catalogoServicioId }) => {
+export const listarTodos = async (equipoId, { estado, page = 1, origenOCR, anio, mes, catalogoServicioId, buscar }) => {
   const fechaWhere = {}
   if (anio) {
     const anioNum = parseInt(anio)
@@ -167,8 +168,19 @@ export const listarTodos = async (equipoId, { estado, page = 1, origenOCR, anio,
   }
 
   const where = {
-    actividad: { equipoId, ...fechaWhere },
-    ...(estado && { estado }),
+    AND: [
+      { actividad: { equipoId, ...fechaWhere } },
+      filtroEstado(estado),
+      // Historial por comunidad solicitante (texto de la carta o comunidad vinculada)
+      ...(buscar?.trim()
+        ? [{
+            OR: [
+              { comunidadSolicitante: { contains: buscar.trim() } },
+              { comunidad: { nombre: { contains: buscar.trim() } } },
+            ],
+          }]
+        : []),
+    ],
     ...(origenOCR !== undefined && { origenOCR: origenOCR === 'true' || origenOCR === true }),
     ...(catalogoServicioId && { catalogoServicioId: parseInt(catalogoServicioId) }),
   }
@@ -184,7 +196,7 @@ export const listarTodos = async (equipoId, { estado, page = 1, origenOCR, anio,
     }),
   ])
 
-  return { data, pagination: { page: parseInt(page), limit: PAGE_SIZE, total, pages: Math.ceil(total / PAGE_SIZE) } }
+  return { data: conEstadoEfectivo(data), pagination: { page: parseInt(page), limit: PAGE_SIZE, total, pages: Math.ceil(total / PAGE_SIZE) } }
 }
 
 export const asignarMiembro = async (equipoId, servicioId, miembroId) => {

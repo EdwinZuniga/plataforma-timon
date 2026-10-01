@@ -1,3 +1,4 @@
+import { conEstadoEfectivo } from '../servicios/servicio-estado.js'
 import prisma from '../../config/database.js'
 
 const PAGE_SIZE = 20
@@ -70,7 +71,7 @@ export const obtenerComunidad = async (equipoId, id) => {
     },
   })
   if (!comunidad) throw { status: 404, message: 'Comunidad no encontrada', code: 'COMUNIDAD_NO_ENCONTRADA' }
-  return comunidad
+  return { ...comunidad, servicios: conEstadoEfectivo(comunidad.servicios) }
 }
 
 export const actualizarComunidad = async (id, body) => {

@@ -1,20 +1,22 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { getTodos, confirmarServicio, asignarMiembro, desasignarMiembro, getCatalogo, createCatalogo, updateServicio, deleteServicio, finalizarServicio, reabrirServicio } from '@/api/servicios'
+import { getTodos, asignarMiembro, desasignarMiembro, getCatalogo, createCatalogo, updateServicio, deleteServicio } from '@/api/servicios'
 import { getMiembros } from '@/api/equipos'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { RangoHoraPicker } from '@/components/ui/time-picker'
 import { PageSpinner } from '@/components/ui/spinner'
+import { useDebounce } from '@/hooks/useDebounce'
 import { useToast } from '@/components/ui/toast'
 import { SubirCartaModal } from './SubirCartaModal'
 import { RegistrarManualModal } from './RegistrarManualModal'
 import {
   Wrench, Calendar, MapPin, Clock, Building2, Users,
-  CheckCircle, Upload, X, UserPlus, ChevronDown, ChevronUp,
-  Settings, Plus, Tag, Pencil, Trash2, Archive, Filter, RotateCcw,
+  Upload, Search, X, UserPlus, ChevronDown, ChevronUp,
+  Settings, Plus, Tag, Pencil, Trash2,
 } from 'lucide-react'
 
 const ESTADO_BADGE = {
@@ -29,13 +31,8 @@ const TABS = [
   { key: '', label: 'Todos', short: 'Todos' },
   { key: 'PENDIENTE', label: 'Pendientes', short: 'Pend.' },
   { key: 'ASIGNADO', label: 'Asignados', short: 'Asign.' },
-  { key: 'CONFIRMADO', label: 'Confirmados', short: 'Conf.' },
-  { key: 'FINALIZADO', label: 'Finalizados', short: 'Final.' },
 ]
 
-const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
-const ANIO_ACTUAL = new Date().getFullYear()
-const ANOS = Array.from({ length: 5 }, (_, i) => ANIO_ACTUAL - i)
 
 const nombreMiembro = (m) => m.nombreCorto || m.usuario?.nombre || `Miembro ${m.id}`
 
@@ -207,7 +204,7 @@ function EditarServicioModal({ servicio, equipoId, onClose, onSaved }) {
             </div>
             <div className="space-y-1.5">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Hora</p>
-              <Input placeholder="ej: 7:30 am" value={form.horaServicio} onChange={set('horaServicio')} />
+              <RangoHoraPicker value={form.horaServicio} onChange={(v) => setForm((f) => ({ ...f, horaServicio: v }))} />
             </div>
           </div>
 
@@ -335,54 +332,23 @@ export default function ServiciosPage() {
   const [modalCatalogo, setModalCatalogo] = useState(false)
   const [servicioEditar, setServicioEditar] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
-  const [confirmFinalizar, setConfirmFinalizar] = useState(null)
   const [reasignandoId, setReasignandoId] = useState(null)
-  const [filtros, setFiltros] = useState({ anio: String(ANIO_ACTUAL), mes: '', catalogoServicioId: '' })
 
-  const esHistorial = tabEstado === 'FINALIZADO'
+  const [q, setQ] = useState('')
+  const [page, setPage] = useState(1)
+  const buscar = useDebounce(q, 300)
 
-  const QK = ['servicios-todos', equipoActual?.id, tabEstado, ...(esHistorial ? [filtros.anio, filtros.mes, filtros.catalogoServicioId] : [])]
+  const QK = ['servicios-todos', equipoActual?.id, tabEstado, buscar, page]
 
   const { data, isLoading } = useQuery({
     queryKey: QK,
-    queryFn: () => getTodos(equipoActual.id, {
-      estado: tabEstado || undefined,
-      ...(esHistorial && {
-        anio: filtros.anio || undefined,
-        mes: filtros.mes || undefined,
-        catalogoServicioId: filtros.catalogoServicioId || undefined,
-      }),
-    }).then((r) => r.data),
+    queryFn: () => getTodos(equipoActual.id, { estado: tabEstado || undefined, buscar: buscar || undefined, page }).then((r) => r.data),
     enabled: !!equipoActual?.id,
-  })
-
-  const { data: catalogoFiltro } = useQuery({
-    queryKey: ['catalogo', equipoActual?.id],
-    queryFn: () => getCatalogo(equipoActual.id).then((r) => r.data.data),
-    enabled: !!equipoActual?.id && esHistorial,
-  })
-
-  const { mutate: confirmar } = useMutation({
-    mutationFn: (servicioId) => confirmarServicio(equipoActual.id, servicioId),
-    onSuccess: () => { toast({ title: 'Servicio confirmado' }); qc.invalidateQueries({ queryKey: QK }) },
-    onError: (err) => toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' }),
   })
 
   const { mutate: eliminar, isPending: eliminando } = useMutation({
     mutationFn: (servicioId) => deleteServicio(equipoActual.id, servicioId),
     onSuccess: () => { toast({ title: 'Servicio eliminado' }); setConfirmDelete(null); invalidar() },
-    onError: (err) => toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' }),
-  })
-
-  const { mutate: finalizar } = useMutation({
-    mutationFn: (servicioId) => finalizarServicio(equipoActual.id, servicioId),
-    onSuccess: () => { toast({ title: 'Servicio finalizado' }); setConfirmFinalizar(null); qc.invalidateQueries({ queryKey: QK }) },
-    onError: (err) => toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' }),
-  })
-
-  const { mutate: reabrir } = useMutation({
-    mutationFn: (servicioId) => reabrirServicio(equipoActual.id, servicioId),
-    onSuccess: () => { toast({ title: 'Servicio reabierto' }); qc.invalidateQueries({ queryKey: QK }) },
     onError: (err) => toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' }),
   })
 
@@ -417,7 +383,7 @@ export default function ServiciosPage() {
       {/* Tabs */}
       <div className="flex gap-0.5 sm:gap-1 p-1 bg-muted rounded-lg w-fit">
         {TABS.map((t) => (
-          <button key={t.key} onClick={() => setTabEstado(t.key)}
+          <button key={t.key} onClick={() => { setTabEstado(t.key); setPage(1) }}
             className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
               tabEstado === t.key ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}>
@@ -427,40 +393,15 @@ export default function ServiciosPage() {
         ))}
       </div>
 
-      {/* Filtros historial */}
-      {esHistorial && (
-        <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/40 rounded-lg border">
-          <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-          <select
-            value={filtros.anio}
-            onChange={(e) => setFiltros((f) => ({ ...f, anio: e.target.value }))}
-            className="border rounded-md px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value="">Todos los años</option>
-            {ANOS.map((a) => <option key={a} value={a}>{a}</option>)}
-          </select>
-          <select
-            value={filtros.mes}
-            onChange={(e) => setFiltros((f) => ({ ...f, mes: e.target.value }))}
-            className="border rounded-md px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value="">Todos los meses</option>
-            {MESES.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
-          </select>
-          <select
-            value={filtros.catalogoServicioId}
-            onChange={(e) => setFiltros((f) => ({ ...f, catalogoServicioId: e.target.value }))}
-            className="border rounded-md px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value="">Todos los tipos</option>
-            {catalogoFiltro?.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-          </select>
-          {(filtros.mes || filtros.catalogoServicioId) && (
-            <button
-              onClick={() => setFiltros({ anio: String(ANIO_ACTUAL), mes: '', catalogoServicioId: '' })}
-              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-              <X className="h-3.5 w-3.5" /> Limpiar
-            </button>
-          )}
-        </div>
-      )}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por comunidad solicitante..."
+          className="pl-9"
+          value={q}
+          onChange={(e) => { setQ(e.target.value); setPage(1) }}
+        />
+      </div>
 
       {isLoading ? <PageSpinner /> : (
         <div className="space-y-3">
@@ -523,7 +464,7 @@ export default function ServiciosPage() {
                       />
                     )}
 
-                    {(s.estado === 'ASIGNADO' || s.estado === 'CONFIRMADO') && (
+                    {s.estado === 'ASIGNADO' && (
                       reasignandoId === s.id ? (
                         <div className="space-y-1">
                           <AsignarMiembroInline
@@ -572,13 +513,7 @@ export default function ServiciosPage() {
                   </div>
 
                   <div className="flex items-center flex-wrap gap-1 basis-full justify-end mt-1 sm:basis-auto sm:justify-normal sm:shrink-0">
-                    {confirmFinalizar === s.id ? (
-                      <>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">¿Finalizar?</span>
-                        <Button size="sm" variant="outline" onClick={() => finalizar(s.id)}>Sí</Button>
-                        <Button size="sm" variant="ghost" onClick={() => setConfirmFinalizar(null)}>No</Button>
-                      </>
-                    ) : confirmDelete === s.id ? (
+                    {confirmDelete === s.id ? (
                       <>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">¿Eliminar?</span>
                         <Button size="sm" variant="destructive" onClick={() => eliminar(s.id)} disabled={eliminando}>Sí</Button>
@@ -586,22 +521,6 @@ export default function ServiciosPage() {
                       </>
                     ) : (
                       <>
-                        {s.estado === 'ASIGNADO' && (
-                          <Button size="sm" variant="outline" onClick={() => confirmar(s.id)}>
-                            <CheckCircle className="h-4 w-4 mr-1" /> Confirmar
-                          </Button>
-                        )}
-                        {s.estado === 'CONFIRMADO' && (
-                          <Button size="sm" variant="outline" onClick={() => setConfirmFinalizar(s.id)}
-                            className="text-muted-foreground">
-                            <Archive className="h-4 w-4 mr-1" /> Finalizar
-                          </Button>
-                        )}
-                        {s.estado === 'FINALIZADO' && (
-                          <Button size="sm" variant="outline" onClick={() => reabrir(s.id)}>
-                            <RotateCcw className="h-4 w-4 mr-1" /> Reabrir
-                          </Button>
-                        )}
                         <button
                           onClick={() => setServicioEditar(s)}
                           className="p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors"
@@ -624,17 +543,21 @@ export default function ServiciosPage() {
 
           {servicios.length === 0 && !isLoading && (
             <div className="text-center py-16 text-muted-foreground">
-              {esHistorial
-                ? <Archive className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                : <Wrench className="h-10 w-10 mx-auto mb-3 opacity-30" />}
+              <Wrench className="h-10 w-10 mx-auto mb-3 opacity-30" />
               <p className="font-medium">
-                {esHistorial
-                  ? 'No hay servicios finalizados con estos filtros'
-                  : tabEstado ? `No hay servicios ${tabEstado.toLowerCase()}s` : 'No hay servicios registrados'}
+                {buscar ? `Sin resultados para "${buscar}"` : tabEstado ? `No hay servicios ${tabEstado.toLowerCase()}s` : 'No hay servicios registrados'}
               </p>
-              {!esHistorial && <p className="text-sm mt-1">Sube una carta para crear el primero</p>}
+              {!buscar && <p className="text-sm mt-1">Sube una carta para crear el primero</p>}
             </div>
           )}
+        </div>
+      )}
+
+      {data?.pagination && data.pagination.pages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-2">
+          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Anterior</Button>
+          <span className="text-sm text-muted-foreground">Página {page} de {data.pagination.pages}</span>
+          <Button variant="outline" size="sm" disabled={page === data.pagination.pages} onClick={() => setPage((p) => p + 1)}>Siguiente</Button>
         </div>
       )}
 
