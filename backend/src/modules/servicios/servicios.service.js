@@ -67,6 +67,12 @@ export const crearCatalogo = async (equipoId, body) => {
   return prisma.catalogoServicio.create({ data: { ...body, equipoId } })
 }
 
+export const editarCatalogo = async (equipoId, catalogoId, { nombre, descripcion }) => {
+  const tipo = await prisma.catalogoServicio.findFirst({ where: { id: catalogoId, equipoId } })
+  if (!tipo) throw { status: 404, message: 'Tipo de servicio no encontrado', code: 'CATALOGO_NO_ENCONTRADO' }
+  return prisma.catalogoServicio.update({ where: { id: catalogoId }, data: { nombre, descripcion } })
+}
+
 export const crearServicioCompleto = async (equipoId, datos) => {
   const {
     catalogoServicioId, comunidadId, miembroIds = [], descripcion, imagenCartaRuta,

@@ -1,4 +1,4 @@
-const INT_PARAMS = ['id', 'edicionId', 'miembroId', 'actividadId', 'servicioId', 'comunidadId', 'hermanoId', 'inscripcionId', 'acuerdoId', 'equipoId', 'visitaId']
+const INT_PARAMS = ['id', 'edicionId', 'miembroId', 'actividadId', 'servicioId', 'comunidadId', 'hermanoId', 'inscripcionId', 'acuerdoId', 'equipoId', 'visitaId', 'catalogoId']
 
 export const registerIntParams = (router) => {
   INT_PARAMS.forEach(param => {

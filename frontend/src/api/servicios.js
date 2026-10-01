@@ -3,6 +3,7 @@ import api from './client.js'
 const base = (equipoId) => `/equipos/${equipoId}/servicios`
 
 export const getCatalogo = (equipoId) => api.get(`${base(equipoId)}/catalogo`)
+export const updateCatalogo = (equipoId, catalogoId, data) => api.put(`${base(equipoId)}/catalogo/${catalogoId}`, data)
 export const createCatalogo = (equipoId, data) => api.post(`${base(equipoId)}/catalogo`, data)
 
 export const getTodos = (equipoId, params) => api.get(`${base(equipoId)}`, { params })

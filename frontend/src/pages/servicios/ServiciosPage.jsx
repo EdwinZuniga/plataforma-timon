@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { getTodos, asignarMiembro, desasignarMiembro, getCatalogo, createCatalogo, updateServicio, deleteServicio } from '@/api/servicios'
+import { getTodos, asignarMiembro, desasignarMiembro, getCatalogo, createCatalogo, updateCatalogo, updateServicio, deleteServicio } from '@/api/servicios'
 import { getMiembros } from '@/api/equipos'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -44,6 +44,7 @@ function CatalogoModal({ onClose }) {
   const [nombre, setNombre] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [guardando, setGuardando] = useState(false)
+  const [editando, setEditando] = useState(null) // { id, nombre, descripcion }
 
   const { data: catalogo, isLoading } = useQuery({
     queryKey: ['catalogo', equipoActual?.id],
@@ -60,6 +61,22 @@ function CatalogoModal({ onClose }) {
       qc.invalidateQueries({ queryKey: ['catalogo', equipoActual?.id] })
       setNombre('')
       setDescripcion('')
+    } catch (err) {
+      toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' })
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  const guardarEdicion = async () => {
+    if (!editando.nombre.trim()) { toast({ title: 'Escribe el nombre del tipo', variant: 'destructive' }); return }
+    setGuardando(true)
+    try {
+      await updateCatalogo(equipoActual.id, editando.id, { nombre: editando.nombre.trim(), descripcion: editando.descripcion.trim() })
+      toast({ title: 'Tipo de servicio actualizado' })
+      qc.invalidateQueries({ queryKey: ['catalogo', equipoActual?.id] })
+      qc.invalidateQueries({ queryKey: ['servicios-todos', equipoActual?.id] })
+      setEditando(null)
     } catch (err) {
       toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' })
     } finally {
@@ -90,13 +107,43 @@ function CatalogoModal({ onClose }) {
             ) : (
               <div className="space-y-1.5">
                 {catalogo?.map((c) => (
-                  <div key={c.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/40">
-                    <Wrench className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{c.nombre}</p>
-                      {c.descripcion && <p className="text-xs text-muted-foreground">{c.descripcion}</p>}
+                  editando?.id === c.id ? (
+                    <div key={c.id} className="space-y-2 px-3 py-2.5 rounded-lg border border-primary-700/40 bg-muted/40">
+                      <Input
+                        autoFocus
+                        placeholder="Nombre del tipo"
+                        value={editando.nombre}
+                        onChange={(e) => setEditando((x) => ({ ...x, nombre: e.target.value }))}
+                        onKeyDown={(e) => e.key === 'Enter' && guardarEdicion()}
+                      />
+                      <Input
+                        placeholder="Descripción (opcional)"
+                        value={editando.descripcion}
+                        onChange={(e) => setEditando((x) => ({ ...x, descripcion: e.target.value }))}
+                        onKeyDown={(e) => e.key === 'Enter' && guardarEdicion()}
+                      />
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="flex-1" onClick={() => setEditando(null)}>Cancelar</Button>
+                        <Button size="sm" className="flex-1" onClick={guardarEdicion} disabled={guardando || !editando.nombre.trim()}>
+                          {guardando ? 'Guardando...' : 'Guardar'}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div key={c.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/40">
+                      <Wrench className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">{c.nombre}</p>
+                        {c.descripcion && <p className="text-xs text-muted-foreground">{c.descripcion}</p>}
+                      </div>
+                      <button
+                        onClick={() => setEditando({ id: c.id, nombre: c.nombre, descripcion: c.descripcion || '' })}
+                        className="p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors"
+                        title="Editar tipo">
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )
                 ))}
               </div>
             )}

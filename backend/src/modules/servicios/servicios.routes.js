@@ -8,6 +8,7 @@ registerIntParams(router)
 
 router.get('/catalogo', requireAuth, requireEquipo, requirePermiso('servicios', 'ver'), ctrl.listarCatalogo)
 router.post('/catalogo', requireAuth, requireEquipo, requirePermiso('servicios', 'crear'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.crearCatalogo)
+router.put('/catalogo/:catalogoId', requireAuth, requireEquipo, requirePermiso('servicios', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.editarCatalogo)
 
 router.get('/pendientes', requireAuth, requireEquipo, requirePermiso('servicios', 'ver'), ctrl.pendientes)
 router.get('/', requireAuth, requireEquipo, requirePermiso('servicios', 'ver'), ctrl.listarTodos)

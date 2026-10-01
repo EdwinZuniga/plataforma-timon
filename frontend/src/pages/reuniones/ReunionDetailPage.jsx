@@ -70,7 +70,21 @@ export default function ReunionDetailPage() {
 
   const { mutate: toggleCumplido } = useMutation({
     mutationFn: ({ acuerdoId, cumplido }) => updateAcuerdo(equipoActual.id, acuerdoId, { cumplido }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['reunion', id] }),
+    // Actualización optimista: el check cambia al instante y se revierte si el servidor falla
+    onMutate: async ({ acuerdoId, cumplido }) => {
+      await qc.cancelQueries({ queryKey: ['reunion', id] })
+      const previo = qc.getQueryData(['reunion', id])
+      qc.setQueryData(['reunion', id], (r) => r && ({
+        ...r,
+        acuerdos: r.acuerdos?.map((a) => (a.id === acuerdoId ? { ...a, cumplido } : a)),
+      }))
+      return { previo }
+    },
+    onError: (err, _vars, ctx) => {
+      if (ctx?.previo) qc.setQueryData(['reunion', id], ctx.previo)
+      toast({ title: 'No se pudo actualizar el acuerdo', description: err.response?.data?.error, variant: 'destructive' })
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['reunion', id] }),
   })
 
   const { mutate: generar, isPending: generando } = useMutation({

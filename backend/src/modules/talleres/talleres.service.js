@@ -91,7 +91,7 @@ export const obtenerEdicion = async (equipoId, tallerId, edicionId) => {
           tareasEntrega: { orderBy: [{ anio: 'asc' }, { mes: 'asc' }] },
           participaciones: { orderBy: [{ anio: 'asc' }, { mes: 'asc' }] },
         },
-        orderBy: { createdAt: 'asc' },
+        orderBy: [{ hermano: { nombre: 'asc' } }, { hermano: { apellido: 'asc' } }],
       },
     },
   })

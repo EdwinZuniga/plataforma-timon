@@ -7,6 +7,15 @@ export const listarCatalogo = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
+export const editarCatalogo = async (req, res, next) => {
+  try {
+    const { nombre, descripcion } = req.body
+    if (!nombre?.trim()) return next({ status: 400, message: 'El nombre del servicio es requerido', code: 'DATOS_REQUERIDOS' })
+    const data = await svc.editarCatalogo(req.params.equipoId, req.params.catalogoId, { nombre: nombre.trim(), descripcion: descripcion?.trim() || null })
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
 export const crearCatalogo = async (req, res, next) => {
   try {
     const { nombre, descripcion } = req.body
