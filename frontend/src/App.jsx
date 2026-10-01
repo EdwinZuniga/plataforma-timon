@@ -34,6 +34,8 @@ import EquiposPage from '@/pages/equipos/EquiposPage'
 import PerfilPage from '@/pages/perfil/PerfilPage'
 import TesoreriaPage from '@/pages/tesoreria/TesoreriaPage'
 import InventarioPage from '@/pages/inventario/InventarioPage'
+import AcuerdosPage from '@/pages/acuerdos/AcuerdosPage'
+import CalendarioPage from '@/pages/calendario/CalendarioPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,6 +78,8 @@ function AppRoutes() {
           <Route path="/hermanos/:id" element={<HermanoDetailPage />} />
           <Route path="/actividades" element={<ActividadesPage />} />
           <Route path="/actividades/:id" element={<ActividadDetailPage />} />
+          <Route path="/calendario" element={<CalendarioPage />} />
+          <Route path="/acuerdos" element={<AcuerdosPage />} />
           <Route path="/reuniones" element={<ReunionesPage />} />
           <Route path="/reuniones/:id" element={<ReunionDetailPage />} />
           <Route path="/talleres" element={<TalleresPage />} />

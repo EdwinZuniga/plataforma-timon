@@ -3,18 +3,21 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { getReunion, createAcuerdo, updateAcuerdo, updateReunion, generarTexto, deleteReunion, saveComisiones } from '@/api/reuniones'
+import { getReunion, createAcuerdo, updateAcuerdo, updateReunion, generarTexto, deleteReunion, saveComisiones, getAcuerdos } from '@/api/reuniones'
 import { getMiembros } from '@/api/equipos'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageSpinner } from '@/components/ui/spinner'
 import { useToast } from '@/components/ui/toast'
-import { ArrowLeft, Plus, Copy, CheckCircle, Circle, Edit, Trash2, StickyNote, Check, Pencil, Users2, FileText } from 'lucide-react'
+import { ArrowLeft, Plus, Copy, Edit, Trash2, StickyNote, Check, Pencil, Users2, FileText } from 'lucide-react'
 import { EditarReunionModal } from './EditarReunionModal'
 import { ComisionesModal } from './ComisionesModal'
 import { NotasEditor } from '@/components/NotasEditor'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
+import { AcuerdoEstadoBoton } from '@/components/shared/AcuerdoEstadoBoton'
+import { estaVencido, fmtFechaLimite } from '@/utils/acuerdos'
+import { Badge } from '@/components/ui/badge'
 
 export default function ReunionDetailPage() {
   const { id } = useParams()
@@ -42,6 +45,13 @@ export default function ReunionDetailPage() {
     enabled: !!equipoActual?.id,
   })
 
+  // Acuerdos sin cumplir de otras reuniones: se arrastran para darles seguimiento aquí
+  const { data: abiertos = [] } = useQuery({
+    queryKey: ['acuerdos', equipoActual?.id, 'ABIERTOS'],
+    queryFn: () => getAcuerdos(equipoActual.id, { estado: 'ABIERTOS' }).then((r) => r.data.data),
+    enabled: !!equipoActual?.id,
+  })
+
   const miembrosActivos = miembros
     .filter((m) => m.activo)
     .sort((a, b) => (a.usuario?.nombre || '').localeCompare(b.usuario?.nombre || ''))
@@ -59,24 +69,24 @@ export default function ReunionDetailPage() {
     onError: (err) => toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' }),
   })
 
-  const toggleResponsable = (nombre) =>
+  const toggleResponsable = (miembroId) =>
     setSelectedResponsables((prev) =>
-      prev.includes(nombre) ? prev.filter((n) => n !== nombre) : [...prev, nombre]
+      prev.includes(miembroId) ? prev.filter((x) => x !== miembroId) : [...prev, miembroId]
     )
 
   const onAddAcuerdo = (data) => {
-    addAcuerdo({ ...data, responsable: selectedResponsables.join(', ') || undefined })
+    addAcuerdo({ ...data, fechaLimite: data.fechaLimite || undefined, responsableIds: selectedResponsables })
   }
 
-  const { mutate: toggleCumplido } = useMutation({
-    mutationFn: ({ acuerdoId, cumplido }) => updateAcuerdo(equipoActual.id, acuerdoId, { cumplido }),
+  const { mutate: cambiarEstado } = useMutation({
+    mutationFn: ({ acuerdoId, estado }) => updateAcuerdo(equipoActual.id, acuerdoId, { estado }),
     // Actualización optimista: el check cambia al instante y se revierte si el servidor falla
-    onMutate: async ({ acuerdoId, cumplido }) => {
+    onMutate: async ({ acuerdoId, estado }) => {
       await qc.cancelQueries({ queryKey: ['reunion', id] })
       const previo = qc.getQueryData(['reunion', id])
       qc.setQueryData(['reunion', id], (r) => r && ({
         ...r,
-        acuerdos: r.acuerdos?.map((a) => (a.id === acuerdoId ? { ...a, cumplido } : a)),
+        acuerdos: r.acuerdos?.map((a) => (a.id === acuerdoId ? { ...a, estado, cumplido: estado === 'CUMPLIDO' } : a)),
       }))
       return { previo }
     },
@@ -84,7 +94,11 @@ export default function ReunionDetailPage() {
       if (ctx?.previo) qc.setQueryData(['reunion', id], ctx.previo)
       toast({ title: 'No se pudo actualizar el acuerdo', description: err.response?.data?.error, variant: 'destructive' })
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['reunion', id] }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['reunion', id] })
+      qc.invalidateQueries({ queryKey: ['acuerdos'] })
+      qc.invalidateQueries({ queryKey: ['avisos'] })
+    },
   })
 
   const { mutate: generar, isPending: generando } = useMutation({
@@ -132,8 +146,9 @@ export default function ReunionDetailPage() {
   if (isLoading) return <PageSpinner />
   if (!reunion) return <div className="p-6 text-muted-foreground">Reunión no encontrada</div>
 
-  const acuerdosPendientes = reunion.acuerdos?.filter((a) => !a.cumplido).length
-  const acuerdosCumplidos = reunion.acuerdos?.filter((a) => a.cumplido).length
+  const acuerdosPendientes = reunion.acuerdos?.filter((a) => a.estado !== 'CUMPLIDO').length
+  const acuerdosCumplidos = reunion.acuerdos?.filter((a) => a.estado === 'CUMPLIDO').length
+  const arrastrados = abiertos.filter((a) => a.reunionId !== reunion.id && new Date(a.reunion.fecha) <= new Date(reunion.fecha))
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-3xl mx-auto">
@@ -271,12 +286,12 @@ export default function ReunionDetailPage() {
               <div className="border rounded-md divide-y max-h-32 overflow-y-auto">
                 {miembrosActivos.map((m) => {
                   const nombre = m.usuario?.nombre
-                  const selected = selectedResponsables.includes(nombre)
+                  const selected = selectedResponsables.includes(m.id)
                   return (
                     <button
                       key={m.id}
                       type="button"
-                      onClick={() => toggleResponsable(nombre)}
+                      onClick={() => toggleResponsable(m.id)}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/50 ${selected ? 'bg-primary-50 dark:bg-primary-900/20' : ''}`}
                     >
                       <div className={`h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${selected ? 'border-primary-700 bg-primary-700' : 'border-input'}`}>
@@ -299,20 +314,21 @@ export default function ReunionDetailPage() {
 
       <div className="space-y-2">
         {reunion.acuerdos?.map((a) => (
-          <Card key={a.id} className={a.cumplido ? 'opacity-60' : ''}>
+          <Card key={a.id} className={a.estado === 'CUMPLIDO' ? 'opacity-60' : ''}>
             <CardContent className="flex items-start gap-3 py-3 px-4">
-              <button
-                className="min-h-0 h-auto p-0 mt-0.5 shrink-0"
-                onClick={() => toggleCumplido({ acuerdoId: a.id, cumplido: !a.cumplido })}
-              >
-                {a.cumplido
-                  ? <CheckCircle className="h-5 w-5 text-green-500" />
-                  : <Circle className="h-5 w-5 text-muted-foreground" />}
-              </button>
+              <AcuerdoEstadoBoton estado={a.estado} onCambiar={(estado) => cambiarEstado({ acuerdoId: a.id, estado })} />
               <div className="flex-1">
-                <p className={`font-medium ${a.cumplido ? 'line-through' : ''}`}>{a.descripcion}</p>
+                <p className={`font-medium ${a.estado === 'CUMPLIDO' ? 'line-through' : ''}`}>{a.descripcion}</p>
                 {a.responsable && <p className="text-xs text-muted-foreground">Responsable: {a.responsable}</p>}
-                {a.fechaLimite && <p className="text-xs text-muted-foreground">Fecha límite: {new Date(a.fechaLimite).toLocaleDateString('es-SV')}</p>}
+                {a.fechaLimite && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                    Fecha límite: {fmtFechaLimite(a.fechaLimite)}
+                    {estaVencido(a) && <Badge variant="destructive">Vencido</Badge>}
+                  </p>
+                )}
+                {a.estado === 'CUMPLIDO' && a.fechaCumplido && (
+                  <p className="text-xs text-green-600 dark:text-green-400">Cumplido el {fmtFechaLimite(a.fechaCumplido)}</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -321,6 +337,30 @@ export default function ReunionDetailPage() {
           <p className="text-center py-8 text-muted-foreground">Sin acuerdos registrados. Usa el botón + para agregar.</p>
         )}
       </div>
+
+      {arrastrados.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-muted-foreground">
+            Pendientes de reuniones anteriores ({arrastrados.length})
+          </h2>
+          {arrastrados.map((a) => (
+            <Card key={a.id} className="border-dashed">
+              <CardContent className="flex items-start gap-3 py-3 px-4">
+                <AcuerdoEstadoBoton estado={a.estado} onCambiar={(estado) => cambiarEstado({ acuerdoId: a.id, estado })} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium">{a.descripcion}</p>
+                  {a.responsable && <p className="text-xs text-muted-foreground">Responsable: {a.responsable}</p>}
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                    <Link to={`/reuniones/${a.reunion.id}`} className="underline">{a.reunion.titulo}</Link>
+                    {a.fechaLimite && <>· límite {fmtFechaLimite(a.fechaLimite)}</>}
+                    {a.vencido && <Badge variant="destructive">Vencido</Badge>}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {textoModal && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">

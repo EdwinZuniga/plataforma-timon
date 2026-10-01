@@ -11,3 +11,4 @@ export const updateAcuerdo = (equipoId, acuerdoId, data) => api.put(`/equipos/${
 export const deleteReunion = (equipoId, id) => api.delete(`${base(equipoId)}/${id}`)
 export const generarTexto = (equipoId, id) => api.post(`${base(equipoId)}/${id}/generar-texto`)
 export const saveComisiones = (equipoId, id, comisiones) => api.put(`${base(equipoId)}/${id}/comisiones`, { comisiones })
+export const getAcuerdos = (equipoId, params) => api.get(`/equipos/${equipoId}/acuerdos`, { params })

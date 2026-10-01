@@ -29,7 +29,8 @@ export default function TallerDetailPage() {
   const [loadingDelete, setLoadingDelete] = useState(false)
   const [pageFin, setPageFin] = useState(1)
 
-  const crearForm = useForm()
+  // Por defecto, los talleres se imparten el primer domingo de cada mes
+  const crearForm = useForm({ defaultValues: { semanaSesion: 1, diaSesion: 0 } })
   const editForm = useForm()
 
   const { data: taller, isLoading } = useQuery({
@@ -70,7 +71,7 @@ export default function TallerDetailPage() {
     try {
       await createEdicion(equipoActual.id, id, data)
       toast({ title: 'Edición creada' })
-      crearForm.reset()
+      crearForm.reset({ semanaSesion: 1, diaSesion: 0 })
       setShowCrearModal(false)
       refrescarEdiciones()
     } catch (err) {
@@ -86,6 +87,8 @@ export default function TallerDetailPage() {
       fechaFin: toInputDate(e.fechaFin),
       lugar: e.lugar ?? '',
       coordinadorId: e.coordinadorId ?? '',
+      semanaSesion: e.semanaSesion ?? '',
+      diaSesion: e.diaSesion ?? 0,
     })
   }
 
@@ -321,6 +324,9 @@ function EdicionCard({ e, finalizada, puedeEliminar, onNavigate, onEdit, onDelet
 
 // ─── EdicionModal ─────────────────────────────────────────────────────────────
 
+const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+const SELECT_CLASS = 'flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+
 function EdicionModal({ title, form, miembros, loading, onSubmit, onClose }) {
   const { register } = form
   return (
@@ -342,6 +348,25 @@ function EdicionModal({ title, form, miembros, loading, onSubmit, onClose }) {
               <label className="text-sm font-medium">Fecha de fin</label>
               <Input type="date" {...register('fechaFin')} />
             </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Se imparte (calendario)</label>
+            <div className="grid grid-cols-2 gap-3">
+              <select {...register('semanaSesion')} className={SELECT_CLASS}>
+                <option value="">Sin día fijo</option>
+                <option value="1">El primer</option>
+                <option value="2">El segundo</option>
+                <option value="3">El tercer</option>
+                <option value="4">El cuarto</option>
+                <option value="5">El último</option>
+              </select>
+              <select {...register('diaSesion')} className={SELECT_CLASS}>
+                {DIAS_SEMANA.map((d, i) => <option key={i} value={i}>{d}</option>)}
+              </select>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Día del mes en que se reúne el taller. Con «Sin día fijo» el calendario solo marca la fecha de inicio.
+            </p>
           </div>
           <div className="space-y-1">
             <label className="text-sm font-medium">Lugar</label>

@@ -4,12 +4,13 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import { useThemeStore } from '@/stores/useThemeStore'
 import {
   Home, Users, UserCheck, Calendar, FileText,
-  ShipWheel, LogOut, Menu, X, ChevronRight,
+  ShipWheel, LogOut, Menu, X,
   Wrench, BookOpen, MoreHorizontal, UserCircle, ShieldCheck, Landmark, Package,
-  Sun, Moon, Contrast,
+  Sun, Moon, Contrast, CalendarDays, ListChecks,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { Button } from '@/components/ui/button'
+import { AvisosBell } from '@/components/shared/AvisosBell'
 
 // modulo: null = siempre visible (dashboard, equipos no tienen restricción de módulo)
 const navItems = [
@@ -18,6 +19,8 @@ const navItems = [
   { to: '/hermanos', icon: UserCheck, label: 'Hermanos', modulo: 'hermanos' },
   { to: '/actividades', icon: Calendar, label: 'Actividades', modulo: 'actividades' },
   { to: '/reuniones', icon: FileText, label: 'Reuniones', modulo: 'reuniones' },
+  { to: '/acuerdos', icon: ListChecks, label: 'Acuerdos', modulo: 'reuniones' },
+  { to: '/calendario', icon: CalendarDays, label: 'Calendario', modulo: null },
 ]
 
 const moreItems = [
@@ -110,7 +113,7 @@ export function Layout({ children }) {
               {equipoActual?.nombre || 'Sin equipo'}
             </p>
           </div>
-          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+          <AvisosBell />
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
@@ -202,9 +205,10 @@ export function Layout({ children }) {
           <button onClick={() => setSidebarOpen(true)} className="min-h-0 h-auto p-1 -ml-1">
             <Menu className="h-5 w-5" />
           </button>
-          <span className="font-semibold text-equipo">
+          <span className="font-semibold text-equipo flex-1 min-w-0 truncate">
             {equipoActual?.nombre || 'Plataforma Timón'}
           </span>
+          <AvisosBell />
         </header>
 
         {/* Contenido principal */}

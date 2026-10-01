@@ -313,7 +313,28 @@ export const eliminarServicio = async (equipoId, servicioId) => {
   if (!servicio) throw { status: 404, message: 'Servicio no encontrado', code: 'SERVICIO_NO_ENCONTRADO' }
 
   await prisma.servicioAsignado.deleteMany({ where: { servicioActividadId: servicioId } })
-  return prisma.servicioActividad.delete({ where: { id: servicioId } })
+  const eliminado = await prisma.servicioActividad.delete({ where: { id: servicioId } })
+
+  // La actividad creada automáticamente para este servicio no tiene sentido sin él
+  // (y queda oculta en Actividades): se borra si no tiene otros servicios ni datos propios.
+  const actividad = await prisma.actividad.findUnique({
+    where: { id: servicio.actividadId },
+    select: {
+      generadaPorServicio: true,
+      _count: { select: { servicios: true, asistencias: true, movimientosTesoreria: true } },
+      asistenciasMiembros: { where: { presente: true }, select: { id: true }, take: 1 },
+    },
+  })
+  const huerfana = actividad?.generadaPorServicio
+    && actividad._count.servicios === 0
+    && actividad._count.asistencias === 0
+    && actividad._count.movimientosTesoreria === 0
+    && actividad.asistenciasMiembros.length === 0
+  if (huerfana) {
+    await prisma.asistenciaMiembro.deleteMany({ where: { actividadId: servicio.actividadId } })
+    await prisma.actividad.delete({ where: { id: servicio.actividadId } })
+  }
+  return eliminado
 }
 
 export const pendientes = async (equipoId) => {

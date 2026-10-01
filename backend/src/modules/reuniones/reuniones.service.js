@@ -1,4 +1,5 @@
 import prisma from '../../config/database.js'
+import { hoyElSalvador } from '../servicios/servicio-estado.js'
 
 const PAGE_SIZE = 20
 
@@ -50,7 +51,7 @@ export const obtenerReunion = async (equipoId, id) => {
     where: { id, equipoId },
     include: {
       redactor: { select: { nombre: true } },
-      acuerdos: { orderBy: { orden: 'asc' } },
+      acuerdos: { orderBy: { orden: 'asc' }, include: incluirAcuerdo },
       asistentes: {
         include: { miembro: { include: { usuario: { select: { id: true, nombre: true } } } } },
         orderBy: { miembro: { usuario: { nombre: 'asc' } } },
@@ -85,22 +86,89 @@ export const eliminarReunion = async (equipoId, id) => {
   return prisma.reunion.delete({ where: { id } })
 }
 
+const ESTADOS_ACUERDO = ['PENDIENTE', 'EN_PROCESO', 'CUMPLIDO']
+
+// Responsables por id de miembro; `responsable` (texto) se mantiene como nombres
+// separados por coma para el acta y para acuerdos anteriores al seguimiento.
+const resolverResponsables = async (equipoId, responsableIds) => {
+  const ids = [...new Set((responsableIds || []).map(Number).filter(Boolean))]
+  if (ids.length === 0) return { ids: [], texto: null }
+  const miembros = await prisma.miembroEquipo.findMany({
+    where: { id: { in: ids }, equipoId },
+    include: { usuario: { select: { nombre: true } } },
+  })
+  return { ids: miembros.map((m) => m.id), texto: miembros.map((m) => m.usuario.nombre).join(', ') || null }
+}
+
+export const incluirAcuerdo = {
+  responsables: { include: { miembro: { include: { usuario: { select: { id: true, nombre: true } } } } } },
+}
+
 export const crearAcuerdo = async (equipoId, reunionId, body) => {
   const reunion = await prisma.reunion.findFirst({ where: { id: reunionId, equipoId } })
   if (!reunion) throw { status: 404, message: 'Reunión no encontrada', code: 'REUNION_NO_ENCONTRADA' }
   const count = await prisma.acuerdo.count({ where: { reunionId } })
+  const { descripcion, responsable, fechaLimite, responsableIds } = body
+  const resp = await resolverResponsables(equipoId, responsableIds)
   return prisma.acuerdo.create({
     data: {
-      ...body,
+      descripcion,
       reunionId,
       orden: count + 1,
-      ...(body.fechaLimite && { fechaLimite: new Date(body.fechaLimite) }),
+      responsable: resp.texto ?? responsable ?? null,
+      ...(fechaLimite && { fechaLimite: new Date(fechaLimite) }),
+      responsables: { create: resp.ids.map((miembroId) => ({ miembroId })) },
     },
+    include: incluirAcuerdo,
   })
 }
 
-export const actualizarAcuerdo = async (id, body) => {
-  return prisma.acuerdo.update({ where: { id }, data: body })
+export const actualizarAcuerdo = async (equipoId, id, body) => {
+  const existe = await prisma.acuerdo.findFirst({ where: { id, reunion: { equipoId } } })
+  if (!existe) throw { status: 404, message: 'Acuerdo no encontrado', code: 'ACUERDO_NO_ENCONTRADO' }
+
+  const { descripcion, fechaLimite, responsableIds, estado, cumplido } = body
+  const data = {}
+  if (descripcion !== undefined) data.descripcion = descripcion
+  if (fechaLimite !== undefined) data.fechaLimite = fechaLimite ? new Date(fechaLimite) : null
+
+  // `cumplido` (booleano, clientes anteriores) equivale a CUMPLIDO / PENDIENTE
+  const nuevoEstado = estado ?? (cumplido === undefined ? undefined : cumplido ? 'CUMPLIDO' : 'PENDIENTE')
+  if (nuevoEstado !== undefined) {
+    if (!ESTADOS_ACUERDO.includes(nuevoEstado)) {
+      throw { status: 400, message: 'Estado de acuerdo inválido', code: 'ESTADO_INVALIDO' }
+    }
+    data.estado = nuevoEstado
+    data.cumplido = nuevoEstado === 'CUMPLIDO'
+    data.fechaCumplido = nuevoEstado === 'CUMPLIDO' ? (existe.fechaCumplido ?? new Date()) : null
+  }
+
+  if (Array.isArray(responsableIds)) {
+    const resp = await resolverResponsables(equipoId, responsableIds)
+    data.responsable = resp.texto
+    data.responsables = { deleteMany: {}, create: resp.ids.map((miembroId) => ({ miembroId })) }
+  }
+
+  return prisma.acuerdo.update({ where: { id }, data, include: incluirAcuerdo })
+}
+
+// Seguimiento: acuerdos del equipo con sus responsables y reunión de origen.
+// `vencido` = no cumplido con fecha límite anterior a hoy.
+export const listarAcuerdos = async (equipoId, { estado, miembroId, reunionId } = {}) => {
+  const where = {
+    reunion: { equipoId },
+    ...(estado === 'ABIERTOS' && { estado: { not: 'CUMPLIDO' } }),
+    ...(ESTADOS_ACUERDO.includes(estado) && { estado }),
+    ...(miembroId && { responsables: { some: { miembroId } } }),
+    ...(reunionId && { reunionId }),
+  }
+  const acuerdos = await prisma.acuerdo.findMany({
+    where,
+    include: { ...incluirAcuerdo, reunion: { select: { id: true, titulo: true, fecha: true } } },
+    orderBy: [{ fechaLimite: 'asc' }, { id: 'desc' }],
+  })
+  const hoy = hoyElSalvador()
+  return acuerdos.map((a) => ({ ...a, vencido: a.estado !== 'CUMPLIDO' && !!a.fechaLimite && new Date(a.fechaLimite) < hoy }))
 }
 
 const htmlToText = (html) => {

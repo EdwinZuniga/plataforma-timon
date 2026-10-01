@@ -54,28 +54,29 @@ model Usuario {
 
 // Roles: COORDINADOR | MIEMBRO | SECRETARIO | CONSULTOR
 model MiembroEquipo {
-  id          Int         @id @default(autoincrement())
-  usuarioId   Int
-  usuario     Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  equipoId    Int
-  equipo      EquipoTimon @relation(fields: [equipoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  rol         String      @default("CONSULTOR")
-  nombreCorto String?
-  activo      Boolean     @default(true)
+  id                Int         @id @default(autoincrement())
+  usuarioId         Int
+  usuario           Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  equipoId          Int
+  equipo            EquipoTimon @relation(fields: [equipoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  rol               String      @default("CONSULTOR")
+  nombreCorto       String?
+  activo            Boolean     @default(true)
   fechaFinalizacion DateTime?
-  createdAt   DateTime    @default(now())
+  createdAt         DateTime    @default(now())
 
   // Datos personales del miembro (ficha de la sección Equipos)
-  nombreCompleto   String?
-  telefono         String?
-  direccion        String?
-  fechaNacimiento  DateTime?
-  profesion        String?
-  ingresoETJ       DateTime?
-  comunidadOrigenId Int?
-  comunidadOrigen  Comunidad? @relation("MiembroComunidadOrigen", fields: [comunidadOrigenId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  nombreCompleto      String?
+  telefono            String?
+  direccion           String?
+  fechaNacimiento     DateTime?
+  profesion           String?
+  ingresoETJ          DateTime?
+  acuerdosResponsable AcuerdoResponsable[] @relation("AcuerdoResponsableMiembro")
+  comunidadOrigenId   Int?
+  comunidadOrigen     Comunidad?           @relation("MiembroComunidadOrigen", fields: [comunidadOrigenId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  comunidades            Comunidad[]          @relation("ComunidadEnlace")
+  comunidades            Comunidad[]           @relation("ComunidadEnlace")
   edicionesCoordinadas   EdicionTaller[]
   equipoApoyoEdiciones   EquipoApoyoEdicion[]
   temasMesExpuestos      TemaMes[]             @relation("TemaMesExpositor")
@@ -109,15 +110,15 @@ model PermisoUsuario {
 }
 
 model RefreshToken {
-  id         Int      @id @default(autoincrement())
-  token      String   @unique
+  id         Int       @id @default(autoincrement())
+  token      String    @unique
   usuarioId  Int
-  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  usuario    Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   ip         String?
   userAgent  String?
   expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  lastUsedAt DateTime @default(now())
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime  @default(now())
   // Cierre de sesión (soft-delete para conservar el historial): LOGOUT | EXPULSADA
   revokedAt  DateTime?
   motivoFin  String?
@@ -149,7 +150,7 @@ model Comunidad {
   miembrosConsejo MiembroConsejo[]
   visitas         Visita[]
   servicios       ServicioActividad[]
-  miembrosOrigen  MiembroEquipo[]  @relation("MiembroComunidadOrigen")
+  miembrosOrigen  MiembroEquipo[]     @relation("MiembroComunidadOrigen")
 
   @@map("Comunidad")
 }
@@ -235,6 +236,10 @@ model EdicionTaller {
   fechaFin      DateTime?
   lugar         String?
   notas         String?
+  // Día en que se imparte cada mes (para el calendario): semanaSesion 1-4 = primera…cuarta, 5 = última;
+  // diaSesion 0 = domingo … 6 = sábado. Ambos null = sin patrón fijo (solo se marca el inicio).
+  semanaSesion  Int?
+  diaSesion     Int?
   createdAt     DateTime       @default(now())
 
   inscripciones Inscripcion[]
@@ -339,18 +344,18 @@ model ParticipacionMes {
 
 // tipo: RETIRO | ASAMBLEA | ENCUENTRO | MISION | FORMACION | OTRO
 model Actividad {
-  id          Int         @id @default(autoincrement())
-  equipoId    Int
-  equipo      EquipoTimon @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  nombre      String
-  tipo        String
-  fecha       DateTime
-  lugar       String?
-  descripcion String?
-  anio        Int
-  generadaPorServicio Boolean @default(false)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id                  Int         @id @default(autoincrement())
+  equipoId            Int
+  equipo              EquipoTimon @relation(fields: [equipoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  nombre              String
+  tipo                String
+  fecha               DateTime
+  lugar               String?
+  descripcion         String?
+  anio                Int
+  generadaPorServicio Boolean     @default(false)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
   asistencias          Asistencia[]
   asistenciasMiembros  AsistenciaMiembro[]
@@ -463,16 +468,32 @@ model Reunion {
 }
 
 model Acuerdo {
-  id          Int       @id @default(autoincrement())
-  reunionId   Int
-  reunion     Reunion   @relation(fields: [reunionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  descripcion String
-  responsable String?
-  fechaLimite DateTime?
-  cumplido    Boolean   @default(false)
-  orden       Int
+  id            Int       @id @default(autoincrement())
+  reunionId     Int
+  reunion       Reunion   @relation(fields: [reunionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  descripcion   String
+  responsable   String?
+  fechaLimite   DateTime?
+  cumplido      Boolean   @default(false)
+  orden         Int
+  // estado: PENDIENTE | EN_PROCESO | CUMPLIDO (cumplido se mantiene sincronizado)
+  estado        String    @default("PENDIENTE")
+  fechaCumplido DateTime?
+
+  responsables AcuerdoResponsable[]
 
   @@map("Acuerdo")
+}
+
+model AcuerdoResponsable {
+  id        Int           @id @default(autoincrement())
+  acuerdoId Int
+  acuerdo   Acuerdo       @relation(fields: [acuerdoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  miembroId Int
+  miembro   MiembroEquipo @relation("AcuerdoResponsableMiembro", fields: [miembroId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([acuerdoId, miembroId])
+  @@map("AcuerdoResponsable")
 }
 
 model ReunionAsistente {
