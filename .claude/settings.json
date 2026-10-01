@@ -59,7 +59,9 @@
       "Bash(JAVA_HOME=\"C:/Program Files/Android/Android Studio1/jbr\" ./gradlew.bat assembleRelease --no-daemon --console=plain)",
       "Bash(\"C:/Users/Usuario/AppData/Local/Android/Sdk/build-tools/35.0.0/aapt.exe\" dump *)",
       "Bash(cp /c/Users/Usuario/plataforma-timon/frontend/android/app/build/outputs/apk/release/app-release.apk /c/Users/Usuario/AppData/Local/Temp/claude/c--Users-Usuario-plataforma-timon/a83b2dcd-6f39-41cf-a64d-bcfb7cf7f93c/scratchpad/plataforma-timon-1.0.1.apk)",
-      "Read(//c/Users/Usuario/AppData/Local/Temp/claude/c--Users-Usuario-plataforma-timon/a83b2dcd-6f39-41cf-a64d-bcfb7cf7f93c/scratchpad/**)"
+      "Read(//c/Users/Usuario/AppData/Local/Temp/claude/c--Users-Usuario-plataforma-timon/a83b2dcd-6f39-41cf-a64d-bcfb7cf7f93c/scratchpad/**)",
+      "Bash(node -e \"const s=require\\('sharp'\\);s\\('assets/icon.png'\\).resize\\(1024,1024,{fit:'cover'}\\).png\\({compressionLevel:9}\\).toFile\\('assets/icon.1024.png'\\).then\\(\\(\\)=>console.log\\('ok'\\)\\)\")",
+      "Bash(node -e \"const s=require\\('sharp'\\);s\\('assets/icon.png'\\).metadata\\(\\).then\\(m=>console.log\\(m.width+'x'+m.height, \\(require\\('fs'\\).statSync\\('assets/icon.png'\\).size/1024\\).toFixed\\(0\\)+'KB'\\)\\)\")"
     ]
   }
 }
