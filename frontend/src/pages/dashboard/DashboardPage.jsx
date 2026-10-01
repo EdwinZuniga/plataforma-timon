@@ -3,10 +3,20 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import { getDashboard } from '@/api/dashboard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageSpinner } from '@/components/ui/spinner'
-import { Users, UserCheck, Calendar, BookOpen, Wrench } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Users, UserCheck, Calendar, BookOpen, Wrench, MapPin } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+const fmtFechaVisita = (d, opts = { day: '2-digit', month: 'short', year: 'numeric' }) =>
+  new Date(d).toLocaleDateString('es-SV', { timeZone: 'UTC', ...opts })
+const rangoVisita = (v) => {
+  const ini = v.fecha.slice(0, 10)
+  const fin = (v.fechaFin || v.fecha).slice(0, 10)
+  return ini === fin ? fmtFechaVisita(v.fecha) : `${fmtFechaVisita(v.fecha)} al ${fmtFechaVisita(v.fechaFin)}`
+}
+
 const COLORS = ['#6D28D9', '#7C3AED', '#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE', '#4C1D95', '#5B21B6']
 
 // Estilos de los gráficos (Recharts) enlazados a las CSS vars del tema para
@@ -66,6 +76,7 @@ export default function DashboardPage() {
     total: d.total,
   }))
   const herPorDep = data?.graficas?.hermanosPorDepartamento || []
+  const visitas = data?.visitasProgramadas || []
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
@@ -81,6 +92,38 @@ export default function DashboardPage() {
         <MetricCard icon={BookOpen} label="Talleres" value={metricas.talleres} />
         <MetricCard icon={Wrench} label="Servicios pendientes" value={metricas.serviciosPendientes} color="text-orange-500" />
       </div>
+
+      {visitas.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary-700 dark:text-primary-400" /> Visitas programadas
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y">
+            {visitas.map((v) => (
+              <Link
+                key={v.id}
+                to={`/comunidades/${v.comunidad.id}`}
+                className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0 hover:text-primary-700 dark:hover:text-primary-400"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{v.comunidad.nombre}</p>
+                  {v.responsable && (
+                    <p className="text-xs text-muted-foreground truncate">
+                      Responsable: {v.responsable.nombreCorto || v.responsable.usuario?.nombre}
+                    </p>
+                  )}
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-medium">{rangoVisita(v)}</p>
+                  {v.horario && <p className="text-xs text-muted-foreground">{v.horario}</p>}
+                </div>
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6">
         <Card>

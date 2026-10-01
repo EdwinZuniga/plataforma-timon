@@ -3,7 +3,9 @@ import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import Link from '@tiptap/extension-link'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough,
   List, ListOrdered, AlignLeft, AlignCenter, AlignRight,
@@ -32,6 +34,8 @@ function Divider() {
 }
 
 export function NotasEditor({ initialContent = '', onSave, onCancel, isPending }) {
+  const [linkOpen, setLinkOpen] = useState(false)
+  const [linkUrl, setLinkUrl] = useState('')
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -50,11 +54,16 @@ export function NotasEditor({ initialContent = '', onSave, onCancel, isPending }
   if (!editor) return null
 
   const setLink = () => {
-    const prev = editor.getAttributes('link').href
-    const url = window.prompt('URL del enlace', prev ?? 'https://')
-    if (url === null) return
-    if (url === '') { editor.chain().focus().unsetLink().run(); return }
-    editor.chain().focus().setLink({ href: url }).run()
+    setLinkUrl(editor.getAttributes('link').href ?? 'https://')
+    setLinkOpen(true)
+  }
+
+  const applyLink = (e) => {
+    e.preventDefault()
+    const url = linkUrl.trim()
+    setLinkOpen(false)
+    if (url === '' || url === 'https://') editor.chain().focus().unsetLink().run()
+    else editor.chain().focus().setLink({ href: url }).run()
   }
 
   return (
@@ -88,6 +97,24 @@ export function NotasEditor({ initialContent = '', onSave, onCancel, isPending }
           {isPending ? 'Guardando...' : 'Guardar notas'}
         </Button>
       </div>
+
+      {linkOpen && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50" onClick={() => setLinkOpen(false)}>
+          <form
+            className="bg-card rounded-t-2xl md:rounded-xl w-full max-w-sm shadow-xl p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={applyLink}
+          >
+            <p className="font-semibold text-base">Enlace</p>
+            <Input autoFocus value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://" />
+            <p className="text-xs text-muted-foreground">Déjalo vacío para quitar el enlace.</p>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setLinkOpen(false)}>Cancelar</Button>
+              <Button type="submit" className="flex-1">Aplicar</Button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }

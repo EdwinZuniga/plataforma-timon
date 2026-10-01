@@ -2,6 +2,8 @@ import prisma from '../../config/database.js'
 
 export const obtenerDashboard = async (equipoId) => {
   const anioActual = new Date().getFullYear()
+  // Medianoche UTC del día actual en El Salvador: las fechas de visita se guardan como fecha pura (UTC)
+  const hoy = new Date(`${new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' })}T00:00:00.000Z`)
 
   const [
     totalComunidades,
@@ -11,6 +13,7 @@ export const obtenerDashboard = async (equipoId) => {
     serviciosPendientes,
     asistenciaTalleresMes,
     hermanosPorDepartamento,
+    visitasProgramadas,
   ] = await Promise.all([
     prisma.comunidad.count({ where: { estado: 'ACTIVA' } }),
     prisma.hermano.count({ where: { equipoId, activo: true } }),
@@ -32,6 +35,18 @@ export const obtenerDashboard = async (equipoId) => {
       where: { estado: 'ACTIVA' },
       _count: { id: true },
     }),
+    prisma.visita.findMany({
+      where: {
+        equipoId,
+        OR: [{ fechaFin: { gte: hoy } }, { fechaFin: null, fecha: { gte: hoy } }],
+      },
+      orderBy: { fecha: 'asc' },
+      take: 10,
+      include: {
+        comunidad: { select: { id: true, nombre: true } },
+        responsable: { include: { usuario: { select: { nombre: true } } } },
+      },
+    }),
   ])
 
   const asistenciaPorMesData = Array.from({ length: 12 }, (_, i) => {
@@ -47,6 +62,7 @@ export const obtenerDashboard = async (equipoId) => {
       talleres,
       serviciosPendientes,
     },
+    visitasProgramadas,
     graficas: {
       asistenciaTalleresMes: asistenciaPorMesData,
       hermanosPorDepartamento: hermanosPorDepartamento.map((d) => ({

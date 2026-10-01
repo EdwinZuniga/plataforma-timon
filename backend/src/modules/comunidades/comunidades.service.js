@@ -109,22 +109,27 @@ export const eliminarMiembroConsejo = async (comunidadId, miembroId) => {
 
 // ─── VISITAS ─────────────────────────────────────────────────────────────────
 
-export const crearVisita = async (equipoId, comunidadId, { fecha, responsableId, apoyo, horario, notas }) => {
+export const crearVisita = async (equipoId, comunidadId, { fecha, fechaFin, responsableId, apoyo, horario, notas }) => {
   const comunidad = await prisma.comunidad.findFirst({ where: { id: comunidadId } })
   if (!comunidad) throw { status: 404, message: 'Comunidad no encontrada', code: 'COMUNIDAD_NO_ENCONTRADA' }
   if (!fecha) throw { status: 400, message: 'La fecha es requerida', code: 'DATOS_REQUERIDOS' }
+  const fin = fechaFin ? new Date(fechaFin) : new Date(fecha)
+  if (fin < new Date(fecha)) throw { status: 400, message: 'La fecha fin no puede ser anterior al inicio', code: 'FECHAS_INVALIDAS' }
   return prisma.visita.create({
-    data: { comunidadId, equipoId, fecha: new Date(fecha), responsableId: responsableId || null, apoyo, horario, notas },
+    data: { comunidadId, equipoId, fecha: new Date(fecha), fechaFin: fin, responsableId: responsableId || null, apoyo, horario, notas },
     include: { responsable: { include: { usuario: { select: { nombre: true } } } } },
   })
 }
 
-export const actualizarVisita = async (equipoId, comunidadId, visitaId, { fecha, responsableId, apoyo, horario, notas }) => {
+export const actualizarVisita = async (equipoId, comunidadId, visitaId, { fecha, fechaFin, responsableId, apoyo, horario, notas }) => {
   const visita = await prisma.visita.findFirst({ where: { id: visitaId, comunidadId, equipoId } })
   if (!visita) throw { status: 404, message: 'Visita no encontrada', code: 'NO_ENCONTRADA' }
+  const inicio = fecha ? new Date(fecha) : visita.fecha
+  const fin = fechaFin ? new Date(fechaFin) : inicio
+  if (fin < inicio) throw { status: 400, message: 'La fecha fin no puede ser anterior al inicio', code: 'FECHAS_INVALIDAS' }
   return prisma.visita.update({
     where: { id: visitaId },
-    data: { ...(fecha && { fecha: new Date(fecha) }), responsableId: responsableId || null, apoyo, horario, notas },
+    data: { fecha: inicio, fechaFin: fin, responsableId: responsableId || null, apoyo, horario, notas },
     include: { responsable: { include: { usuario: { select: { nombre: true } } } } },
   })
 }

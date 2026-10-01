@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { HermanoModal } from './HermanoModal'
 import { VincularTallerModal } from './VincularTallerModal'
 import { TallerResumenModal } from './TallerResumenModal'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { PhoneActions } from '@/components/shared/PhoneActions'
 import { useToast } from '@/components/ui/toast'
 import { ArrowLeft, Edit, CheckCircle, XCircle, PlusCircle, Trash2, BookOpen, BookCheck } from 'lucide-react'
@@ -119,6 +120,7 @@ export default function HermanoDetailPage() {
   const { id } = useParams()
   const { equipoActual } = useAuthStore()
   const [tab, setTab] = useState(0)
+  const [desvincularId, setDesvincularId] = useState(null)
   const [editModal, setEditModal] = useState(false)
   const [vincularModal, setVincularModal] = useState(false)
   const [selectedInscripcion, setSelectedInscripcion] = useState(null)
@@ -139,7 +141,6 @@ export default function HermanoDetailPage() {
   })
 
   const handleDesvincularTaller = async (inscripcionId) => {
-    if (!window.confirm('¿Desvincular este hermano del taller?')) return
     try {
       await deleteInscripcion(equipoActual.id, inscripcionId)
       toast({ title: 'Taller desvinculado' })
@@ -205,7 +206,7 @@ export default function HermanoDetailPage() {
           talleres={historial?.talleres ?? []}
           hermanoId={id}
           onVincular={() => setVincularModal(true)}
-          onDesvincular={handleDesvincularTaller}
+          onDesvincular={(inscripcionId) => setDesvincularId(inscripcionId)}
           onVerResumen={(ins) => setSelectedInscripcion(ins)}
         />
       )}
@@ -243,6 +244,14 @@ export default function HermanoDetailPage() {
         <TallerResumenModal
           ins={selectedInscripcion}
           onClose={() => setSelectedInscripcion(null)}
+        />
+      )}
+      {desvincularId && (
+        <ConfirmModal
+          title="¿Desvincular este hermano del taller?"
+          confirmLabel="Desvincular"
+          onCancel={() => setDesvincularId(null)}
+          onConfirm={() => { const id = desvincularId; setDesvincularId(null); handleDesvincularTaller(id) }}
         />
       )}
     </div>

@@ -14,6 +14,8 @@ import { PageSpinner } from '@/components/ui/spinner'
 import { Card, CardContent } from '@/components/ui/card'
 import { ComunidadModal } from './ComunidadModal'
 import { HermanoModal } from '../hermanos/HermanoModal'
+import { TimePicker } from '@/components/ui/time-picker'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { PhoneActions } from '@/components/shared/PhoneActions'
 import { ArrowLeft, Edit, MapPin, Clock, Users, Plus, Trash2, Pencil, X, ShieldCheck, Wrench, Calendar } from 'lucide-react'
 
@@ -21,10 +23,41 @@ const TABS = ['Info general', 'Consejo', 'Hermanos', 'Visitas', 'Servicios']
 const ESTADO_BADGE = { ACTIVA: 'success', PROCESO_INSCRIPCION: 'warning', INACTIVA: 'secondary' }
 const ESTADO_LABEL = { ACTIVA: 'Activa', PROCESO_INSCRIPCION: 'En proceso', INACTIVA: 'Inactiva' }
 const SERVICIO_ESTADO_BADGE = { PENDIENTE: 'destructive', ASIGNADO: 'warning', CONFIRMADO: 'success', FINALIZADO: 'secondary', CANCELADO: 'outline' }
+
+// Las fechas de visita son fechas puras guardadas en UTC
+const fmtFecha = (d, opts = { day: '2-digit', month: 'long', year: 'numeric' }) =>
+  new Date(d).toLocaleDateString('es-SV', { timeZone: 'UTC', ...opts })
+const rangoVisita = (v) => {
+  const ini = v.fecha.slice(0, 10)
+  const fin = (v.fechaFin || v.fecha).slice(0, 10)
+  if (ini === fin) return fmtFecha(v.fecha)
+  const mismoMes = ini.slice(0, 7) === fin.slice(0, 7)
+  return mismoMes
+    ? `${fmtFecha(v.fecha, { day: '2-digit' })} al ${fmtFecha(v.fechaFin)}`
+    : `${fmtFecha(v.fecha)} al ${fmtFecha(v.fechaFin)}`
+}
+// El horario se guarda como texto "10:00 AM"; el selector de hora usa "HH:mm" (24 h)
+const horarioATime = (h) => {
+  const m = /^\s*(\d{1,2})(?::(\d{2}))?\s*([ap])\.?\s*m?\.?\s*$/i.exec(h || '')
+  if (m) {
+    let hh = Number(m[1]) % 12
+    if (m[3].toLowerCase() === 'p') hh += 12
+    return `${String(hh).padStart(2, '0')}:${m[2] || '00'}`
+  }
+  const m24 = /^\s*(\d{1,2}):(\d{2})\s*$/.exec(h || '')
+  return m24 ? `${m24[1].padStart(2, '0')}:${m24[2]}` : ''
+}
+const timeAHorario = (t) => {
+  if (!t) return null
+  const [hh, mm] = t.split(':').map(Number)
+  return `${hh % 12 || 12}:${String(mm).padStart(2, '0')} ${hh >= 12 ? 'PM' : 'AM'}`
+}
+const hoyLocal = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' })
+const visitaVigente = (v) => (v.fechaFin || v.fecha).slice(0, 10) >= hoyLocal()
 const nombreMiembro = (m) => m.nombreCorto || m.usuario?.nombre || `Miembro ${m.id}`
 
 const CONSEJO_EMPTY = { nombre: '', telefono: '', periodo: '', nota: '' }
-const VISITA_EMPTY = { fecha: '', responsableId: '', apoyo: '', horario: '', notas: '' }
+const VISITA_EMPTY = { fecha: '', fechaFin: '', responsableId: '', apoyo: '', horario: '', notas: '' }
 
 function Modal({ title, onClose, children }) {
   return (
@@ -57,6 +90,7 @@ export default function ComunidadDetailPage() {
   const { equipoActual } = useAuthStore()
   const qc = useQueryClient()
   const [tab, setTab] = useState(0)
+  const [confirmDelete, setConfirmDelete] = useState(null) // { tipo: 'consejo' | 'visita', id }
   const [editModal, setEditModal] = useState(false)
   const [hermanoModal, setHermanoModal] = useState(false)
 
@@ -134,9 +168,10 @@ export default function ComunidadDetailPage() {
     setEditingVisita(v)
     setVisitaForm({
       fecha: v.fecha ? v.fecha.split('T')[0] : '',
+      fechaFin: v.fechaFin ? v.fechaFin.split('T')[0] : '',
       responsableId: v.responsableId || '',
       apoyo: v.apoyo || '',
-      horario: v.horario || '',
+      horario: horarioATime(v.horario),
       notas: v.notas || '',
     })
     setVisitaModal(true)
@@ -156,12 +191,17 @@ export default function ComunidadDetailPage() {
     e.preventDefault()
     saveVisita.mutate({
       fecha: visitaForm.fecha,
+      fechaFin: visitaForm.fechaFin || visitaForm.fecha,
       responsableId: visitaForm.responsableId ? Number(visitaForm.responsableId) : null,
       apoyo: visitaForm.apoyo || null,
-      horario: visitaForm.horario || null,
+      horario: timeAHorario(visitaForm.horario),
       notas: visitaForm.notas || null,
     })
   }
+
+  const visitasVigentes = (data?.visitas ?? [])
+    .filter(visitaVigente)
+    .sort((a, b) => a.fecha.localeCompare(b.fecha))
 
   if (isLoading) return <PageSpinner />
   if (!data) return <div className="p-6 text-muted-foreground">Comunidad no encontrada</div>
@@ -206,6 +246,28 @@ export default function ComunidadDetailPage() {
       {/* ── Info general ── */}
       {tab === 0 && (
         <div className="grid md:grid-cols-2 gap-4">
+          {visitasVigentes.length > 0 && (
+            <Card className="md:col-span-2 border-primary-200 bg-primary-50/50 dark:border-primary-800/50 dark:bg-primary-900/20">
+              <CardContent className="py-3 px-4 space-y-2">
+                <p className="text-xs font-medium text-primary-700 dark:text-primary-400 flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {visitasVigentes.length === 1 ? 'Visita programada' : 'Visitas programadas'}
+                </p>
+                {visitasVigentes.map((v) => (
+                  <div key={v.id}>
+                    <p className="font-medium">
+                      {rangoVisita(v)}{v.horario && <span className="text-muted-foreground font-normal"> · {v.horario}</span>}
+                    </p>
+                    {v.responsable && (
+                      <p className="text-sm text-muted-foreground">
+                        Responsable: {v.responsable.nombreCorto || v.responsable.usuario?.nombre}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
           {data.lugarAsamblea && (
             <Card><CardContent className="py-3 px-4 flex gap-2 items-start">
               <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
@@ -276,7 +338,7 @@ export default function ComunidadDetailPage() {
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() => { if (confirm('¿Eliminar este miembro?')) removeConsejo.mutate(m.id) }}
+                      onClick={() => setConfirmDelete({ tipo: 'consejo', id: m.id })}
                       className="p-1.5 text-muted-foreground hover:text-destructive rounded"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -337,7 +399,7 @@ export default function ComunidadDetailPage() {
               <Card key={v.id}>
                 <CardContent className="py-3 px-4 flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium">{new Date(v.fecha).toLocaleDateString('es-SV', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                    <p className="font-medium">{rangoVisita(v)}</p>
                     {v.horario && <p className="text-sm text-muted-foreground">{v.horario}</p>}
                     {v.responsable && (
                       <p className="text-sm mt-1">
@@ -363,7 +425,7 @@ export default function ComunidadDetailPage() {
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() => { if (confirm('¿Eliminar esta visita?')) removeVisita.mutate(v.id) }}
+                      onClick={() => setConfirmDelete({ tipo: 'visita', id: v.id })}
                       className="p-1.5 text-muted-foreground hover:text-destructive rounded"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -490,21 +552,34 @@ export default function ComunidadDetailPage() {
       {visitaModal && (
         <Modal title={editingVisita ? 'Editar visita' : 'Programar visita'} onClose={() => setVisitaModal(false)}>
           <form onSubmit={submitVisita} className="space-y-3">
-            <Field label="Fecha *">
-              <input
-                type="date"
-                className={inputCls}
-                value={visitaForm.fecha}
-                onChange={(e) => setVisitaForm((f) => ({ ...f, fecha: e.target.value }))}
-                required
-              />
-            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Fecha inicio *">
+                <input
+                  type="date"
+                  className={inputCls}
+                  value={visitaForm.fecha}
+                  onChange={(e) => setVisitaForm((f) => ({
+                    ...f,
+                    fecha: e.target.value,
+                    fechaFin: f.fechaFin && f.fechaFin < e.target.value ? e.target.value : f.fechaFin,
+                  }))}
+                  required
+                />
+              </Field>
+              <Field label="Fecha fin">
+                <input
+                  type="date"
+                  className={inputCls}
+                  value={visitaForm.fechaFin}
+                  min={visitaForm.fecha || undefined}
+                  onChange={(e) => setVisitaForm((f) => ({ ...f, fechaFin: e.target.value }))}
+                />
+              </Field>
+            </div>
             <Field label="Horario">
-              <input
-                className={inputCls}
+              <TimePicker
                 value={visitaForm.horario}
-                onChange={(e) => setVisitaForm((f) => ({ ...f, horario: e.target.value }))}
-                placeholder="Ej. 10:00 AM"
+                onChange={(v) => setVisitaForm((f) => ({ ...f, horario: v }))}
               />
             </Field>
             <Field label="Responsable">
@@ -561,6 +636,20 @@ export default function ComunidadDetailPage() {
             </div>
           </form>
         </Modal>
+      )}
+
+      {confirmDelete && (
+        <ConfirmModal
+          title={confirmDelete.tipo === 'visita' ? '¿Eliminar esta visita?' : '¿Eliminar este miembro?'}
+          description="Esta acción no se puede deshacer."
+          confirmLabel="Eliminar"
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => {
+            if (confirmDelete.tipo === 'visita') removeVisita.mutate(confirmDelete.id)
+            else removeConsejo.mutate(confirmDelete.id)
+            setConfirmDelete(null)
+          }}
+        />
       )}
     </div>
   )
