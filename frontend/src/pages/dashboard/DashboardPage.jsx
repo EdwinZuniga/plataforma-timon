@@ -1,14 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { getDashboard } from '@/api/dashboard'
-import { getAcuerdos } from '@/api/reuniones'
-import { fmtFechaLimite } from '@/utils/acuerdos'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageSpinner } from '@/components/ui/spinner'
 import { Link, useNavigate } from 'react-router-dom'
-import { Users, UserCheck, Calendar, BookOpen, Wrench, MapPin, ArrowRight, ListChecks } from 'lucide-react'
+import { Users, UserCheck, Calendar, BookOpen, Wrench, MapPin, ArrowRight } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
@@ -73,12 +70,6 @@ export default function DashboardPage() {
     enabled: !!equipoActual?.id,
   })
 
-  const { data: misAcuerdos = [] } = useQuery({
-    queryKey: ['acuerdos', equipoActual?.id, 'mios'],
-    queryFn: () => getAcuerdos(equipoActual.id, { estado: 'ABIERTOS', mios: 1 }).then((r) => r.data.data),
-    enabled: !!equipoActual?.id,
-  })
-
   if (isLoading) return <PageSpinner />
 
   const metricas = data?.metricas || {}
@@ -105,36 +96,6 @@ export default function DashboardPage() {
         <MetricCard icon={BookOpen} label="Talleres" value={metricas.talleres} />
         <MetricCard icon={Wrench} label="Servicios pendientes" value={metricas.serviciosPendientes} color="text-orange-500" />
       </div>
-
-      {misAcuerdos.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <ListChecks className="h-4 w-4 text-primary-700 dark:text-primary-400" /> Mis acuerdos pendientes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="divide-y">
-            {misAcuerdos.slice(0, 5).map((a) => (
-              <Link
-                key={a.id}
-                to={`/reuniones/${a.reunion.id}`}
-                className="flex items-center justify-between gap-3 py-2.5 first:pt-0 hover:text-primary-700 dark:hover:text-primary-400"
-              >
-                <p className="font-medium truncate">{a.descripcion}</p>
-                <div className="shrink-0 flex items-center gap-2">
-                  {a.vencido && <Badge variant="destructive">Vencido</Badge>}
-                  {a.fechaLimite && <span className="text-xs text-muted-foreground">{fmtFechaLimite(a.fechaLimite)}</span>}
-                </div>
-              </Link>
-            ))}
-            <div className="pt-3 flex justify-end">
-              <Button variant="outline" size="sm" onClick={() => navigate('/acuerdos')}>
-                Ver todos{misAcuerdos.length > 5 && ` (${misAcuerdos.length})`} <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {visitas.length > 0 && (
         <Card>
