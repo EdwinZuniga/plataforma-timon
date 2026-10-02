@@ -323,3 +323,34 @@ export const expulsarSesion = async (id) => {
   })
   if (count === 0) throw { status: 404, message: 'Sesión no encontrada', code: 'SESION_NO_ENCONTRADA' }
 }
+
+// ─── BITÁCORA ─────────────────────────────────────────────────────────────────
+
+const ACCIONES_BITACORA = ['CREACION', 'EDICION', 'ELIMINACION']
+
+export const listarBitacora = async ({ search, accion, desde, hasta, page = 1, limit = 20 } = {}) => {
+  // desde/hasta llegan como 'YYYY-MM-DD' en hora de El Salvador (UTC-6, sin horario de verano)
+  const createdAt = {}
+  if (desde) createdAt.gte = new Date(`${desde}T00:00:00.000-06:00`)
+  if (hasta) createdAt.lte = new Date(`${hasta}T23:59:59.999-06:00`)
+
+  const where = {
+    ...(ACCIONES_BITACORA.includes(accion) && { accion }),
+    ...(search && { OR: [{ descripcion: { contains: search } }, { usuarioNombre: { contains: search } }] }),
+    ...(Object.keys(createdAt).length && { createdAt }),
+  }
+
+  const [total, rows] = await Promise.all([
+    prisma.bitacora.count({ where }),
+    prisma.bitacora.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * limit, take: limit }),
+  ])
+
+  const equipoIds = [...new Set(rows.map((r) => r.equipoId).filter(Boolean))]
+  const equipos = equipoIds.length
+    ? await prisma.equipoTimon.findMany({ where: { id: { in: equipoIds } }, select: { id: true, nombre: true } })
+    : []
+  const nombreEquipo = Object.fromEntries(equipos.map((e) => [e.id, e.nombre]))
+
+  const items = rows.map((r) => ({ ...r, equipo: r.equipoId ? (nombreEquipo[r.equipoId] ?? `Equipo #${r.equipoId}`) : null }))
+  return { total, page, limit, items }
+}

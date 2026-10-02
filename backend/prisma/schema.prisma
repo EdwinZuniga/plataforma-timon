@@ -595,3 +595,24 @@ model OfrendaSemanal {
   @@unique([miembroId, fecha])
   @@map("OfrendaSemanal")
 }
+
+// ─── BITÁCORA ────────────────────────────────────────────────────────────────
+
+// Registro de operaciones de escritura. Sin relaciones a propósito: debe sobrevivir
+// al borrado de usuarios/equipos, así que guarda el nombre del usuario al momento.
+// accion: CREACION | EDICION | ELIMINACION
+model Bitacora {
+  id            Int      @id @default(autoincrement())
+  usuarioId     Int?
+  usuarioNombre String?
+  equipoId      Int?
+  accion        String
+  entidad       String
+  entidadId     Int?
+  descripcion   String
+  ip            String?
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("Bitacora")
+}

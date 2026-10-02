@@ -136,3 +136,12 @@ export const expulsarSesion = async (req, res, next) => {
     res.json({ success: true })
   } catch (err) { next(err) }
 }
+
+// ─── BITÁCORA ─────────────────────────────────────────────────────────────────
+
+export const listarBitacora = async (req, res, next) => {
+  try {
+    const { search, accion, desde, hasta, page, limit } = req.query
+    res.json({ success: true, data: await svc.listarBitacora({ search, accion, desde, hasta, page: +page || 1, limit: +limit || 20 }) })
+  } catch (err) { next(err) }
+}

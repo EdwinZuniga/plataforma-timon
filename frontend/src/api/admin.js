@@ -31,3 +31,6 @@ export const clearPermisosMembresia = (miembroId) =>
 export const getSesiones = (params) => api.get('/admin/sesiones', { params })
 export const getHistorialSesiones = (params) => api.get('/admin/sesiones/historial', { params })
 export const expulsarSesion = (id) => api.delete(`/admin/sesiones/${id}`)
+
+// Bitácora
+export const getBitacora = (params) => api.get('/admin/bitacora', { params })

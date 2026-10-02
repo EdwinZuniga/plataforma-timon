@@ -24,6 +24,7 @@ import ocrRoutes from './modules/ocr/ocr.routes.js'
 import dashboardRoutes from './modules/dashboard/dashboard.routes.js'
 import tesoreriaRoutes from './modules/tesoreria/tesoreria.routes.js'
 import inventarioRoutes from './modules/inventario/inventario.routes.js'
+import { bitacora } from './middlewares/bitacora.js'
 import calendarioRoutes from './modules/calendario/calendario.routes.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -70,6 +71,7 @@ app.get('/api/health/db', async (req, res) => {
   res.status(503).json({ warm: false, code: 'DB_INICIANDO' })
 })
 
+app.use('/api', bitacora)
 app.use('/api/auth', authRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/equipos', equiposRoutes)

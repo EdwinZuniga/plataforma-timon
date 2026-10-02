@@ -37,4 +37,7 @@ router.get('/sesiones', ctrl.listarSesiones)
 router.get('/sesiones/historial', ctrl.listarHistorialSesiones)
 router.delete('/sesiones/:id', ctrl.expulsarSesion)
 
+// Bitácora de operaciones
+router.get('/bitacora', ctrl.listarBitacora)
+
 export default router
