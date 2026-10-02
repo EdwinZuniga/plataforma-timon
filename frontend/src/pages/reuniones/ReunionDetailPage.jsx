@@ -1,20 +1,19 @@
 import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { getReunion, createAcuerdo, updateAcuerdo, updateReunion, generarTexto, deleteReunion, saveComisiones, getAcuerdos } from '@/api/reuniones'
+import { getReunion, createAcuerdo, updateAcuerdo, updateReunion, generarTexto, deleteReunion, saveComisiones, getAcuerdos, deleteAcuerdo } from '@/api/reuniones'
 import { getMiembros } from '@/api/equipos'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageSpinner } from '@/components/ui/spinner'
 import { useToast } from '@/components/ui/toast'
-import { ArrowLeft, Plus, Copy, Edit, Trash2, StickyNote, Check, Pencil, Users2, FileText } from 'lucide-react'
+import { ArrowLeft, Plus, Copy, Edit, Trash2, StickyNote, Pencil, Users2, FileText } from 'lucide-react'
 import { EditarReunionModal } from './EditarReunionModal'
 import { ComisionesModal } from './ComisionesModal'
 import { NotasEditor } from '@/components/NotasEditor'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
+import { AcuerdoModal } from '@/components/shared/AcuerdoModal'
 import { AcuerdoEstadoBoton } from '@/components/shared/AcuerdoEstadoBoton'
 import { estaVencido, fmtFechaLimite } from '@/utils/acuerdos'
 import { Badge } from '@/components/ui/badge'
@@ -26,12 +25,12 @@ export default function ReunionDetailPage() {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const [textoModal, setTextoModal] = useState(null)
-  const [addingAcuerdo, setAddingAcuerdo] = useState(false)
   const [editModal, setEditModal] = useState(false)
   const [notasEditando, setNotasEditando] = useState(false)
   const [confirmEliminar, setConfirmEliminar] = useState(false)
   const [comisionesModal, setComisionesModal] = useState(false)
-  const [selectedResponsables, setSelectedResponsables] = useState([])
+  const [acuerdoModal, setAcuerdoModal] = useState(null) // null | 'nuevo' | acuerdo a editar
+  const [acuerdoEliminar, setAcuerdoEliminar] = useState(null)
 
   const { data: reunion, isLoading } = useQuery({
     queryKey: ['reunion', id],
@@ -56,27 +55,32 @@ export default function ReunionDetailPage() {
     .filter((m) => m.activo)
     .sort((a, b) => (a.usuario?.nombre || '').localeCompare(b.usuario?.nombre || ''))
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm()
+  const refrescarAcuerdos = () => {
+    qc.invalidateQueries({ queryKey: ['reunion', id] })
+    qc.invalidateQueries({ queryKey: ['acuerdos'] })
+    qc.invalidateQueries({ queryKey: ['avisos'] })
+  }
 
-  const { mutate: addAcuerdo, isPending: addingPending } = useMutation({
-    mutationFn: (data) => createAcuerdo(equipoActual.id, id, data),
+  const { mutate: guardarAcuerdo, isPending: guardandoAcuerdo } = useMutation({
+    mutationFn: (data) => (acuerdoModal?.id
+      ? updateAcuerdo(equipoActual.id, acuerdoModal.id, data)
+      : createAcuerdo(equipoActual.id, id, data)),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['reunion', id] })
-      reset()
-      setSelectedResponsables([])
-      setAddingAcuerdo(false)
+      refrescarAcuerdos()
+      setAcuerdoModal(null)
     },
     onError: (err) => toast({ title: 'Error', description: err.response?.data?.error, variant: 'destructive' }),
   })
 
-  const toggleResponsable = (miembroId) =>
-    setSelectedResponsables((prev) =>
-      prev.includes(miembroId) ? prev.filter((x) => x !== miembroId) : [...prev, miembroId]
-    )
-
-  const onAddAcuerdo = (data) => {
-    addAcuerdo({ ...data, fechaLimite: data.fechaLimite || undefined, responsableIds: selectedResponsables })
-  }
+  const { mutate: eliminarAcuerdo } = useMutation({
+    mutationFn: (acuerdoId) => deleteAcuerdo(equipoActual.id, acuerdoId),
+    onSuccess: () => {
+      refrescarAcuerdos()
+      setAcuerdoEliminar(null)
+      toast({ title: 'Acuerdo eliminado' })
+    },
+    onError: (err) => toast({ title: 'No se pudo eliminar el acuerdo', description: err.response?.data?.error, variant: 'destructive' }),
+  })
 
   const { mutate: cambiarEstado } = useMutation({
     mutationFn: ({ acuerdoId, estado }) => updateAcuerdo(equipoActual.id, acuerdoId, { estado }),
@@ -266,51 +270,10 @@ export default function ReunionDetailPage() {
           <span className="text-orange-500">{acuerdosPendientes} pendientes</span>
           <span className="text-green-500">{acuerdosCumplidos} cumplidos</span>
         </div>
-        <Button size="sm" onClick={() => setAddingAcuerdo(true)} variant="outline">
+        <Button size="sm" onClick={() => setAcuerdoModal('nuevo')} variant="outline">
           <Plus className="h-4 w-4" /> Acuerdo
         </Button>
       </div>
-
-      {addingAcuerdo && (
-        <Card className="border-primary-200 dark:border-primary-800/50">
-          <CardContent className="py-4 space-y-3">
-            <Input {...register('descripcion', { required: 'Requerido' })} placeholder="Descripción del acuerdo" />
-            {errors.descripcion && <p className="text-xs text-destructive">{errors.descripcion.message}</p>}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-muted-foreground">Responsables</label>
-                {selectedResponsables.length > 0 && (
-                  <span className="text-xs text-primary-700 dark:text-primary-400 font-medium">{selectedResponsables.length} seleccionados</span>
-                )}
-              </div>
-              <div className="border rounded-md divide-y max-h-32 overflow-y-auto">
-                {miembrosActivos.map((m) => {
-                  const nombre = m.usuario?.nombre
-                  const selected = selectedResponsables.includes(m.id)
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => toggleResponsable(m.id)}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/50 ${selected ? 'bg-primary-50 dark:bg-primary-900/20' : ''}`}
-                    >
-                      <div className={`h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${selected ? 'border-primary-700 bg-primary-700' : 'border-input'}`}>
-                        {selected && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
-                      </div>
-                      <span className="text-sm">{nombre}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-            <Input type="date" {...register('fechaLimite')} />
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => { setAddingAcuerdo(false); reset(); setSelectedResponsables([]) }}>Cancelar</Button>
-              <Button size="sm" disabled={addingPending} onClick={handleSubmit(onAddAcuerdo)}>Agregar</Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="space-y-2">
         {reunion.acuerdos?.map((a) => (
@@ -329,6 +292,10 @@ export default function ReunionDetailPage() {
                 {a.estado === 'CUMPLIDO' && a.fechaCumplido && (
                   <p className="text-xs text-green-600 dark:text-green-400">Cumplido el {fmtFechaLimite(a.fechaCumplido)}</p>
                 )}
+              </div>
+              <div className="flex items-center shrink-0">
+                <button onClick={() => setAcuerdoModal(a)} className="min-h-0 h-auto p-2 text-muted-foreground hover:text-foreground" title="Editar acuerdo"><Pencil className="h-4 w-4" /></button>
+                <button onClick={() => setAcuerdoEliminar(a)} className="min-h-0 h-auto p-2 text-muted-foreground hover:text-destructive" title="Eliminar acuerdo"><Trash2 className="h-4 w-4" /></button>
               </div>
             </CardContent>
           </Card>
@@ -356,10 +323,34 @@ export default function ReunionDetailPage() {
                     {a.vencido && <Badge variant="destructive">Vencido</Badge>}
                   </p>
                 </div>
+                <div className="flex items-center shrink-0">
+                  <button onClick={() => setAcuerdoModal(a)} className="min-h-0 h-auto p-2 text-muted-foreground hover:text-foreground" title="Editar acuerdo"><Pencil className="h-4 w-4" /></button>
+                  <button onClick={() => setAcuerdoEliminar(a)} className="min-h-0 h-auto p-2 text-muted-foreground hover:text-destructive" title="Eliminar acuerdo"><Trash2 className="h-4 w-4" /></button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
+      )}
+
+      {acuerdoModal && (
+        <AcuerdoModal
+          acuerdo={acuerdoModal === 'nuevo' ? null : acuerdoModal}
+          miembros={miembrosActivos}
+          pending={guardandoAcuerdo}
+          onSubmit={guardarAcuerdo}
+          onClose={() => setAcuerdoModal(null)}
+        />
+      )}
+
+      {acuerdoEliminar && (
+        <ConfirmModal
+          title="Eliminar acuerdo"
+          description="Se quitará el acuerdo del seguimiento. Esta acción no se puede deshacer."
+          confirmLabel="Eliminar"
+          onConfirm={() => eliminarAcuerdo(acuerdoEliminar.id)}
+          onCancel={() => setAcuerdoEliminar(null)}
+        />
       )}
 
       {textoModal && (

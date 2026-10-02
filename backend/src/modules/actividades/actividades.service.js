@@ -32,10 +32,18 @@ export const listarActividades = async (equipoId, { anio, tipo, q, desde, hasta,
   return { data, pagination: { page: parseInt(page), limit: PAGE_SIZE, total, pages: Math.ceil(total / PAGE_SIZE) } }
 }
 
+// Fecha fin opcional: solo cuenta si es posterior al inicio
+const rangoFin = (fecha, fin) => {
+  if (!fin) return null
+  const f = new Date(fin)
+  return f > fecha ? f : null
+}
+
 export const crearActividad = async (equipoId, body) => {
   const fecha = new Date(body.fecha)
+  const fechaFin = rangoFin(fecha, body.fechaFin)
   return prisma.actividad.create({
-    data: { ...body, equipoId, fecha, anio: fecha.getFullYear() },
+    data: { ...body, equipoId, fecha, fechaFin, anio: fecha.getFullYear() },
   })
 }
 
@@ -57,6 +65,10 @@ export const actualizarActividad = async (equipoId, id, body) => {
   if (body.fecha) {
     data.fecha = new Date(body.fecha)
     data.anio = data.fecha.getFullYear()
+  }
+  if ('fechaFin' in body || body.fecha) {
+    const inicio = data.fecha ?? existe.fecha
+    data.fechaFin = rangoFin(inicio, 'fechaFin' in body ? body.fechaFin : existe.fechaFin)
   }
   return prisma.actividad.update({ where: { id }, data })
 }

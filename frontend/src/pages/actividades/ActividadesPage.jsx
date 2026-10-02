@@ -11,6 +11,7 @@ import { PageSpinner } from '@/components/ui/spinner'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { ListaAgrupadaPorFecha } from '@/components/shared/ListaAgrupadaPorFecha'
 import { agruparPorMesYDia } from '@/utils/agruparPorFecha'
+import { formatCalendarDate } from '@/utils/dates'
 import { useDebounce } from '@/hooks/useDebounce'
 import { Plus, Search, ChevronRight, Calendar, Clock } from 'lucide-react'
 import { ActividadModal } from './ActividadModal'
@@ -19,7 +20,7 @@ const TIPO_BADGE = { RETIRO: 'default', ASAMBLEA: 'secondary', ENCUENTRO: 'succe
 const TIPO_LABEL = { RETIRO: 'Retiro', ASAMBLEA: 'Asamblea', ENCUENTRO: 'Encuentro', MISION: 'Misión', FORMACION: 'Formación', OTRO: 'Otro' }
 
 const hoyISO = new Date().toISOString().slice(0, 10)
-const esProgramada = (fecha) => new Date(fecha).toISOString().slice(0, 10) >= hoyISO
+const esProgramada = (a) => new Date(a.fechaFin || a.fecha).toISOString().slice(0, 10) >= hoyISO
 
 export default function ActividadesPage() {
   const { equipoActual } = useAuthStore()
@@ -118,10 +119,13 @@ export default function ActividadesPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-medium">{a.nombre}</p>
                         <Badge variant={TIPO_BADGE[a.tipo]}>{TIPO_LABEL[a.tipo]}</Badge>
-                        {esProgramada(a.fecha) && (
+                        {esProgramada(a) && (
                           <Badge variant="outline"><Clock className="h-3 w-3 mr-1" />Programada</Badge>
                         )}
                       </div>
+                      {a.fechaFin && (
+                        <p className="text-sm text-muted-foreground">{formatCalendarDate(a.fecha, { day: 'numeric', month: 'short' })} – {formatCalendarDate(a.fechaFin, { day: 'numeric', month: 'short' })}</p>
+                      )}
                       {a.lugar && <p className="text-sm text-muted-foreground truncate">{a.lugar}</p>}
                     </div>
                     <div className="text-right shrink-0">

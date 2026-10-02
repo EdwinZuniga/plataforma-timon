@@ -25,4 +25,11 @@ router.put('/acuerdos/:acuerdoId', requireAuth, requireEquipo, requirePermiso('r
   } catch (err) { next(err) }
 })
 
+router.delete('/acuerdos/:acuerdoId', requireAuth, requireEquipo, requirePermiso('reuniones', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
+  try {
+    await svc.eliminarAcuerdo(req.params.equipoId, req.params.acuerdoId)
+    res.json({ success: true })
+  } catch (err) { next(err) }
+})
+
 export default router

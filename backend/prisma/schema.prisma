@@ -350,6 +350,7 @@ model Actividad {
   nombre              String
   tipo                String
   fecha               DateTime
+  fechaFin            DateTime?
   lugar               String?
   descripcion         String?
   anio                Int

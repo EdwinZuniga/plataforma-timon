@@ -6,7 +6,7 @@ import { CalendarioMes } from './_calendario'
 import { fmtCorto, hoyKey, parseKey, toKey, useCerrarPopover } from './_calendario-core'
 
 // Calendario de rango autocontenido (sin dependencias). Valores 'YYYY-MM-DD'.
-export function DateRangePicker({ desde = '', hasta = '', onChange, className }) {
+export function DateRangePicker({ desde = '', hasta = '', onChange, className, placeholder = 'Filtrar por fecha', presets = true }) {
   const [open, setOpen] = useState(false)
   const [anchor, setAnchor] = useState(null)   // primer día elegido, aún sin cerrar el rango
   const [hover, setHover] = useState(null)
@@ -66,7 +66,7 @@ export function DateRangePicker({ desde = '', hasta = '', onChange, className })
     ? `${fmtCorto(desde, desde.slice(0, 4) !== hasta.slice(0, 4))} – ${fmtCorto(hasta)}`
     : desde ? `Desde ${fmtCorto(desde)}`
       : hasta ? `Hasta ${fmtCorto(hasta)}`
-        : 'Filtrar por fecha'
+        : placeholder
 
   return (
     <div ref={ref} className={cn('relative', className)}>
@@ -108,9 +108,11 @@ export function DateRangePicker({ desde = '', hasta = '', onChange, className })
           />
 
           <div className="mt-3 flex flex-wrap gap-1.5">
-            <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={presetMesActual}>Este mes</Button>
-            <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={presetUltimos3}>Últimos 3 meses</Button>
-            <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={presetAnio}>Este año</Button>
+            {presets && <>
+              <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={presetMesActual}>Este mes</Button>
+              <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={presetUltimos3}>Últimos 3 meses</Button>
+              <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={presetAnio}>Este año</Button>
+            </>}
             {activo && (
               <Button type="button" variant="ghost" size="sm" className="ml-auto h-7 text-xs" onClick={() => { limpiar(); setOpen(false) }}>
                 Limpiar

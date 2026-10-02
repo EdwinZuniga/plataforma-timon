@@ -9,11 +9,11 @@ export const listar = async (req, res, next) => {
 
 export const crear = async (req, res, next) => {
   try {
-    const { nombre, tipo, fecha, lugar, descripcion } = req.body
+    const { nombre, tipo, fecha, fechaFin, lugar, descripcion } = req.body
     if (!nombre || !tipo || !fecha) {
       return next({ status: 400, message: 'Nombre, tipo y fecha son requeridos', code: 'DATOS_REQUERIDOS' })
     }
-    const data = await svc.crearActividad(req.params.equipoId, { nombre, tipo, fecha, lugar, descripcion })
+    const data = await svc.crearActividad(req.params.equipoId, { nombre, tipo, fecha, fechaFin, lugar, descripcion })
     res.status(201).json({ success: true, data })
   } catch (err) { next(err) }
 }

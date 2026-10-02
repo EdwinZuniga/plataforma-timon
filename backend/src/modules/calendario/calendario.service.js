@@ -61,7 +61,7 @@ export const eventosEquipo = async (equipoId, membresia, usuario, desde, hasta) 
       : [],
     ver('actividades')
       // Las actividades generadas por un servicio se muestran como servicio, no como actividad
-      ? prisma.actividad.findMany({ where: { equipoId, generadaPorServicio: false, fecha: enRango }, select: { id: true, nombre: true, tipo: true, fecha: true, lugar: true } })
+      ? prisma.actividad.findMany({ where: { equipoId, generadaPorServicio: false, ...solapa }, select: { id: true, nombre: true, tipo: true, fecha: true, fechaFin: true, lugar: true } })
       : [],
     ver('servicios')
       ? prisma.servicioActividad.findMany({
@@ -109,7 +109,7 @@ export const eventosEquipo = async (equipoId, membresia, usuario, desde, hasta) 
     eventos.push({ id: `reunion-${r.id}`, tipo: 'REUNION', titulo: r.titulo, detalle: r.lugar, fecha: ymd(r.fecha), link: `/reuniones/${r.id}` })
   }
   for (const a of actividades) {
-    eventos.push({ id: `actividad-${a.id}`, tipo: 'ACTIVIDAD', titulo: a.nombre, detalle: [a.tipo, a.lugar].filter(Boolean).join(' · '), fecha: ymd(a.fecha), link: `/actividades/${a.id}` })
+    eventos.push({ id: `actividad-${a.id}`, tipo: 'ACTIVIDAD', titulo: a.nombre, detalle: [a.tipo, a.lugar].filter(Boolean).join(' · '), fecha: ymd(a.fecha), fechaFin: a.fechaFin ? ymd(a.fechaFin) : null, link: `/actividades/${a.id}` })
   }
   for (const s of servicios) {
     eventos.push({

@@ -46,9 +46,9 @@ export const eliminar = async (req, res, next) => {
 
 export const crearAcuerdo = async (req, res, next) => {
   try {
-    const { descripcion, responsable, fechaLimite } = req.body
+    const { descripcion, responsable, fechaLimite, responsableIds } = req.body
     if (!descripcion) return next({ status: 400, message: 'La descripción del acuerdo es requerida', code: 'DATOS_REQUERIDOS' })
-    const data = await svc.crearAcuerdo(req.params.equipoId, req.params.id, { descripcion, responsable, fechaLimite })
+    const data = await svc.crearAcuerdo(req.params.equipoId, req.params.id, { descripcion, responsable, fechaLimite, responsableIds })
     res.status(201).json({ success: true, data })
   } catch (err) { next(err) }
 }

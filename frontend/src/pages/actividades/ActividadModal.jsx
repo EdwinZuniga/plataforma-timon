@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import { createActividad, updateActividad } from '@/api/actividades'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { DatePicker } from '@/components/ui/date-picker'
+import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { useToast } from '@/components/ui/toast'
 import { X } from 'lucide-react'
 
@@ -16,12 +16,13 @@ export function ActividadModal({ onClose, onSaved, actividad }) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
 
-  const { register, handleSubmit, control, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm({
     defaultValues: actividad
       ? {
           nombre: actividad.nombre ?? '',
           tipo: actividad.tipo ?? '',
           fecha: actividad.fecha?.slice(0, 10) ?? '',
+          fechaFin: actividad.fechaFin?.slice(0, 10) ?? '',
           lugar: actividad.lugar ?? '',
           descripcion: actividad.descripcion ?? '',
         }
@@ -31,10 +32,11 @@ export function ActividadModal({ onClose, onSaved, actividad }) {
   const onSubmit = async (data) => {
     setLoading(true)
     try {
+      const payload = { ...data, fechaFin: data.fechaFin || null }
       if (actividad?.id) {
-        await updateActividad(equipoActual.id, actividad.id, data)
+        await updateActividad(equipoActual.id, actividad.id, payload)
       } else {
-        await createActividad(equipoActual.id, data)
+        await createActividad(equipoActual.id, payload)
       }
       toast({ title: actividad ? 'Actividad actualizada' : 'Actividad creada' })
       onSaved()
@@ -58,27 +60,34 @@ export function ActividadModal({ onClose, onSaved, actividad }) {
             <Input {...register('nombre', { required: 'Requerido' })} placeholder="Nombre de la actividad" />
             {errors.nombre && <p className="text-xs text-destructive">{errors.nombre.message}</p>}
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Tipo *</label>
-              <select className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...register('tipo', { required: 'Requerido' })}>
-                <option value="">Seleccionar...</option>
-                {TIPOS.map((t) => <option key={t} value={t}>{TIPO_LABEL[t]}</option>)}
-              </select>
-              {errors.tipo && <p className="text-xs text-destructive">{errors.tipo.message}</p>}
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Fecha *</label>
-              <Controller
-                control={control}
-                name="fecha"
-                rules={{ required: 'Requerido' }}
-                render={({ field }) => (
-                  <DatePicker value={field.value || ''} onChange={field.onChange} />
-                )}
-              />
-              {errors.fecha && <p className="text-xs text-destructive">{errors.fecha.message}</p>}
-            </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Tipo *</label>
+            <select className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...register('tipo', { required: 'Requerido' })}>
+              <option value="">Seleccionar...</option>
+              {TIPOS.map((t) => <option key={t} value={t}>{TIPO_LABEL[t]}</option>)}
+            </select>
+            {errors.tipo && <p className="text-xs text-destructive">{errors.tipo.message}</p>}
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Fecha * <span className="text-muted-foreground font-normal">(elige dos días si dura varios)</span></label>
+            <Controller
+              control={control}
+              name="fecha"
+              rules={{ required: 'Requerido' }}
+              render={({ field }) => (
+                <DateRangePicker
+                  presets={false}
+                  placeholder="Seleccionar fecha o rango"
+                  desde={field.value || ''}
+                  hasta={watch('fechaFin') || ''}
+                  onChange={(r) => {
+                    field.onChange(r.desde)
+                    setValue('fechaFin', r.hasta && r.hasta !== r.desde ? r.hasta : '')
+                  }}
+                />
+              )}
+            />
+            {errors.fecha && <p className="text-xs text-destructive">{errors.fecha.message}</p>}
           </div>
           <div className="space-y-1">
             <label className="text-sm font-medium">Lugar</label>

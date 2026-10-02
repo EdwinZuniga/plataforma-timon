@@ -2,7 +2,11 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { getAcuerdos, updateAcuerdo } from '@/api/reuniones'
+import { getAcuerdos, updateAcuerdo, deleteAcuerdo } from '@/api/reuniones'
+import { getMiembros } from '@/api/equipos'
+import { AcuerdoModal } from '@/components/shared/AcuerdoModal'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
+import { Pencil, Trash2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PageSpinner } from '@/components/ui/spinner'
@@ -23,6 +27,33 @@ export default function AcuerdosPage() {
   const qc = useQueryClient()
   const [vistaId, setVistaId] = useState('mios')
   const vista = VISTAS.find((v) => v.id === vistaId)
+  const [editando, setEditando] = useState(null)
+  const [eliminando, setEliminando] = useState(null)
+
+  const { data: miembros = [] } = useQuery({
+    queryKey: ['miembros', equipoActual?.id],
+    queryFn: () => getMiembros(equipoActual.id).then((r) => r.data.data),
+    enabled: !!equipoActual?.id,
+  })
+  const miembrosActivos = miembros
+    .filter((m) => m.activo)
+    .sort((a, b) => (a.usuario?.nombre || '').localeCompare(b.usuario?.nombre || ''))
+
+  const refrescar = () => {
+    qc.invalidateQueries({ queryKey: ['acuerdos'] })
+    qc.invalidateQueries({ queryKey: ['avisos'] })
+    qc.invalidateQueries({ queryKey: ['reunion'] })
+  }
+  const { mutate: guardar, isPending: guardando } = useMutation({
+    mutationFn: (data) => updateAcuerdo(equipoActual.id, editando.id, data),
+    onSuccess: () => { refrescar(); setEditando(null) },
+    onError: (err) => toast({ title: 'No se pudo guardar el acuerdo', description: err.response?.data?.error, variant: 'destructive' }),
+  })
+  const { mutate: eliminar } = useMutation({
+    mutationFn: (acuerdoId) => deleteAcuerdo(equipoActual.id, acuerdoId),
+    onSuccess: () => { refrescar(); setEliminando(null); toast({ title: 'Acuerdo eliminado' }) },
+    onError: (err) => toast({ title: 'No se pudo eliminar el acuerdo', description: err.response?.data?.error, variant: 'destructive' }),
+  })
 
   const { data: acuerdos = [], isLoading } = useQuery({
     queryKey: ['acuerdos', equipoActual?.id, vistaId],
@@ -60,6 +91,10 @@ export default function AcuerdosPage() {
             {a.estado === 'EN_PROCESO' && <Badge variant="warning">En proceso</Badge>}
             {a.vencido && <Badge variant="destructive">Vencido</Badge>}
           </p>
+        </div>
+        <div className="flex items-center shrink-0">
+          <button onClick={() => setEditando(a)} className="min-h-0 h-auto p-2 text-muted-foreground hover:text-foreground" title="Editar acuerdo"><Pencil className="h-4 w-4" /></button>
+          <button onClick={() => setEliminando(a)} className="min-h-0 h-auto p-2 text-muted-foreground hover:text-destructive" title="Eliminar acuerdo"><Trash2 className="h-4 w-4" /></button>
         </div>
       </CardContent>
     </Card>
@@ -110,6 +145,19 @@ export default function AcuerdosPage() {
             {resto.map(renderAcuerdo)}
           </section>
         </div>
+      )}
+
+      {editando && (
+        <AcuerdoModal acuerdo={editando} miembros={miembrosActivos} pending={guardando} onSubmit={guardar} onClose={() => setEditando(null)} />
+      )}
+      {eliminando && (
+        <ConfirmModal
+          title="Eliminar acuerdo"
+          description="Se quitará el acuerdo del seguimiento. Esta acción no se puede deshacer."
+          confirmLabel="Eliminar"
+          onConfirm={() => eliminar(eliminando.id)}
+          onCancel={() => setEliminando(null)}
+        />
       )}
     </div>
   )

@@ -143,7 +143,7 @@ export default function ActividadDetailPage() {
         <div className="flex-1 min-w-0">
           <h1 className="text-xl font-bold truncate">{actividad.nombre}</h1>
           <p className="text-sm text-muted-foreground">
-            {formatCalendarDate(actividad.fecha)} · {TIPO_LABEL[actividad.tipo]}
+            {formatCalendarDate(actividad.fecha)}{actividad.fechaFin && ` al ${formatCalendarDate(actividad.fechaFin)}`} · {TIPO_LABEL[actividad.tipo]}
             {actividad.lugar && ` · ${actividad.lugar}`}
           </p>
         </div>

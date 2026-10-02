@@ -152,6 +152,12 @@ export const actualizarAcuerdo = async (equipoId, id, body) => {
   return prisma.acuerdo.update({ where: { id }, data, include: incluirAcuerdo })
 }
 
+export const eliminarAcuerdo = async (equipoId, id) => {
+  const existe = await prisma.acuerdo.findFirst({ where: { id, reunion: { equipoId } } })
+  if (!existe) throw { status: 404, message: 'Acuerdo no encontrado', code: 'ACUERDO_NO_ENCONTRADO' }
+  await prisma.acuerdo.delete({ where: { id } })
+}
+
 // Seguimiento: acuerdos del equipo con sus responsables y reunión de origen.
 // `vencido` = no cumplido con fecha límite anterior a hoy.
 export const listarAcuerdos = async (equipoId, { estado, miembroId, reunionId } = {}) => {
