@@ -11,6 +11,7 @@ import { RangoHoraPicker } from '@/components/ui/time-picker'
 import { Combobox } from '@/components/ui/combobox'
 import { useToast } from '@/components/ui/toast'
 import { X, Upload, Loader2, FileText, Users, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
 
 function normalizar(str) {
   return (str || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
@@ -190,8 +191,11 @@ export function SubirCartaModal({ onClose, onSaved }) {
     }
   }
 
+  const { cerrar, dialogo } = useConfirmarSalida(onClose, archivo !== null)
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
+      {dialogo}
       <div className="bg-card rounded-t-2xl md:rounded-xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-xl">
 
         {/* Header */}
@@ -200,7 +204,7 @@ export function SubirCartaModal({ onClose, onSaved }) {
             <FileText className="h-5 w-5 text-primary" />
             <h2 className="font-semibold text-lg">Subir carta de servicio</h2>
           </div>
-          <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground">
+          <button onClick={cerrar} className="p-1 text-muted-foreground hover:text-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -248,7 +252,7 @@ export function SubirCartaModal({ onClose, onSaved }) {
               </div>
               {archivo && <p className="text-xs text-muted-foreground text-center">{archivo.name}</p>}
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
+                <Button variant="outline" className="flex-1" onClick={cerrar}>Cancelar</Button>
                 <Button className="flex-1" onClick={procesarImagen} disabled={!archivo}>
                   <FileText className="h-4 w-4 mr-1" /> Leer carta
                 </Button>

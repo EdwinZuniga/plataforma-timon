@@ -18,6 +18,13 @@ export const crear = async (req, res, next) => {
   } catch (err) { next(err) }
 }
 
+export const crearMasivo = async (req, res, next) => {
+  try {
+    const data = await svc.crearHermanosMasivo(req.params.equipoId, req.body.hermanos)
+    res.status(201).json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
 export const obtener = async (req, res, next) => {
   try {
     const data = await svc.obtenerHermano(req.params.equipoId, req.params.id)

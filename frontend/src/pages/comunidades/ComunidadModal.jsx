@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { X } from 'lucide-react'
+import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
 
 export function ComunidadModal({ onClose, onSaved, comunidad }) {
   const { equipoActual } = useAuthStore()
@@ -20,7 +21,7 @@ export function ComunidadModal({ onClose, onSaved, comunidad }) {
       .catch(() => {})
   }, [equipoActual.id])
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, formState: { errors, isDirty } } = useForm({
     defaultValues: comunidad || {},
   })
 
@@ -42,12 +43,15 @@ export function ComunidadModal({ onClose, onSaved, comunidad }) {
     }
   }
 
+  const { cerrar, dialogo } = useConfirmarSalida(onClose, isDirty)
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
+      {dialogo}
       <div className="bg-card rounded-t-2xl md:rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="font-semibold text-lg">{comunidad ? 'Editar comunidad' : 'Nueva comunidad'}</h2>
-          <button onClick={onClose} className="min-h-0 h-auto p-1 text-muted-foreground">
+          <button onClick={cerrar} className="min-h-0 h-auto p-1 text-muted-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -112,7 +116,7 @@ export function ComunidadModal({ onClose, onSaved, comunidad }) {
             </div>
           </div>
           <div className="flex gap-2 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
+            <Button type="button" variant="outline" className="flex-1" onClick={cerrar}>Cancelar</Button>
             <Button type="submit" className="flex-1" disabled={loading}>
               {loading ? 'Guardando...' : 'Guardar'}
             </Button>

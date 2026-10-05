@@ -8,14 +8,16 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageSpinner } from '@/components/ui/spinner'
 import { useDebounce } from '@/hooks/useDebounce'
-import { Plus, Search, ChevronRight, User } from 'lucide-react'
+import { Plus, Search, ChevronRight, User, FileSpreadsheet } from 'lucide-react'
 import { HermanoModal } from './HermanoModal'
+import { ImportarHermanosModal } from './ImportarHermanosModal'
 
 export default function HermanosPage() {
   const { equipoActual } = useAuthStore()
   const [q, setQ] = useState('')
   const [page, setPage] = useState(1)
   const [showModal, setShowModal] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const debouncedQ = useDebounce(q, 300)
 
   const { data, isLoading, refetch } = useQuery({
@@ -31,9 +33,14 @@ export default function HermanosPage() {
           <h1 className="text-2xl font-bold">Hermanos</h1>
           <p className="text-sm text-muted-foreground">{data?.pagination?.total ?? '—'} registrados</p>
         </div>
-        <Button onClick={() => setShowModal(true)} size="sm">
-          <Plus className="h-4 w-4" /> Nuevo
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowImport(true)} size="sm" variant="outline">
+            <FileSpreadsheet className="h-4 w-4" /> Importar
+          </Button>
+          <Button onClick={() => setShowModal(true)} size="sm">
+            <Plus className="h-4 w-4" /> Nuevo
+          </Button>
+        </div>
       </div>
 
       <div className="relative">
@@ -79,6 +86,7 @@ export default function HermanosPage() {
       )}
 
       {showModal && <HermanoModal onClose={() => setShowModal(false)} onSaved={() => { setShowModal(false); refetch() }} />}
+      {showImport && <ImportarHermanosModal onSaved={(cerrar) => { refetch(); if (cerrar) setShowImport(false) }} />}
     </div>
   )
 }

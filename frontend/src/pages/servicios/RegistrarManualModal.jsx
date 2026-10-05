@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { createServicioManual, getCatalogo } from '@/api/servicios'
@@ -10,6 +10,7 @@ import { RangoHoraPicker } from '@/components/ui/time-picker'
 import { Combobox } from '@/components/ui/combobox'
 import { useToast } from '@/components/ui/toast'
 import { X, Wrench, Users, Loader2 } from 'lucide-react'
+import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
 
 const nombreMiembro = (m) => m.nombreCorto || m.usuario?.nombre || `Miembro ${m.id}`
 
@@ -29,6 +30,7 @@ export function RegistrarManualModal({ onClose, onSaved }) {
     fechaServicio: '',
     dirigidoA: '',
   })
+  const inicial = useRef(JSON.stringify([form, miembroIdsSeleccionados]))
 
   const { data: comunidades } = useQuery({
     queryKey: ['comunidades-select', equipoActual?.id],
@@ -89,8 +91,11 @@ export function RegistrarManualModal({ onClose, onSaved }) {
     }
   }
 
+  const { cerrar, dialogo } = useConfirmarSalida(onClose, JSON.stringify([form, miembroIdsSeleccionados]) !== inicial.current)
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
+      {dialogo}
       <div className="bg-card rounded-t-2xl md:rounded-xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-xl">
 
         <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-card z-10">
@@ -98,7 +103,7 @@ export function RegistrarManualModal({ onClose, onSaved }) {
             <Wrench className="h-5 w-5 text-primary" />
             <h2 className="font-semibold text-lg">Registrar servicio manualmente</h2>
           </div>
-          <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground">
+          <button onClick={cerrar} className="p-1 text-muted-foreground hover:text-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -213,7 +218,7 @@ export function RegistrarManualModal({ onClose, onSaved }) {
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
+            <Button variant="outline" className="flex-1" onClick={cerrar}>Cancelar</Button>
             <Button className="flex-1" onClick={guardar} disabled={guardando || !form.comunidadId || !form.catalogoServicioId}>
               {guardando
                 ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Guardando...</>

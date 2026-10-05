@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { X, Check } from 'lucide-react'
+import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
 
 export function ReunionModal({ onClose, onSaved }) {
   const { equipoActual } = useAuthStore()
@@ -17,7 +18,7 @@ export function ReunionModal({ onClose, onSaved }) {
   const [loading, setLoading] = useState(false)
   const [selectedMiembros, setSelectedMiembros] = useState([])
 
-  const { register, handleSubmit, formState: { errors } } = useForm()
+  const { register, handleSubmit, formState: { errors, isDirty } } = useForm()
 
   const { data: miembros = [] } = useQuery({
     queryKey: ['miembros', equipoActual?.id],
@@ -48,12 +49,15 @@ export function ReunionModal({ onClose, onSaved }) {
     }
   }
 
+  const { cerrar, dialogo } = useConfirmarSalida(onClose, isDirty || selectedMiembros.length > 0)
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
+      {dialogo}
       <div className="bg-card rounded-t-2xl md:rounded-xl w-full max-w-lg shadow-xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b shrink-0">
           <h2 className="font-semibold text-lg">Nueva reunión</h2>
-          <button onClick={onClose} className="min-h-0 h-auto p-1 text-muted-foreground"><X className="h-5 w-5" /></button>
+          <button onClick={cerrar} className="min-h-0 h-auto p-1 text-muted-foreground"><X className="h-5 w-5" /></button>
         </div>
 
         <div className="overflow-y-auto flex-1">
@@ -128,7 +132,7 @@ export function ReunionModal({ onClose, onSaved }) {
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
+              <Button type="button" variant="outline" className="flex-1" onClick={cerrar}>Cancelar</Button>
               <Button type="submit" className="flex-1" disabled={loading}>{loading ? 'Creando...' : 'Crear y editar'}</Button>
             </div>
           </form>

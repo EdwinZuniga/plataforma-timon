@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { X, Check } from 'lucide-react'
+import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
 
 const toDateInput = (iso) => iso ? iso.split('T')[0] : ''
 
@@ -15,11 +16,12 @@ export function EditarReunionModal({ reunion, onClose, onSaved }) {
   const { equipoActual } = useAuthStore()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const inicialMiembros = useRef(JSON.stringify((reunion.asistentes?.map((a) => a.miembro.id) ?? []).sort()))
   const [selectedMiembros, setSelectedMiembros] = useState(
     reunion.asistentes?.map((a) => a.miembro.id) ?? []
   )
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, formState: { errors, isDirty } } = useForm({
     defaultValues: {
       titulo: reunion.titulo,
       fecha: toDateInput(reunion.fecha),
@@ -56,12 +58,15 @@ export function EditarReunionModal({ reunion, onClose, onSaved }) {
     }
   }
 
+  const { cerrar, dialogo } = useConfirmarSalida(onClose, isDirty || JSON.stringify([...selectedMiembros].sort()) !== inicialMiembros.current)
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
+      {dialogo}
       <div className="bg-card rounded-t-2xl md:rounded-xl w-full max-w-lg shadow-xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b shrink-0">
           <h2 className="font-semibold text-lg">Editar reunión</h2>
-          <button onClick={onClose} className="min-h-0 h-auto p-1 text-muted-foreground"><X className="h-5 w-5" /></button>
+          <button onClick={cerrar} className="min-h-0 h-auto p-1 text-muted-foreground"><X className="h-5 w-5" /></button>
         </div>
 
         <div className="overflow-y-auto flex-1">
@@ -135,7 +140,7 @@ export function EditarReunionModal({ reunion, onClose, onSaved }) {
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
+              <Button type="button" variant="outline" className="flex-1" onClick={cerrar}>Cancelar</Button>
               <Button type="submit" className="flex-1" disabled={loading}>{loading ? 'Guardando...' : 'Guardar cambios'}</Button>
             </div>
           </form>

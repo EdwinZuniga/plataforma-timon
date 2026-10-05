@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 import { X, BookOpen } from 'lucide-react'
 import { formatCalendarDate } from '@/utils/dates'
+import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
 
 const fmt = (d) => formatCalendarDate(d, { year: 'numeric', month: 'numeric', day: 'numeric' })
 
@@ -53,15 +54,18 @@ export function VincularTallerModal({ hermanoId, inscripcionesActuales = [], onC
     }
   }
 
+  const { cerrar, dialogo } = useConfirmarSalida(onClose, tallerId !== '')
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
+      {dialogo}
       <div className="bg-card rounded-t-2xl md:rounded-xl w-full max-w-md shadow-xl">
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-primary-700 dark:text-primary-400" />
             <h2 className="font-semibold text-lg">Vincular a taller</h2>
           </div>
-          <button onClick={onClose} className="min-h-0 h-auto p-1 text-muted-foreground">
+          <button onClick={cerrar} className="min-h-0 h-auto p-1 text-muted-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -108,7 +112,7 @@ export function VincularTallerModal({ hermanoId, inscripcionesActuales = [], onC
           )}
 
           <div className="flex gap-2 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+            <Button type="button" variant="outline" className="flex-1" onClick={cerrar}>
               Cancelar
             </Button>
             <Button type="submit" className="flex-1" disabled={!edicionId || loading}>

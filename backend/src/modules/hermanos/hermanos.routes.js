@@ -8,6 +8,7 @@ registerIntParams(router)
 
 router.get('/', requireAuth, requireEquipo, requirePermiso('hermanos', 'ver'), ctrl.listar)
 router.post('/', requireAuth, requireEquipo, requirePermiso('hermanos', 'crear'), requireRolMinimo(['COORDINADOR', 'SECRETARIO', 'MIEMBRO']), ctrl.crear)
+router.post('/masivo', requireAuth, requireEquipo, requirePermiso('hermanos', 'crear'), requireRolMinimo(['COORDINADOR', 'SECRETARIO', 'MIEMBRO']), ctrl.crearMasivo)
 router.get('/:id', requireAuth, requireEquipo, requirePermiso('hermanos', 'ver'), ctrl.obtener)
 router.get('/:id/historial', requireAuth, requireEquipo, requirePermiso('hermanos', 'ver'), ctrl.historial)
 router.put('/:id', requireAuth, requireEquipo, requirePermiso('hermanos', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO', 'MIEMBRO']), ctrl.actualizar)

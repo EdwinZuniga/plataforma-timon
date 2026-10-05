@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { useToast } from '@/components/ui/toast'
 import { X } from 'lucide-react'
+import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
 
 const TIPOS = ['RETIRO', 'ASAMBLEA', 'ENCUENTRO', 'MISION', 'FORMACION', 'OTRO']
 const TIPO_LABEL = { RETIRO: 'Retiro', ASAMBLEA: 'Asamblea', ENCUENTRO: 'Encuentro', MISION: 'Misión', FORMACION: 'Formación', OTRO: 'Otro' }
@@ -16,7 +17,7 @@ export function ActividadModal({ onClose, onSaved, actividad }) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
 
-  const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, watch, setValue, formState: { errors, isDirty } } = useForm({
     defaultValues: actividad
       ? {
           nombre: actividad.nombre ?? '',
@@ -47,12 +48,15 @@ export function ActividadModal({ onClose, onSaved, actividad }) {
     }
   }
 
+  const { cerrar, dialogo } = useConfirmarSalida(onClose, isDirty)
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
+      {dialogo}
       <div className="bg-card rounded-t-2xl md:rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="font-semibold text-lg">{actividad ? 'Editar actividad' : 'Nueva actividad'}</h2>
-          <button onClick={onClose} className="min-h-0 h-auto p-1 text-muted-foreground"><X className="h-5 w-5" /></button>
+          <button onClick={cerrar} className="min-h-0 h-auto p-1 text-muted-foreground"><X className="h-5 w-5" /></button>
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="p-4 space-y-4">
           <div className="space-y-1">
@@ -82,7 +86,7 @@ export function ActividadModal({ onClose, onSaved, actividad }) {
                   hasta={watch('fechaFin') || ''}
                   onChange={(r) => {
                     field.onChange(r.desde)
-                    setValue('fechaFin', r.hasta && r.hasta !== r.desde ? r.hasta : '')
+                    setValue('fechaFin', r.hasta && r.hasta !== r.desde ? r.hasta : '', { shouldDirty: true })
                   }}
                 />
               )}
@@ -98,7 +102,7 @@ export function ActividadModal({ onClose, onSaved, actividad }) {
             <textarea className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none" {...register('descripcion')} placeholder="Descripción breve" />
           </div>
           <div className="flex gap-2 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
+            <Button type="button" variant="outline" className="flex-1" onClick={cerrar}>Cancelar</Button>
             <Button type="submit" className="flex-1" disabled={loading}>{loading ? 'Guardando...' : 'Guardar'}</Button>
           </div>
         </form>

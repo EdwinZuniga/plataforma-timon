@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Combobox } from '@/components/ui/combobox'
 import { useToast } from '@/components/ui/toast'
 import { X } from 'lucide-react'
+import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
 
 export function HermanoModal({ onClose, onSaved, hermano, comunidadId }) {
   const { equipoActual } = useAuthStore()
@@ -21,7 +22,7 @@ export function HermanoModal({ onClose, onSaved, hermano, comunidadId }) {
     enabled: !!equipoActual?.id,
   })
 
-  const { register, handleSubmit, control, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, formState: { errors, isDirty } } = useForm({
     defaultValues: hermano || (comunidadId ? { comunidadId } : {}),
   })
 
@@ -47,12 +48,15 @@ export function HermanoModal({ onClose, onSaved, hermano, comunidadId }) {
     }
   }
 
+  const { cerrar, dialogo } = useConfirmarSalida(onClose, isDirty)
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
+      {dialogo}
       <div className="bg-card rounded-t-2xl md:rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="font-semibold text-lg">{hermano ? 'Editar hermano' : 'Nuevo hermano'}</h2>
-          <button onClick={onClose} className="min-h-0 h-auto p-1 text-muted-foreground"><X className="h-5 w-5" /></button>
+          <button onClick={cerrar} className="min-h-0 h-auto p-1 text-muted-foreground"><X className="h-5 w-5" /></button>
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="p-4 space-y-4">
           <div className="grid grid-cols-2 gap-3">
@@ -102,7 +106,7 @@ export function HermanoModal({ onClose, onSaved, hermano, comunidadId }) {
             </div>
           </div>
           <div className="flex gap-2 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
+            <Button type="button" variant="outline" className="flex-1" onClick={cerrar}>Cancelar</Button>
             <Button type="submit" className="flex-1" disabled={loading}>{loading ? 'Guardando...' : 'Guardar'}</Button>
           </div>
         </form>

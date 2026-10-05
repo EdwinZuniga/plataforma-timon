@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Check, X } from 'lucide-react'
+import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
 
 // Alta y edición de un acuerdo. `acuerdo` (opcional) precarga los valores.
 export function AcuerdoModal({ acuerdo, miembros, pending, onSubmit, onClose }) {
@@ -10,6 +11,7 @@ export function AcuerdoModal({ acuerdo, miembros, pending, onSubmit, onClose }) 
   const [fechaLimite, setFechaLimite] = useState(acuerdo?.fechaLimite?.slice(0, 10) ?? '')
   const [responsableIds, setResponsableIds] = useState(acuerdo?.responsables?.map((r) => r.miembroId) ?? [])
   const [error, setError] = useState('')
+  const inicial = useRef(JSON.stringify([descripcion, fechaLimite, responsableIds]))
 
   const toggle = (id) =>
     setResponsableIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
@@ -20,12 +22,15 @@ export function AcuerdoModal({ acuerdo, miembros, pending, onSubmit, onClose }) 
     onSubmit({ descripcion: descripcion.trim(), fechaLimite: fechaLimite || null, responsableIds })
   }
 
+  const { cerrar, dialogo } = useConfirmarSalida(onClose, JSON.stringify([descripcion, fechaLimite, responsableIds]) !== inicial.current)
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
+      {dialogo}
       <div className="bg-card rounded-t-2xl md:rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="font-semibold text-lg">{acuerdo ? 'Editar acuerdo' : 'Nuevo acuerdo'}</h2>
-          <button type="button" onClick={onClose} className="min-h-0 h-auto p-1 text-muted-foreground"><X className="h-5 w-5" /></button>
+          <button type="button" onClick={cerrar} className="min-h-0 h-auto p-1 text-muted-foreground"><X className="h-5 w-5" /></button>
         </div>
         <form onSubmit={submit} className="p-4 space-y-4">
           <div className="space-y-1">
@@ -64,7 +69,7 @@ export function AcuerdoModal({ acuerdo, miembros, pending, onSubmit, onClose }) 
             <DatePicker clearable value={fechaLimite} onChange={setFechaLimite} />
           </div>
           <div className="flex gap-2 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
+            <Button type="button" variant="outline" className="flex-1" onClick={cerrar}>Cancelar</Button>
             <Button type="submit" className="flex-1" disabled={pending}>{pending ? 'Guardando...' : 'Guardar'}</Button>
           </div>
         </form>

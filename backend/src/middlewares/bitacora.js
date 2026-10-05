@@ -9,7 +9,7 @@ const ETIQUETA = {
   hermanos: 'hermano', talleres: 'taller', ediciones: 'edición de taller', inscripciones: 'inscripción',
   actividades: 'actividad', asistencia: 'asistencia', servicios: 'servicio', reuniones: 'reunión',
   acuerdos: 'acuerdo', comisiones: 'comisiones', visitas: 'visita', tesoreria: 'tesorería',
-  inventario: 'inventario', movimientos: 'movimiento', prestamos: 'préstamo', ocr: 'OCR', tipos: 'tipo',
+  inventario: 'inventario', movimientos: 'movimiento', prestamos: 'préstamo', ocr: 'OCR', masivo: 'registro masivo', tipos: 'tipo',
 }
 
 // Rutas que no aportan a la auditoría: la sesión ya tiene su propio historial.
