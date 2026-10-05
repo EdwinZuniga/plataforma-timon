@@ -23,5 +23,5 @@ export const errorHandler = (err, req, res, next) => {
     console.error(err)
   }
 
-  res.status(status).json({ success: false, error: message, code })
+  res.status(status).json({ success: false, error: message, code, ...(err.detalle && { detalle: err.detalle }) })
 }

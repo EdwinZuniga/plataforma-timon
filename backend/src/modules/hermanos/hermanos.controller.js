@@ -9,18 +9,18 @@ export const listar = async (req, res, next) => {
 
 export const crear = async (req, res, next) => {
   try {
-    const { nombre, apellido, telefono, email, comunidadId, notas } = req.body
+    const { nombre, apellido, telefono, email, comunidadId, notas, forzarNuevo } = req.body
     if (!nombre || !comunidadId) {
       return next({ status: 400, message: 'Nombre y comunidad son requeridos', code: 'DATOS_REQUERIDOS' })
     }
-    const data = await svc.crearHermano({ nombre, apellido, telefono, email, comunidadId: parseInt(comunidadId), equipoId: req.params.equipoId, notas })
+    const data = await svc.crearHermano({ nombre, apellido, telefono, email, comunidadId: parseInt(comunidadId), equipoId: req.params.equipoId, notas, forzarNuevo })
     res.status(201).json({ success: true, data })
   } catch (err) { next(err) }
 }
 
 export const crearMasivo = async (req, res, next) => {
   try {
-    const data = await svc.crearHermanosMasivo(req.params.equipoId, req.body.hermanos)
+    const data = await svc.crearHermanosMasivo(req.params.equipoId, req.body.hermanos, { simular: req.body.simular === true })
     res.status(201).json({ success: true, data })
   } catch (err) { next(err) }
 }

@@ -29,7 +29,29 @@ export const listarHermanos = async (equipoId, { q, comunidadId, activo, page = 
   return { data, pagination: { page: parseInt(page), limit: PAGE_SIZE, total, pages: Math.ceil(total / PAGE_SIZE) } }
 }
 
-export const crearHermano = async (body) => {
+// Busca en la comunidad un hermano con el mismo nombre completo (exacto) o muy parecido.
+// Lanza 409 para que la app pregunte al usuario en vez de crear un duplicado.
+const verificarDuplicado = async ({ equipoId, comunidadId, nombre, apellido, excluirId, forzarNuevo }) => {
+  const completo = normalizar(`${nombre ?? ''} ${apellido ?? ''}`)
+  const candidatos = await prisma.hermano.findMany({
+    where: { equipoId, comunidadId, ...(excluirId && { id: { not: excluirId } }) },
+    select: { id: true, nombre: true, apellido: true, activo: true },
+  })
+  const puntuados = candidatos
+    .map((h) => ({ h, d: distancia(completo, normalizar(`${h.nombre} ${h.apellido ?? ''}`)) }))
+    .sort((x, y) => x.d - y.d)
+  const mejor = puntuados[0]
+  if (!mejor) return
+  if (mejor.d === 0) {
+    throw { status: 409, code: 'HERMANO_DUPLICADO', message: 'Ya existe un hermano con ese nombre en esta comunidad', detalle: mejor.h }
+  }
+  if (!forzarNuevo && mejor.d <= umbralParecido(completo.length)) {
+    throw { status: 409, code: 'HERMANO_PARECIDO', message: 'Hay un hermano con un nombre muy parecido en esta comunidad', detalle: mejor.h }
+  }
+}
+
+export const crearHermano = async ({ forzarNuevo, ...body }) => {
+  await verificarDuplicado({ ...body, forzarNuevo })
   return prisma.hermano.create({ data: body })
 }
 
@@ -70,7 +92,14 @@ export const historialHermano = async (equipoId, id) => {
 export const actualizarHermano = async (equipoId, id, body) => {
   const existe = await prisma.hermano.findFirst({ where: { id, equipoId } })
   if (!existe) throw { status: 404, message: 'Hermano no encontrado', code: 'HERMANO_NO_ENCONTRADO' }
-  const { nombre, apellido, telefono, email, comunidadId, activo, notas } = body
+  const { nombre, apellido, telefono, email, comunidadId, activo, notas, forzarNuevo } = body
+  // Solo se revisa si cambia lo que identifica a la persona (nombre, apellido o comunidad).
+  const nuevaComunidad = comunidadId ? parseInt(comunidadId) : existe.comunidadId
+  const cambiaIdentidad = normalizar(`${nombre ?? existe.nombre} ${apellido ?? existe.apellido ?? ''}`) !== normalizar(`${existe.nombre} ${existe.apellido ?? ''}`)
+    || nuevaComunidad !== existe.comunidadId
+  if (cambiaIdentidad) {
+    await verificarDuplicado({ equipoId, comunidadId: nuevaComunidad, nombre: nombre ?? existe.nombre, apellido: apellido ?? existe.apellido, excluirId: id, forzarNuevo })
+  }
   return prisma.hermano.update({
     where: { id },
     data: { nombre, apellido, telefono, email, comunidadId: comunidadId ? parseInt(comunidadId) : undefined, activo, notas }
@@ -106,7 +135,7 @@ const texto = (v) => { const t = String(v ?? '').trim(); return t || null }
 // Una fila casi igual a un hermano de su comunidad (p. ej. «Martinez»/«Martines») no se
 // guarda: vuelve en `posibles` para que el usuario decida y reenvíe la fila con
 // `hermanoId` (es la misma persona: se completa su ficha) o `forzarNuevo` (es otra persona).
-export const crearHermanosMasivo = async (equipoId, filas) => {
+export const crearHermanosMasivo = async (equipoId, filas, { simular = false } = {}) => {
   if (!Array.isArray(filas) || filas.length === 0) {
     throw { status: 400, message: 'No hay filas para registrar', code: 'DATOS_REQUERIDOS' }
   }
@@ -131,18 +160,26 @@ export const crearHermanosMasivo = async (equipoId, filas) => {
   const validos = []
   const actualizaciones = []
   const posibles = []
+  const nuevos = []
+  const existentesAfectados = []
   const porId = new Map(existentes.map((h) => [h.id, h]))
   let sinCambios = 0
   const errores = []
 
   // Completa lo que falte en la ficha existente (sin pisar datos) y la reactiva si estaba inactiva.
-  const fusionar = (previo, f, email) => {
+  const fusionar = (previo, f, email, fila) => {
     const nuevo = { telefono: texto(f.telefono), email, notas: texto(f.notas) }
     const cambios = {}
     for (const [campo, valor] of Object.entries(nuevo)) if (valor && !previo[campo]) cambios[campo] = valor
     if (!previo.activo) cambios.activo = true
     if (Object.keys(cambios).length) actualizaciones.push({ id: previo.id, cambios })
     else sinCambios++
+    existentesAfectados.push({
+      fila,
+      datos: { nombre: f.nombre, apellido: f.apellido },
+      existente: { id: previo.id, nombre: previo.nombre, apellido: previo.apellido, activo: previo.activo },
+      cambios: Object.keys(cambios).map((c) => (c === 'activo' ? 'reactivar' : c)),
+    })
   }
   filas.forEach((f, i) => {
     const fila = f.fila ?? i + 1
@@ -165,13 +202,13 @@ export const crearHermanosMasivo = async (equipoId, filas) => {
 
     // Ya registrado con el mismo nombre completo: no se duplica, se fusiona.
     const previo = existentesPorClave.get(k)
-    if (previo) return fusionar(previo, f, email)
+    if (previo) return fusionar(previo, f, email, fila)
 
     // El usuario ya dijo que es la misma persona que un hermano existente.
     if (f.hermanoId != null) {
       const elegido = porId.get(Number(f.hermanoId))
       if (!elegido) return errores.push({ fila, error: 'El hermano elegido ya no existe' })
-      return fusionar(elegido, f, email)
+      return fusionar(elegido, f, email, fila)
     }
 
     // Nombre muy parecido en la misma comunidad: se pregunta en vez de decidir.
@@ -191,6 +228,7 @@ export const crearHermanosMasivo = async (equipoId, filas) => {
       }
     }
 
+    nuevos.push({ fila, nombre, apellido, telefono: texto(f.telefono), email, comunidad: candidatas[0].nombre, notas: texto(f.notas) })
     validos.push({
       nombre: nombre.slice(0, 191),
       apellido: apellido?.slice(0, 191) ?? null,
@@ -202,7 +240,13 @@ export const crearHermanosMasivo = async (equipoId, filas) => {
     })
   })
 
-  if (validos.length) await prisma.hermano.createMany({ data: validos })
-  await Promise.all(actualizaciones.map((a) => prisma.hermano.update({ where: { id: a.id }, data: a.cambios })))
-  return { creados: validos.length, actualizados: actualizaciones.length, sinCambios, posibles, errores }
+  // En simulación solo se clasifica: no se escribe nada y se devuelve el detalle para revisarlo.
+  if (!simular) {
+    if (validos.length) await prisma.hermano.createMany({ data: validos })
+    await Promise.all(actualizaciones.map((a) => prisma.hermano.update({ where: { id: a.id }, data: a.cambios })))
+  }
+  return {
+    creados: validos.length, actualizados: actualizaciones.length, sinCambios, posibles, errores,
+    ...(simular && { nuevos, existentes: existentesAfectados }),
+  }
 }

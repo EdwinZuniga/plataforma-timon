@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useForm, Controller } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -8,13 +9,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Combobox } from '@/components/ui/combobox'
 import { useToast } from '@/components/ui/toast'
-import { X } from 'lucide-react'
+import { X, AlertTriangle } from 'lucide-react'
 import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
 
 export function HermanoModal({ onClose, onSaved, hermano, comunidadId }) {
   const { equipoActual } = useAuthStore()
   const { toast } = useToast()
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [conflicto, setConflicto] = useState(null)
 
   const { data: comunidadesData } = useQuery({
     queryKey: ['comunidades-select', equipoActual?.id],
@@ -31,21 +34,40 @@ export function HermanoModal({ onClose, onSaved, hermano, comunidadId }) {
     [comunidadesData]
   )
 
-  const onSubmit = async (data) => {
+  const guardar = async (data, forzarNuevo = false) => {
     setLoading(true)
     try {
+      const body = forzarNuevo ? { ...data, forzarNuevo: true } : data
       if (hermano?.id) {
-        await updateHermano(equipoActual.id, hermano.id, data)
+        await updateHermano(equipoActual.id, hermano.id, body)
       } else {
-        await createHermano(equipoActual.id, data)
+        await createHermano(equipoActual.id, body)
       }
       toast({ title: hermano ? 'Hermano actualizado' : 'Hermano registrado' })
       onSaved()
     } catch (err) {
-      toast({ title: 'Error', description: err.response?.data?.error || 'Ocurrió un error', variant: 'destructive' })
+      const r = err.response?.data
+      if (err.response?.status === 409 && r?.detalle) {
+        setConflicto({ tipo: r.code, existente: r.detalle, data })
+      } else {
+        toast({ title: 'Error', description: r?.error || 'Ocurrió un error', variant: 'destructive' })
+      }
     } finally {
       setLoading(false)
     }
+  }
+  const onSubmit = (data) => guardar(data)
+
+  // Ir a la ficha del hermano que ya existe; si estaba inactivo se reactiva primero.
+  const irAFicha = async (reactivar) => {
+    const { existente } = conflicto
+    try {
+      if (reactivar) await updateHermano(equipoActual.id, existente.id, { activo: true })
+    } catch (err) {
+      return toast({ title: 'Error', description: err.response?.data?.error || 'No se pudo reactivar', variant: 'destructive' })
+    }
+    onClose()
+    navigate(`/hermanos/${existente.id}`)
   }
 
   const { cerrar, dialogo } = useConfirmarSalida(onClose, isDirty)
@@ -53,6 +75,37 @@ export function HermanoModal({ onClose, onSaved, hermano, comunidadId }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
       {dialogo}
+      {conflicto && (
+        <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/50">
+          <div className="bg-card rounded-t-2xl md:rounded-xl w-full max-w-sm shadow-xl p-5 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="shrink-0 mt-0.5 h-9 w-9 rounded-full bg-amber-500/10 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-base">
+                  {conflicto.tipo === 'HERMANO_DUPLICADO' ? 'Este hermano ya está registrado' : 'Se parece a un hermano ya registrado'}
+                </p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  <span className="font-medium text-foreground">{conflicto.existente.nombre} {conflicto.existente.apellido}</span> ya existe en esta comunidad
+                  {!conflicto.existente.activo && ' y está inactivo/a'}.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              {conflicto.existente.activo === false
+                ? <Button onClick={() => irAFicha(true)}>Reactivar y ver su ficha</Button>
+                : <Button onClick={() => irAFicha(false)}>{conflicto.tipo === 'HERMANO_PARECIDO' ? 'Es la misma persona: ver su ficha' : 'Ver su ficha'}</Button>}
+              {conflicto.tipo === 'HERMANO_PARECIDO' && (
+                <Button variant="outline" disabled={loading} onClick={() => { const d = conflicto.data; setConflicto(null); guardar(d, true) }}>
+                  Es otra persona: {hermano ? 'guardar' : 'registrar'} igual
+                </Button>
+              )}
+              <Button variant="ghost" onClick={() => setConflicto(null)}>Volver y corregir</Button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="bg-card rounded-t-2xl md:rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="font-semibold text-lg">{hermano ? 'Editar hermano' : 'Nuevo hermano'}</h2>
