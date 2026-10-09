@@ -77,7 +77,7 @@ export const obtenerDashboard = async (equipoId) => {
       talleres,
       serviciosPendientes,
     },
-    visitasProgramadas,
+    visitasProgramadas: await conApoyoNombres(visitasProgramadas, equipoId),
     serviciosAsignados,
     totalServiciosAsignados,
     graficas: {
@@ -131,4 +131,19 @@ export const reporteHermano = async (equipoId, hermanoId) => {
   })
   if (!hermano) throw { status: 404, message: 'Hermano no encontrado', code: 'HERMANO_NO_ENCONTRADO' }
   return hermano
+}
+
+// El campo apoyo guarda ids de miembros separados por coma; se resuelve a nombres para mostrarlos
+const conApoyoNombres = async (visitas, equipoId) => {
+  const ids = [...new Set(visitas.flatMap((v) => (v.apoyo || '').split(',').filter(Boolean).map(Number)))]
+  if (!ids.length) return visitas
+  const miembros = await prisma.miembroEquipo.findMany({
+    where: { equipoId, id: { in: ids } },
+    include: { usuario: { select: { nombre: true } } },
+  })
+  const nombrePorId = new Map(miembros.map((m) => [String(m.id), m.nombreCorto || m.usuario?.nombre]))
+  return visitas.map((v) => ({
+    ...v,
+    apoyoNombres: (v.apoyo || '').split(',').filter(Boolean).map((id) => nombrePorId.get(id) || id),
+  }))
 }

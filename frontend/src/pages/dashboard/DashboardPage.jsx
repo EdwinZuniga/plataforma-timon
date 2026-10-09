@@ -118,6 +118,11 @@ export default function DashboardPage() {
                       Responsable: {v.responsable.nombreCorto || v.responsable.usuario?.nombre}
                     </p>
                   )}
+                  {v.apoyoNombres?.length > 0 && (
+                    <p className="text-xs text-muted-foreground truncate">
+                      Apoyo: {v.apoyoNombres.join(', ')}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-medium">{rangoVisita(v)}</p>
