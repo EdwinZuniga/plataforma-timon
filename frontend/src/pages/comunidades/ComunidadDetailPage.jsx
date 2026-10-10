@@ -17,6 +17,7 @@ import { HermanoModal } from '../hermanos/HermanoModal'
 import { TimePicker, horarioATime, timeAHorario } from '@/components/ui/time-picker'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { PhoneActions } from '@/components/shared/PhoneActions'
+import { MapaUbicacion } from '@/components/shared/MapaUbicacion'
 import { enlaceGoogleMaps, enlaceWaze, coordenadasValidas } from '@/utils/ubicacion'
 import { ArrowLeft, Edit, MapPin, Navigation, Clock, Users, Plus, Trash2, Pencil, X, ShieldCheck, Wrench, Calendar } from 'lucide-react'
 
@@ -37,13 +38,7 @@ function UbicacionCard({ equipoId, comunidad }) {
       {foto && <img src={foto} alt="Foto de la ubicación" className="w-full max-h-72 object-cover rounded-md border" />}
       {hayCoords && (
         <>
-          <iframe
-            title="Mapa de la comunidad"
-            src={`https://maps.google.com/maps?q=${latitud},${longitud}&z=16&output=embed`}
-            className="w-full h-56 rounded-md border"
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
+          <MapaUbicacion latitud={latitud} longitud={longitud} />
           <p className="text-xs text-muted-foreground">{Number(latitud).toFixed(6)}, {Number(longitud).toFixed(6)}</p>
           <div className="grid grid-cols-2 gap-2">
             <a href={enlaceGoogleMaps(latitud, longitud)} target="_blank" rel="noopener noreferrer" className={btn}>

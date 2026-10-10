@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { createComunidad, updateComunidad, getFotoComunidad, resolverUbicacion, saveFotoComunidad, deleteFotoComunidad } from '@/api/comunidades'
+import { MapaUbicacion } from '@/components/shared/MapaUbicacion'
 import { coordenadasValidas, parsearCoordenadas, comprimirImagen } from '@/utils/ubicacion'
 import { getMiembros } from '@/api/equipos'
 import { Button } from '@/components/ui/button'
@@ -238,15 +239,9 @@ export function ComunidadModal({ onClose, onSaved, comunidad }) {
               />
               {vista && (
                 <div className="space-y-1">
-                  <iframe
-                    title="Vista previa del punto"
-                    src={`https://maps.google.com/maps?q=${vista.lat},${vista.lng}&z=17&output=embed`}
-                    className="w-full h-48 rounded-md border"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  />
+                  <MapaUbicacion latitud={vista.lat} longitud={vista.lng} />
                   <p className="text-xs text-muted-foreground">
-                    Confirma que el marcador está en el lugar correcto.
+                    Arrastra y haz zoom en el mapa para confirmar que el marcador está en el lugar correcto.
                     {precision != null && ` Precisión del GPS: ±${precision} m.`}
                   </p>
                 </div>
