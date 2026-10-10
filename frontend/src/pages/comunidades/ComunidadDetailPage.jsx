@@ -66,7 +66,7 @@ function Field({ label, children }) {
   )
 }
 
-const inputCls = 'w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500'
+const inputCls = 'w-full rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring'
 
 export default function ComunidadDetailPage() {
   const { id } = useParams()
@@ -581,7 +581,7 @@ export default function ComunidadDetailPage() {
               </select>
             </Field>
             <Field label="Apoyo">
-              <div className="border rounded-md p-2 space-y-1 max-h-40 overflow-y-auto">
+              <div className="border border-input bg-background rounded-md p-2 space-y-1 max-h-40 overflow-y-auto">
                 {miembros.length === 0 && <p className="text-xs text-muted-foreground px-1">Sin miembros disponibles</p>}
                 {miembros.map((m) => {
                   const selected = visitaForm.apoyo.split(',').filter(Boolean).includes(String(m.id))

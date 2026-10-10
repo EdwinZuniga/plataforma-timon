@@ -100,6 +100,9 @@
   #root { min-height: 100svh; }
 }
 
+/* Controles nativos (icono de calendario, scrollbars, desplegables) en modo oscuro */
+.dark { color-scheme: dark; }
+
 button { min-height: 44px; }
 input, select, textarea { min-height: 44px; }
 a[role="button"] { min-height: 44px; display: inline-flex; align-items: center; }
