@@ -8,9 +8,15 @@ registerIntParams(router)
 
 router.get('/', requireAuth, requireEquipo, requirePermiso('comunidades', 'ver'), ctrl.listar)
 router.post('/', requireAuth, requireEquipo, requirePermiso('comunidades', 'crear'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.crear)
+router.post('/resolver-ubicacion', requireAuth, requireEquipo, requirePermiso('comunidades', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.resolverUbicacion)
 router.get('/:id', requireAuth, requireEquipo, requirePermiso('comunidades', 'ver'), ctrl.obtener)
 router.put('/:id', requireAuth, requireEquipo, requirePermiso('comunidades', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.actualizar)
 router.delete('/:id', requireAuth, requireEquipo, requirePermiso('comunidades', 'eliminar'), requireRolMinimo(['COORDINADOR']), ctrl.eliminar)
+
+// Foto de la ubicación
+router.get('/:id/foto', requireAuth, requireEquipo, requirePermiso('comunidades', 'ver'), ctrl.obtenerFoto)
+router.put('/:id/foto', requireAuth, requireEquipo, requirePermiso('comunidades', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.guardarFoto)
+router.delete('/:id/foto', requireAuth, requireEquipo, requirePermiso('comunidades', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.eliminarFoto)
 
 // Miembros del consejo
 router.post('/:id/consejo', requireAuth, requireEquipo, requirePermiso('comunidades', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), ctrl.crearMiembroConsejo)

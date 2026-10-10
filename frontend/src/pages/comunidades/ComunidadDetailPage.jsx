@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
 import {
-  getComunidad,
+  getComunidad, getFotoComunidad,
   createMiembroConsejo, updateMiembroConsejo, deleteMiembroConsejo,
   createVisita, updateVisita, deleteVisita,
 } from '@/api/comunidades'
@@ -17,7 +17,47 @@ import { HermanoModal } from '../hermanos/HermanoModal'
 import { TimePicker, horarioATime, timeAHorario } from '@/components/ui/time-picker'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { PhoneActions } from '@/components/shared/PhoneActions'
-import { ArrowLeft, Edit, MapPin, Clock, Users, Plus, Trash2, Pencil, X, ShieldCheck, Wrench, Calendar } from 'lucide-react'
+import { enlaceGoogleMaps, enlaceWaze, coordenadasValidas } from '@/utils/ubicacion'
+import { ArrowLeft, Edit, MapPin, Navigation, Clock, Users, Plus, Trash2, Pencil, X, ShieldCheck, Wrench, Calendar } from 'lucide-react'
+
+function UbicacionCard({ equipoId, comunidad }) {
+  const { latitud, longitud, tieneFoto, id } = comunidad
+  const hayCoords = coordenadasValidas(latitud, longitud)
+  const { data: foto } = useQuery({
+    queryKey: ['comunidad-foto', equipoId, id, comunidad.updatedAt],
+    queryFn: () => getFotoComunidad(equipoId, id).then(r => r.data.data),
+    enabled: !!tieneFoto,
+  })
+  if (!hayCoords && !tieneFoto) return null
+
+  const btn = 'inline-flex items-center justify-center gap-2 h-11 rounded-md border border-input text-sm font-medium hover:bg-muted transition-colors'
+  return (
+    <Card className="md:col-span-2"><CardContent className="py-3 px-4 space-y-3">
+      <p className="text-xs text-muted-foreground flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />Ubicación</p>
+      {foto && <img src={foto} alt="Foto de la ubicación" className="w-full max-h-72 object-cover rounded-md border" />}
+      {hayCoords && (
+        <>
+          <iframe
+            title="Mapa de la comunidad"
+            src={`https://maps.google.com/maps?q=${latitud},${longitud}&z=16&output=embed`}
+            className="w-full h-56 rounded-md border"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+          <p className="text-xs text-muted-foreground">{Number(latitud).toFixed(6)}, {Number(longitud).toFixed(6)}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <a href={enlaceGoogleMaps(latitud, longitud)} target="_blank" rel="noopener noreferrer" className={btn}>
+              <MapPin className="h-4 w-4" />Google Maps
+            </a>
+            <a href={enlaceWaze(latitud, longitud)} target="_blank" rel="noopener noreferrer" className={btn}>
+              <Navigation className="h-4 w-4" />Waze
+            </a>
+          </div>
+        </>
+      )}
+    </CardContent></Card>
+  )
+}
 
 const TABS = ['Info general', 'Consejo', 'Hermanos', 'Visitas', 'Servicios']
 const ESTADO_BADGE = { ACTIVA: 'success', PROCESO_INSCRIPCION: 'warning', INACTIVA: 'secondary' }
@@ -258,6 +298,7 @@ export default function ComunidadDetailPage() {
               <div><p className="text-xs text-muted-foreground">Lugar de asamblea</p><p className="font-medium">{data.lugarAsamblea}</p></div>
             </CardContent></Card>
           )}
+          <UbicacionCard equipoId={equipoActual.id} comunidad={data} />
           {data.horarioAsamblea && (
             <Card><CardContent className="py-3 px-4 flex gap-2 items-start">
               <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />

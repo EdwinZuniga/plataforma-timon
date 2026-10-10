@@ -35,8 +35,47 @@ export const listarComunidades = async ({ q, departamento, enlaceId, estado, pag
   return { data, pagination: { page, limit: take, total, pages: Math.ceil(total / take) } }
 }
 
+// Normaliza latitud/longitud: vacío → null, fuera de rango o mal formado → 400.
+// Ambas deben venir juntas o ninguna.
+const normalizarCoordenadas = ({ latitud, longitud }) => {
+  if (latitud === undefined && longitud === undefined) return {}
+  const vacio = (v) => v === null || v === undefined || v === ''
+  if (vacio(latitud) && vacio(longitud)) return { latitud: null, longitud: null }
+  const lat = Number(latitud)
+  const lng = Number(longitud)
+  if (vacio(latitud) || vacio(longitud) || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    throw { status: 400, message: 'Coordenadas inválidas', code: 'COORDENADAS_INVALIDAS' }
+  }
+  return { latitud: lat, longitud: lng }
+}
+
 export const crearComunidad = async (body) => {
-  return prisma.comunidad.create({ data: body })
+  const { latitud, longitud, ...resto } = body
+  return prisma.comunidad.create({ data: { ...resto, ...normalizarCoordenadas({ latitud, longitud }) } })
+}
+
+const MAX_FOTO_CHARS = 1_500_000
+
+export const obtenerFoto = async (comunidadId) => {
+  const foto = await prisma.comunidadFoto.findUnique({ where: { comunidadId } })
+  return foto ? foto.datos : null
+}
+
+export const guardarFoto = async (comunidadId, foto) => {
+  const existe = await prisma.comunidad.findFirst({ where: { id: comunidadId }, select: { id: true } })
+  if (!existe) throw { status: 404, message: 'Comunidad no encontrada', code: 'COMUNIDAD_NO_ENCONTRADA' }
+  if (typeof foto !== 'string' || !/^data:image\/(jpeg|png|webp);base64,/.test(foto) || foto.length > MAX_FOTO_CHARS) {
+    throw { status: 400, message: 'Imagen inválida o demasiado grande', code: 'FOTO_INVALIDA' }
+  }
+  await prisma.comunidadFoto.upsert({
+    where: { comunidadId },
+    create: { comunidadId, datos: foto },
+    update: { datos: foto },
+  })
+}
+
+export const eliminarFoto = async (comunidadId) => {
+  await prisma.comunidadFoto.deleteMany({ where: { comunidadId } })
 }
 
 export const obtenerComunidad = async (equipoId, id) => {
@@ -68,17 +107,20 @@ export const obtenerComunidad = async (equipoId, id) => {
         },
       },
       hermanos: { where: { activo: true, equipoId }, select: { id: true, nombre: true, apellido: true, telefono: true } },
+      foto: { select: { comunidadId: true } },
     },
   })
   if (!comunidad) throw { status: 404, message: 'Comunidad no encontrada', code: 'COMUNIDAD_NO_ENCONTRADA' }
-  return { ...comunidad, servicios: conEstadoEfectivo(comunidad.servicios) }
+  const { foto, ...resto } = comunidad
+  return { ...resto, tieneFoto: !!foto, servicios: conEstadoEfectivo(comunidad.servicios) }
 }
 
 export const actualizarComunidad = async (id, body) => {
   const existe = await prisma.comunidad.findFirst({ where: { id } })
   if (!existe) throw { status: 404, message: 'Comunidad no encontrada', code: 'COMUNIDAD_NO_ENCONTRADA' }
   const { nombre, departamento, numero, estado, enlaceId, enlaceConsejo, fechaEleccion, lugarAsamblea, horarioAsamblea, oficial, notas } = body
-  return prisma.comunidad.update({ where: { id }, data: { nombre, departamento, numero, estado, enlaceId, enlaceConsejo, fechaEleccion, lugarAsamblea, horarioAsamblea, oficial, notas } })
+  const coords = normalizarCoordenadas(body)
+  return prisma.comunidad.update({ where: { id }, data: { nombre, departamento, numero, estado, enlaceId, enlaceConsejo, fechaEleccion, lugarAsamblea, horarioAsamblea, oficial, notas, ...coords } })
 }
 
 export const eliminarComunidad = async (id) => {

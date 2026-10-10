@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { createComunidad, updateComunidad } from '@/api/comunidades'
+import { createComunidad, updateComunidad, getFotoComunidad, resolverUbicacion, saveFotoComunidad, deleteFotoComunidad } from '@/api/comunidades'
+import { coordenadasValidas, parsearCoordenadas, comprimirImagen } from '@/utils/ubicacion'
 import { getMiembros } from '@/api/equipos'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
-import { X } from 'lucide-react'
+import { X, LocateFixed, Camera, Trash2 } from 'lucide-react'
 import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
 
 export function ComunidadModal({ onClose, onSaved, comunidad }) {
@@ -21,19 +22,119 @@ export function ComunidadModal({ onClose, onSaved, comunidad }) {
       .catch(() => {})
   }, [equipoActual.id])
 
-  const { register, handleSubmit, formState: { errors, isDirty } } = useForm({
+  const { register, handleSubmit, setValue, watch, formState: { errors, isDirty } } = useForm({
     defaultValues: comunidad || {},
   })
 
-  const onSubmit = async (data) => {
-    setLoading(true)
-    const payload = { ...data, enlaceId: data.enlaceId || null }
+  // El select de enlace se llena de forma asíncrona: hasta que las opciones existen
+  // el navegador descarta el valor por defecto, así que se vuelve a fijar al cargarlas.
+  useEffect(() => {
+    if (miembros.length && comunidad?.enlaceId) {
+      setValue('enlaceId', comunidad.enlaceId)
+    }
+  }, [miembros, comunidad?.enlaceId, setValue])
+
+  // Foto: undefined = sin cambios, null = quitar, string = nueva (data URL)
+  const [foto, setFoto] = useState(undefined)
+  const [fotoActual, setFotoActual] = useState(null)
+  const [pegado, setPegado] = useState('')
+  const [ubicando, setUbicando] = useState(false)
+  const lat = watch('latitud')
+  const lng = watch('longitud')
+  const hayCoords = String(lat ?? '') !== '' || String(lng ?? '') !== ''
+
+  useEffect(() => {
+    if (!comunidad?.tieneFoto) return
+    getFotoComunidad(equipoActual.id, comunidad.id)
+      .then(res => setFotoActual(res.data.data))
+      .catch(() => {})
+  }, [comunidad?.id, comunidad?.tieneFoto, equipoActual.id])
+
+  const fotoMostrada = foto === undefined ? fotoActual : foto
+
+  const fijarCoordenadas = (latitud, longitud) => {
+    setValue('latitud', latitud, { shouldDirty: true })
+    setValue('longitud', longitud, { shouldDirty: true })
+  }
+
+  const usarMiUbicacion = () => {
+    if (!navigator.geolocation) {
+      toast({ title: 'Tu navegador no permite obtener la ubicación', variant: 'destructive' })
+      return
+    }
+    setUbicando(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        fijarCoordenadas(Number(pos.coords.latitude.toFixed(6)), Number(pos.coords.longitude.toFixed(6)))
+        setUbicando(false)
+      },
+      () => {
+        setUbicando(false)
+        toast({ title: 'No se pudo obtener la ubicación', description: 'Revisa el permiso de ubicación del navegador.', variant: 'destructive' })
+      },
+      { enableHighAccuracy: true, timeout: 15000 },
+    )
+  }
+
+  // Acepta coordenadas o enlaces de Maps; los enlaces cortos (maps.app.goo.gl)
+  // no traen coordenadas, así que se resuelven en el servidor.
+  const procesarPegado = async (valor) => {
+    const texto = valor.trim()
+    if (!texto) return
+    const c = parsearCoordenadas(texto)
+    if (c) {
+      fijarCoordenadas(c.latitud, c.longitud)
+      setPegado('')
+      return
+    }
+    if (!/^https?:\/\//i.test(texto)) return
+    setUbicando(true)
     try {
-      if (comunidad?.id) {
-        await updateComunidad(equipoActual.id, comunidad.id, payload)
+      const res = await resolverUbicacion(equipoActual.id, texto)
+      fijarCoordenadas(res.data.data.latitud, res.data.data.longitud)
+      setPegado('')
+    } catch (err) {
+      toast({ title: 'No se pudo leer el enlace', description: err.response?.data?.error || 'Ingresa las coordenadas manualmente.', variant: 'destructive' })
+    } finally {
+      setUbicando(false)
+    }
+  }
+
+  const alElegirFoto = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    try {
+      setFoto(await comprimirImagen(file))
+    } catch {
+      toast({ title: 'No se pudo procesar la imagen', variant: 'destructive' })
+    }
+  }
+
+  const onSubmit = async (data) => {
+    const conCoords = coordenadasValidas(data.latitud, data.longitud)
+    if (!conCoords && (String(data.latitud ?? '') !== '' || String(data.longitud ?? '') !== '')) {
+      toast({ title: 'Coordenadas inválidas', description: 'Ingresa latitud y longitud válidas, o deja ambas vacías.', variant: 'destructive' })
+      return
+    }
+    setLoading(true)
+    const payload = {
+      ...data,
+      enlaceId: data.enlaceId || null,
+      latitud: conCoords ? Number(data.latitud) : null,
+      longitud: conCoords ? Number(data.longitud) : null,
+    }
+    delete payload.tieneFoto
+    try {
+      let id = comunidad?.id
+      if (id) {
+        await updateComunidad(equipoActual.id, id, payload)
       } else {
-        await createComunidad(equipoActual.id, payload)
+        const res = await createComunidad(equipoActual.id, payload)
+        id = res.data.data.id
       }
+      if (typeof foto === 'string') await saveFotoComunidad(equipoActual.id, id, foto)
+      else if (foto === null && comunidad?.tieneFoto) await deleteFotoComunidad(equipoActual.id, id)
       toast({ title: comunidad ? 'Comunidad actualizada' : 'Comunidad creada' })
       onSaved()
     } catch (err) {
@@ -101,6 +202,46 @@ export function ComunidadModal({ onClose, onSaved, comunidad }) {
             <div className="space-y-1 col-span-2">
               <label className="text-sm font-medium">Lugar de asamblea</label>
               <Input {...register('lugarAsamblea')} placeholder="Lugar habitual de reunión" />
+            </div>
+            <div className="col-span-2 rounded-lg border p-3 space-y-3">
+              <p className="text-sm font-medium">Ubicación en el mapa</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Input {...register('latitud')} inputMode="decimal" placeholder="Latitud (13.6929)" />
+                <Input {...register('longitud')} inputMode="decimal" placeholder="Longitud (-89.2182)" />
+              </div>
+              {hayCoords && !coordenadasValidas(lat, lng) && (
+                <p className="text-xs text-destructive">Coordenadas inválidas</p>
+              )}
+              <Button type="button" variant="outline" className="w-full" onClick={usarMiUbicacion} disabled={ubicando}>
+                <LocateFixed className="h-4 w-4 mr-2" />
+                {ubicando ? 'Obteniendo ubicación...' : 'Usar mi ubicación actual'}
+              </Button>
+              <Input
+                value={pegado}
+                onChange={(e) => setPegado(e.target.value)}
+                onPaste={(e) => { e.preventDefault(); const t = e.clipboardData.getData('text'); setPegado(t); procesarPegado(t) }}
+                onBlur={(e) => procesarPegado(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); procesarPegado(pegado) } }}
+                placeholder="O pega un enlace de Google Maps o coordenadas"
+              />
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">Foto de referencia (fachada, portón, entrada...)</p>
+                {fotoMostrada && (
+                  <img src={fotoMostrada} alt="Foto de la ubicación" className="w-full max-h-56 object-cover rounded-md border" />
+                )}
+                <div className="flex gap-2">
+                  <label className="flex-1 inline-flex items-center justify-center gap-2 h-11 rounded-md border border-input text-sm cursor-pointer hover:bg-muted">
+                    <Camera className="h-4 w-4" />
+                    {fotoMostrada ? 'Cambiar foto' : 'Adjuntar foto'}
+                    <input type="file" accept="image/*" className="hidden" onChange={alElegirFoto} />
+                  </label>
+                  {fotoMostrada && (
+                    <Button type="button" variant="outline" onClick={() => setFoto(null)} title="Quitar foto">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
             <div className="space-y-1 col-span-2">
               <label className="text-sm font-medium">Enlace Consejo Asesor</label>

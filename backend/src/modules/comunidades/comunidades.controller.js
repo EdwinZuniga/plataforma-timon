@@ -1,4 +1,5 @@
 import * as svc from './comunidades.service.js'
+import { resolverEnlaceMapa } from './ubicacion.js'
 
 export const listar = async (req, res, next) => {
   try {
@@ -9,11 +10,11 @@ export const listar = async (req, res, next) => {
 
 export const crear = async (req, res, next) => {
   try {
-    const { nombre, departamento, numero, estado, enlaceId, enlaceConsejo, fechaEleccion, lugarAsamblea, horarioAsamblea, oficial, notas } = req.body
+    const { nombre, departamento, numero, estado, enlaceId, enlaceConsejo, fechaEleccion, lugarAsamblea, horarioAsamblea, oficial, notas, latitud, longitud } = req.body
     if (!nombre || !departamento) {
       return next({ status: 400, message: 'Nombre y departamento son requeridos', code: 'DATOS_REQUERIDOS' })
     }
-    const data = await svc.crearComunidad({ nombre, departamento, numero, estado, enlaceId, enlaceConsejo, fechaEleccion, lugarAsamblea, horarioAsamblea, oficial, notas })
+    const data = await svc.crearComunidad({ nombre, departamento, numero, estado, enlaceId, enlaceConsejo, fechaEleccion, lugarAsamblea, horarioAsamblea, oficial, notas, latitud, longitud })
     res.status(201).json({ success: true, data })
   } catch (err) { next(err) }
 }
@@ -35,6 +36,34 @@ export const actualizar = async (req, res, next) => {
 export const eliminar = async (req, res, next) => {
   try {
     await svc.eliminarComunidad(req.params.id)
+    res.json({ success: true })
+  } catch (err) { next(err) }
+}
+
+export const resolverUbicacion = async (req, res, next) => {
+  try {
+    const data = await resolverEnlaceMapa(req.body.url)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export const obtenerFoto = async (req, res, next) => {
+  try {
+    const data = await svc.obtenerFoto(req.params.id)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+}
+
+export const guardarFoto = async (req, res, next) => {
+  try {
+    await svc.guardarFoto(req.params.id, req.body.foto)
+    res.json({ success: true })
+  } catch (err) { next(err) }
+}
+
+export const eliminarFoto = async (req, res, next) => {
+  try {
+    await svc.eliminarFoto(req.params.id)
     res.json({ success: true })
   } catch (err) { next(err) }
 }

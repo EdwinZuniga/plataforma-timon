@@ -17,3 +17,9 @@ export const deleteMiembroConsejo = (equipoId, comunidadId, miembroId) => api.de
 export const createVisita = (equipoId, comunidadId, data) => api.post(`${base(equipoId)}/${comunidadId}/visitas`, data)
 export const updateVisita = (equipoId, comunidadId, visitaId, data) => api.put(`${base(equipoId)}/${comunidadId}/visitas/${visitaId}`, data)
 export const deleteVisita = (equipoId, comunidadId, visitaId) => api.delete(`${base(equipoId)}/${comunidadId}/visitas/${visitaId}`)
+
+// Foto de la ubicación
+export const getFotoComunidad = (equipoId, id) => api.get(`${base(equipoId)}/${id}/foto`)
+export const saveFotoComunidad = (equipoId, id, foto) => api.put(`${base(equipoId)}/${id}/foto`, { foto })
+export const deleteFotoComunidad = (equipoId, id) => api.delete(`${base(equipoId)}/${id}/foto`)
+export const resolverUbicacion = (equipoId, url) => api.post(`${base(equipoId)}/resolver-ubicacion`, { url })
