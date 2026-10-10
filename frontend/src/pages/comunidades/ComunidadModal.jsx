@@ -41,7 +41,16 @@ export function ComunidadModal({ onClose, onSaved, comunidad }) {
   const [ubicando, setUbicando] = useState(false)
   const lat = watch('latitud')
   const lng = watch('longitud')
+  const [precision, setPrecision] = useState(null)
+  const [vista, setVista] = useState(null)
   const hayCoords = String(lat ?? '') !== '' || String(lng ?? '') !== ''
+
+  // Vista previa del punto (con pausa para no recargar el mapa en cada tecla)
+  useEffect(() => {
+    if (!coordenadasValidas(lat, lng)) { setVista(null); return }
+    const t = setTimeout(() => setVista({ lat: Number(lat), lng: Number(lng) }), 500)
+    return () => clearTimeout(t)
+  }, [lat, lng])
 
   useEffect(() => {
     if (!comunidad?.tieneFoto) return
@@ -66,6 +75,7 @@ export function ComunidadModal({ onClose, onSaved, comunidad }) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         fijarCoordenadas(Number(pos.coords.latitude.toFixed(6)), Number(pos.coords.longitude.toFixed(6)))
+        setPrecision(Math.round(pos.coords.accuracy))
         setUbicando(false)
       },
       () => {
@@ -84,6 +94,7 @@ export function ComunidadModal({ onClose, onSaved, comunidad }) {
     const c = parsearCoordenadas(texto)
     if (c) {
       fijarCoordenadas(c.latitud, c.longitud)
+      setPrecision(null)
       setPegado('')
       return
     }
@@ -92,6 +103,7 @@ export function ComunidadModal({ onClose, onSaved, comunidad }) {
     try {
       const res = await resolverUbicacion(equipoActual.id, texto)
       fijarCoordenadas(res.data.data.latitud, res.data.data.longitud)
+      setPrecision(null)
       setPegado('')
     } catch (err) {
       toast({ title: 'No se pudo leer el enlace', description: err.response?.data?.error || 'Ingresa las coordenadas manualmente.', variant: 'destructive' })
@@ -224,6 +236,21 @@ export function ComunidadModal({ onClose, onSaved, comunidad }) {
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); procesarPegado(pegado) } }}
                 placeholder="O pega un enlace de Google Maps o coordenadas"
               />
+              {vista && (
+                <div className="space-y-1">
+                  <iframe
+                    title="Vista previa del punto"
+                    src={`https://maps.google.com/maps?q=${vista.lat},${vista.lng}&z=17&output=embed`}
+                    className="w-full h-48 rounded-md border"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Confirma que el marcador está en el lugar correcto.
+                    {precision != null && ` Precisión del GPS: ±${precision} m.`}
+                  </p>
+                </div>
+              )}
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">Foto de referencia (fachada, portón, entrada...)</p>
                 {fotoMostrada && (
