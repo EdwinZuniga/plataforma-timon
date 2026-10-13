@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -19,7 +19,41 @@ import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { PhoneActions } from '@/components/shared/PhoneActions'
 import { MapaUbicacion } from '@/components/shared/MapaUbicacion'
 import { enlaceGoogleMaps, enlaceWaze, coordenadasValidas } from '@/utils/ubicacion'
-import { ArrowLeft, Edit, MapPin, Navigation, Clock, Users, Plus, Trash2, Pencil, X, ShieldCheck, Wrench, Calendar } from 'lucide-react'
+import { ArrowLeft, Edit, MapPin, Navigation, Image as ImageIcon, ZoomIn, ZoomOut, Clock, Users, Plus, Trash2, Pencil, X, ShieldCheck, Wrench, Calendar } from 'lucide-react'
+
+function VisorImagen({ src, onClose }) {
+  const [zoom, setZoom] = useState(1)
+  const cambiar = (d) => setZoom((z) => Math.min(5, Math.max(1, +(z + d).toFixed(2))))
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const ctl = 'inline-flex items-center justify-center h-10 w-10 rounded-md bg-white/15 text-white hover:bg-white/25 disabled:opacity-40'
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-black/90" onClick={onClose}>
+      <div className="flex items-center justify-between p-3" onClick={(e) => e.stopPropagation()}>
+        <div className="flex gap-2">
+          <button type="button" className={ctl} onClick={() => cambiar(-0.5)} disabled={zoom <= 1} title="Alejar"><ZoomOut className="h-5 w-5" /></button>
+          <button type="button" className={ctl} onClick={() => cambiar(0.5)} disabled={zoom >= 5} title="Acercar"><ZoomIn className="h-5 w-5" /></button>
+        </div>
+        <button type="button" className={ctl} onClick={onClose} title="Cerrar"><X className="h-5 w-5" /></button>
+      </div>
+      <div className="flex-1 overflow-auto" onClick={(e) => e.stopPropagation()}>
+        <img
+          src={src}
+          alt="Imagen de referencia de la ubicación"
+          style={{ width: `${zoom * 100}%`, maxWidth: 'none' }}
+          className="mx-auto block select-none"
+          onDoubleClick={() => setZoom((z) => (z > 1 ? 1 : 2.5))}
+          draggable={false}
+        />
+      </div>
+    </div>
+  )
+}
 
 function UbicacionCard({ equipoId, comunidad }) {
   const { latitud, longitud, tieneFoto, id } = comunidad
@@ -29,13 +63,13 @@ function UbicacionCard({ equipoId, comunidad }) {
     queryFn: () => getFotoComunidad(equipoId, id).then(r => r.data.data),
     enabled: !!tieneFoto,
   })
+  const [verFoto, setVerFoto] = useState(false)
   if (!hayCoords && !tieneFoto) return null
 
   const btn = 'inline-flex items-center justify-center gap-2 h-11 rounded-md border border-input text-sm font-medium hover:bg-muted transition-colors'
   return (
     <Card className="md:col-span-2"><CardContent className="py-3 px-4 space-y-3">
       <p className="text-xs text-muted-foreground flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />Ubicación</p>
-      {foto && <img src={foto} alt="Foto de la ubicación" className="w-full max-h-72 object-cover rounded-md border" />}
       {hayCoords && (
         <>
           <MapaUbicacion latitud={latitud} longitud={longitud} />
@@ -50,6 +84,12 @@ function UbicacionCard({ equipoId, comunidad }) {
           </div>
         </>
       )}
+      {tieneFoto && (
+        <button type="button" onClick={() => setVerFoto(true)} disabled={!foto} className={`${btn} w-full disabled:opacity-60`}>
+          <ImageIcon className="h-4 w-4" />{foto ? 'Ver imagen de referencia' : 'Cargando imagen...'}
+        </button>
+      )}
+      {verFoto && foto && <VisorImagen src={foto} onClose={() => setVerFoto(false)} />}
     </CardContent></Card>
   )
 }
