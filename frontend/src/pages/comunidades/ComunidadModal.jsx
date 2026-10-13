@@ -8,7 +8,7 @@ import { getMiembros } from '@/api/equipos'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
-import { X, LocateFixed, Camera, Trash2 } from 'lucide-react'
+import { X, LocateFixed, Camera, Image as ImageIcon, Trash2 } from 'lucide-react'
 import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
 
 export function ComunidadModal({ onClose, onSaved, comunidad }) {
@@ -120,7 +120,7 @@ export function ComunidadModal({ onClose, onSaved, comunidad }) {
     try {
       setFoto(await comprimirImagen(file))
     } catch {
-      toast({ title: 'No se pudo procesar la imagen', variant: 'destructive' })
+      toast({ title: 'No se pudo procesar la imagen', description: 'Prueba con otra foto o tómala con la cámara (los formatos como HEIC pueden no ser compatibles).', variant: 'destructive' })
     }
   }
 
@@ -254,7 +254,12 @@ export function ComunidadModal({ onClose, onSaved, comunidad }) {
                 <div className="flex gap-2">
                   <label className="flex-1 inline-flex items-center justify-center gap-2 h-11 rounded-md border border-input text-sm cursor-pointer hover:bg-muted">
                     <Camera className="h-4 w-4" />
-                    {fotoMostrada ? 'Cambiar foto' : 'Adjuntar foto'}
+                    Tomar foto
+                    <input type="file" accept="image/*" capture="environment" className="hidden" onChange={alElegirFoto} />
+                  </label>
+                  <label className="flex-1 inline-flex items-center justify-center gap-2 h-11 rounded-md border border-input text-sm cursor-pointer hover:bg-muted">
+                    <ImageIcon className="h-4 w-4" />
+                    Galería
                     <input type="file" accept="image/*" className="hidden" onChange={alElegirFoto} />
                   </label>
                   {fotoMostrada && (

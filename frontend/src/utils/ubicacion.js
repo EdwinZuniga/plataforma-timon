@@ -30,23 +30,35 @@ export const enlaceWaze = (lat, lng) =>
   `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`
 
 // Reduce la imagen a un JPEG de máx. `maxLado` px y lo devuelve como data URL.
-export function comprimirImagen(file, maxLado = 1024, calidad = 0.75) {
-  return new Promise((resolve, reject) => {
+// createImageBitmap respeta la orientación EXIF (fotos del celular); si el navegador
+// no puede decodificar el formato (p. ej. HEIC), se intenta con <img> y si no, se lanza error.
+export async function comprimirImagen(file, maxLado = 1024, calidad = 0.75) {
+  let fuente, ancho, alto, liberar = () => {}
+  try {
+    fuente = await createImageBitmap(file, { imageOrientation: 'from-image' })
+    ancho = fuente.width
+    alto = fuente.height
+    liberar = () => fuente.close?.()
+  } catch {
     const url = URL.createObjectURL(file)
-    const img = new Image()
-    img.onload = () => {
-      const escala = Math.min(1, maxLado / Math.max(img.width, img.height))
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.round(img.width * escala)
-      canvas.height = Math.round(img.height * escala)
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+    try {
+      fuente = await new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => resolve(img)
+        img.onerror = () => reject(new Error('Formato de imagen no compatible'))
+        img.src = url
+      })
+    } finally {
       URL.revokeObjectURL(url)
-      resolve(canvas.toDataURL('image/jpeg', calidad))
     }
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      reject(new Error('No se pudo leer la imagen'))
-    }
-    img.src = url
-  })
+    ancho = fuente.naturalWidth
+    alto = fuente.naturalHeight
+  }
+  const escala = Math.min(1, maxLado / Math.max(ancho, alto))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(ancho * escala)
+  canvas.height = Math.round(alto * escala)
+  canvas.getContext('2d').drawImage(fuente, 0, 0, canvas.width, canvas.height)
+  liberar()
+  return canvas.toDataURL('image/jpeg', calidad)
 }
