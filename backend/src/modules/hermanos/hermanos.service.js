@@ -1,4 +1,5 @@
 import prisma from '../../config/database.js'
+import { contiene } from '../../utils/busqueda.js'
 
 const PAGE_SIZE = 20
 
@@ -7,8 +8,8 @@ export const listarHermanos = async (equipoId, { q, comunidadId, activo, page = 
     equipoId,
     ...(q && {
       OR: [
-        { nombre: { contains: q } },
-        { apellido: { contains: q } },
+        { nombre: contiene(q) },
+        { apellido: contiene(q) },
       ],
     }),
     ...(comunidadId && { comunidadId }),

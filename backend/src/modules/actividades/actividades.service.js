@@ -1,4 +1,5 @@
 import prisma from '../../config/database.js'
+import { contiene } from '../../utils/busqueda.js'
 
 const PAGE_SIZE = 20
 
@@ -14,7 +15,7 @@ export const listarActividades = async (equipoId, { anio, tipo, q, desde, hasta,
     generadaPorServicio: false,
     ...(anio && { anio: parseInt(anio) }),
     ...(tipo && { tipo }),
-    ...(q && { OR: [{ nombre: { contains: q } }, { lugar: { contains: q } }] }),
+    ...(q && { OR: [{ nombre: contiene(q) }, { lugar: contiene(q) }] }),
     ...(Object.keys(fecha).length && { fecha }),
   }
 
@@ -81,7 +82,7 @@ export const listarAsistencia = async (equipoId, actividadId, { q }) => {
     where: {
       equipoId,
       activo: true,
-      ...(q && { OR: [{ nombre: { contains: q } }, { apellido: { contains: q } }] }),
+      ...(q && { OR: [{ nombre: contiene(q) }, { apellido: contiene(q) }] }),
     },
     include: {
       asistencias: { where: { actividadId } },
@@ -126,8 +127,8 @@ export const listarAsistenciaMiembros = async (equipoId, actividadId, { q }) => 
       activo: true,
       ...(q && {
         OR: [
-          { nombreCorto: { contains: q } },
-          { usuario: { nombre: { contains: q } } },
+          { nombreCorto: contiene(q) },
+          { usuario: { nombre: contiene(q) } },
         ],
       }),
     },

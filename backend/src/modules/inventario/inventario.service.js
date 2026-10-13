@@ -1,4 +1,5 @@
 import prisma from '../../config/database.js'
+import { contiene } from '../../utils/busqueda.js'
 
 // ─── Artículos ───────────────────────────────────────────────────────────────
 
@@ -8,7 +9,7 @@ export const listarArticulos = async (equipoId, { busqueda, categoria } = {}) =>
       equipoId,
       activo: true,
       ...(categoria && { categoria }),
-      ...(busqueda && { nombre: { contains: busqueda } }),
+      ...(busqueda && { nombre: contiene(busqueda) }),
     },
     include: {
       prestamos: {

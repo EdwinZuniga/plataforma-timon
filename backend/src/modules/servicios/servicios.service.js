@@ -1,4 +1,5 @@
 import prisma from '../../config/database.js'
+import { contiene } from '../../utils/busqueda.js'
 import { conEstadoEfectivo, filtroEstado } from './servicio-estado.js'
 
 const PAGE_SIZE = 10
@@ -181,8 +182,8 @@ export const listarTodos = async (equipoId, { estado, page = 1, origenOCR, anio,
       ...(buscar?.trim()
         ? [{
             OR: [
-              { comunidadSolicitante: { contains: buscar.trim() } },
-              { comunidad: { nombre: { contains: buscar.trim() } } },
+              { comunidadSolicitante: contiene(buscar.trim()) },
+              { comunidad: { nombre: contiene(buscar.trim()) } },
             ],
           }]
         : []),

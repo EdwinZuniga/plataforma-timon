@@ -11,6 +11,7 @@ import { Combobox } from '@/components/ui/combobox'
 import { useToast } from '@/components/ui/toast'
 import { X, Wrench, Users, Loader2 } from 'lucide-react'
 import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
+import { coincide } from '@/utils/texto'
 
 const nombreMiembro = (m) => m.nombreCorto || m.usuario?.nombre || `Miembro ${m.id}`
 
@@ -58,7 +59,7 @@ export function RegistrarManualModal({ onClose, onSaved }) {
   const miembrosFiltrados = (miembros || []).filter((m) => {
     if (!m.activo) return false
     if (!busqueda) return true
-    return nombreMiembro(m).toLowerCase().includes(busqueda.toLowerCase())
+    return coincide(nombreMiembro(m), busqueda)
   })
 
   const toggleMiembro = (id) => {

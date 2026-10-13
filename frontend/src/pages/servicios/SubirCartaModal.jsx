@@ -12,6 +12,7 @@ import { Combobox } from '@/components/ui/combobox'
 import { useToast } from '@/components/ui/toast'
 import { X, Upload, Loader2, FileText, Users, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
+import { coincide } from '@/utils/texto'
 
 function normalizar(str) {
   return (str || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
@@ -101,7 +102,7 @@ export function SubirCartaModal({ onClose, onSaved }) {
   const miembrosFiltrados = (miembros || []).filter((m) => {
     if (!m.activo) return false
     if (!busqueda) return true
-    return nombreMiembro(m).toLowerCase().includes(busqueda.toLowerCase())
+    return coincide(nombreMiembro(m), busqueda)
   })
 
   const seleccionarArchivo = (file) => {

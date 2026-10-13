@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { RangoHoraPicker } from '@/components/ui/time-picker'
 import { PageSpinner } from '@/components/ui/spinner'
 import { useDebounce } from '@/hooks/useDebounce'
+import { coincide } from '@/utils/texto'
 import { useToast } from '@/components/ui/toast'
 import { SubirCartaModal } from './SubirCartaModal'
 import { RegistrarManualModal } from './RegistrarManualModal'
@@ -301,7 +302,7 @@ function AsignarMiembroInline({ equipoId, servicioId, asignadosActuales, onUpdat
   const miembrosFiltrados = (miembros || []).filter((m) => {
     if (!m.activo || asignadosIds.has(m.id)) return false
     if (!busqueda) return true
-    return nombreMiembro(m).toLowerCase().includes(busqueda.toLowerCase())
+    return coincide(nombreMiembro(m), busqueda)
   })
 
   const { mutate: asignar, isPending: asignando } = useMutation({

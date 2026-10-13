@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs'
 import prisma from '../../config/database.js'
+import { contiene } from '../../utils/busqueda.js'
 
 // ─── ESTADÍSTICAS GLOBALES ────────────────────────────────────────────────────
 
@@ -24,7 +25,7 @@ export const obtenerStats = async () => {
 export const listarUsuarios = async ({ search, page = 1, limit = 20 } = {}) => {
   const skip = (page - 1) * limit
   const where = search
-    ? { OR: [{ nombre: { contains: search } }, { email: { contains: search } }] }
+    ? { OR: [{ nombre: contiene(search) }, { email: contiene(search) }] }
     : {}
 
   const [total, items] = await Promise.all([
@@ -102,7 +103,7 @@ export const eliminarUsuario = async (id) => {
 
 export const listarEquipos = async ({ search, page = 1, limit = 20 } = {}) => {
   const skip = (page - 1) * limit
-  const where = search ? { nombre: { contains: search } } : {}
+  const where = search ? { nombre: contiene(search) } : {}
 
   const [total, items] = await Promise.all([
     prisma.equipoTimon.count({ where }),
@@ -234,7 +235,7 @@ export const limpiarPermisosMembresia = async (miembroId) => {
 // ─── SESIONES ACTIVAS ─────────────────────────────────────────────────────────
 
 const filtroBusquedaUsuario = (search) =>
-  search ? { usuario: { OR: [{ nombre: { contains: search } }, { email: { contains: search } }] } } : {}
+  search ? { usuario: { OR: [{ nombre: contiene(search) }, { email: contiene(search) }] } } : {}
 
 export const listarSesiones = async ({ search, page = 1, limit = 20 } = {}) => {
   const skip = (page - 1) * limit
@@ -336,7 +337,7 @@ export const listarBitacora = async ({ search, accion, desde, hasta, page = 1, l
 
   const where = {
     ...(ACCIONES_BITACORA.includes(accion) && { accion }),
-    ...(search && { OR: [{ descripcion: { contains: search } }, { usuarioNombre: { contains: search } }] }),
+    ...(search && { OR: [{ descripcion: contiene(search) }, { usuarioNombre: contiene(search) }] }),
     ...(Object.keys(createdAt).length && { createdAt }),
   }
 
