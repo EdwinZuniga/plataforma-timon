@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Check, X } from 'lucide-react'
 import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
+import { nombreMiembro } from '@/utils/texto'
 
 // Alta y edición de un acuerdo. `acuerdo` (opcional) precarga los valores.
 export function AcuerdoModal({ acuerdo, miembros, pending, onSubmit, onClose }) {
@@ -58,7 +59,7 @@ export function AcuerdoModal({ acuerdo, miembros, pending, onSubmit, onClose }) 
                     <div className={`h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${selected ? 'border-primary-700 bg-primary-700' : 'border-input'}`}>
                       {selected && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
                     </div>
-                    <span className="text-sm">{m.usuario?.nombre}</span>
+                    <span className="text-sm">{nombreMiembro(m)}</span>
                   </button>
                 )
               })}

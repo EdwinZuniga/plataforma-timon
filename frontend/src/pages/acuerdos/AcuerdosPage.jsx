@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/toast'
 import { AcuerdoEstadoBoton } from '@/components/shared/AcuerdoEstadoBoton'
 import { fmtFechaLimite } from '@/utils/acuerdos'
 import { cn } from '@/utils/cn'
+import { nombreMiembro } from '@/utils/texto'
 
 const VISTAS = [
   { id: 'mios', label: 'Mis pendientes', params: { estado: 'ABIERTOS', mios: 1 }, vacio: 'No tienes acuerdos pendientes. ¡Buen trabajo!' },
@@ -37,7 +38,7 @@ export default function AcuerdosPage() {
   })
   const miembrosActivos = miembros
     .filter((m) => m.activo)
-    .sort((a, b) => (a.usuario?.nombre || '').localeCompare(b.usuario?.nombre || ''))
+    .sort((a, b) => nombreMiembro(a).localeCompare(nombreMiembro(b)))
 
   const refrescar = () => {
     qc.invalidateQueries({ queryKey: ['acuerdos'] })

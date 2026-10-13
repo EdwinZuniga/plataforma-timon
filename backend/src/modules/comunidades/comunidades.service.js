@@ -1,11 +1,12 @@
 import { conEstadoEfectivo } from '../servicios/servicio-estado.js'
 import prisma from '../../config/database.js'
+import { contiene } from '../../utils/busqueda.js'
 
 const PAGE_SIZE = 20
 
 export const listarComunidades = async ({ q, departamento, enlaceId, estado, page = 1, limit }) => {
   const where = {
-    ...(q && { nombre: { contains: q } }),
+    ...(q && { nombre: contiene(q) }),
     ...(departamento && { departamento }),
     ...(estado && { estado }),
   }
@@ -25,7 +26,7 @@ export const listarComunidades = async ({ q, departamento, enlaceId, estado, pag
     prisma.comunidad.count({ where }),
     prisma.comunidad.findMany({
       where,
-      include: { enlace: { select: { id: true, activo: true, usuario: { select: { nombre: true } } } } },
+      include: { enlace: { select: { id: true, activo: true, nombreCorto: true, usuario: { select: { nombre: true } } } } },
       orderBy: { nombre: 'asc' },
       skip: (page - 1) * take,
       take,

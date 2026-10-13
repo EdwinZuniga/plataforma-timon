@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs'
 import prisma from '../../config/database.js'
+import { contiene } from '../../utils/busqueda.js'
 
 const generarContrasenaTemp = () => {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
@@ -115,7 +116,9 @@ export const listarMiembros = async (equipoId) => {
   })
 }
 
-export const agregarMiembro = async (equipoId, email, rol, nombreCorto, nombre) => {
+export const agregarMiembro = async (equipoId, email, rol, nombreCorto, nombreCuenta, nombreCompleto) => {
+  // La cuenta necesita un nombre; si el formulario no lo pide, usamos el completo o el corto.
+  const nombre = nombreCuenta || nombreCompleto || nombreCorto
   let usuario = await prisma.usuario.findUnique({ where: { email } })
   let usuarioCreado = false
   let contrasenaTemp = null
@@ -125,7 +128,7 @@ export const agregarMiembro = async (equipoId, email, rol, nombreCorto, nombre) 
   }
 
   if (!usuario) {
-    if (!nombre) throw { status: 400, message: 'El usuario no tiene cuenta. Proporciona su nombre completo para crearle acceso.', code: 'NOMBRE_REQUERIDO' }
+    if (!nombre) throw { status: 400, message: 'El usuario no tiene cuenta. Proporciona su nombre corto para crearle acceso.', code: 'NOMBRE_REQUERIDO' }
     contrasenaTemp = generarContrasenaTemp()
     const passwordHash = await bcrypt.hash(contrasenaTemp, 10)
     usuario = await prisma.usuario.create({ data: { nombre, email, passwordHash } })
@@ -138,10 +141,10 @@ export const agregarMiembro = async (equipoId, email, rol, nombreCorto, nombre) 
   if (existente) {
     await prisma.miembroEquipo.update({
       where: { id: existente.id },
-      data: { rol, nombreCorto, activo: true, fechaFinalizacion: null },
+      data: { rol, nombreCorto, ...(nombreCompleto && { nombreCompleto }), activo: true, fechaFinalizacion: null },
     })
   } else {
-    await prisma.miembroEquipo.create({ data: { usuarioId: usuario.id, equipoId, rol, nombreCorto } })
+    await prisma.miembroEquipo.create({ data: { usuarioId: usuario.id, equipoId, rol, nombreCorto, nombreCompleto: nombreCompleto || null } })
   }
 
   return { usuarioCreado, contrasenaTemp, email }
@@ -212,7 +215,7 @@ export const obtenerMiPerfil = async (miembroId, equipoId) => {
     where: {
       cumplido: false,
       reunion: { equipoId },
-      OR: nombresParaBuscar.map((n) => ({ responsable: { contains: n } })),
+      OR: nombresParaBuscar.map((n) => ({ responsable: contiene(n) })),
     },
     include: {
       reunion: { select: { id: true, titulo: true, fecha: true } },

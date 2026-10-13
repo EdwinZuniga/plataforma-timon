@@ -1,4 +1,5 @@
 import prisma from '../../config/database.js'
+import { contiene } from '../../utils/busqueda.js'
 import { hoyElSalvador } from '../servicios/servicio-estado.js'
 
 const PAGE_SIZE = 20
@@ -14,7 +15,7 @@ export const listarReuniones = async (equipoId, { q, page = 1, desde, hasta }) =
     equipoId,
     ...(Object.keys(fecha).length && { fecha }),
     ...(q && {
-      OR: [{ titulo: { contains: q } }, { lugar: { contains: q } }],
+      OR: [{ titulo: contiene(q) }, { lugar: contiene(q) }],
     }),
   }
   const [total, data] = await Promise.all([
@@ -97,7 +98,7 @@ const resolverResponsables = async (equipoId, responsableIds) => {
     where: { id: { in: ids }, equipoId },
     include: { usuario: { select: { nombre: true } } },
   })
-  return { ids: miembros.map((m) => m.id), texto: miembros.map((m) => m.usuario.nombre).join(', ') || null }
+  return { ids: miembros.map((m) => m.id), texto: miembros.map((m) => m.nombreCorto || m.usuario.nombre).join(', ') || null }
 }
 
 export const incluirAcuerdo = {
@@ -239,7 +240,7 @@ export const generarTexto = async (equipoId, reunionId) => {
   }).join('\n')
 
   const nombresAsistentes = reunion.asistentes.length > 0
-    ? reunion.asistentes.map((a) => a.miembro.usuario.nombre).join(', ')
+    ? reunion.asistentes.map((a) => a.miembro.nombreCorto || a.miembro.usuario.nombre).join(', ')
     : (reunion.participantes || 'Sin especificar')
 
   const notasPlano = htmlToText(reunion.notas)

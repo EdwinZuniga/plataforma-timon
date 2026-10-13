@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { PageSpinner } from '@/components/ui/spinner'
 import { useToast } from '@/components/ui/toast'
 import { toInputDate } from '@/utils/dates'
+import { nombreMiembro } from '@/utils/texto'
 import { Plus, Trash2, X, Pencil } from 'lucide-react'
 import MiembroPerfilModal from './MiembroPerfilModal'
 
@@ -30,11 +31,11 @@ function EditMiembroModal({ miembro, comunidades, onClose, onSave, loading }) {
 
   const { register, control, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
-      nombre: miembro.usuario.nombre,
+      nombreCorto: nombreMiembro(miembro),
+      nombreCompleto: miembro.nombreCompleto ?? '',
       email: miembro.usuario.email,
       rol: miembro.rol,
       activo: String(miembro.activo),
-      nombreCompleto: miembro.nombreCompleto ?? '',
       telefono: miembro.telefono ?? '',
       direccion: miembro.direccion ?? '',
       profesion: miembro.profesion ?? '',
@@ -53,12 +54,12 @@ function EditMiembroModal({ miembro, comunidades, onClose, onSave, loading }) {
         </div>
         <form onSubmit={handleSubmit(onSave)} className="p-4 space-y-4 overflow-y-auto">
           <div className="space-y-1">
-            <label className="text-sm font-medium">Nombre (mostrado)</label>
-            <Input {...register('nombre', { required: 'Requerido' })} />
-            {errors.nombre && <p className="text-xs text-destructive">{errors.nombre.message}</p>}
+            <label className="text-sm font-medium">Nombre corto <span className="text-muted-foreground text-xs">(se usa en toda la plataforma)</span></label>
+            <Input {...register('nombreCorto', { required: 'Requerido', setValueAs: (v) => v.trim() })} placeholder="Ej: Oscar" />
+            {errors.nombreCorto && <p className="text-xs text-destructive">{errors.nombreCorto.message}</p>}
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium">Nombre completo</label>
+            <label className="text-sm font-medium">Nombre completo <span className="text-muted-foreground text-xs">(solo informativo, se ve en la ficha)</span></label>
             <Input {...register('nombreCompleto')} placeholder="Nombre y apellidos" />
           </div>
           <div className="space-y-1">
@@ -265,10 +266,10 @@ export default function EquiposPage() {
                   title="Ver perfil y responsabilidades"
                 >
                   <div className="h-9 w-9 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-sm font-bold text-primary-700 dark:text-primary-400 shrink-0">
-                    {m.usuario.nombre[0]}
+                    {nombreMiembro(m)[0]}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate hover:text-primary-700 dark:hover:text-primary-400 transition-colors">{m.usuario.nombre}</p>
+                    <p className="font-medium truncate hover:text-primary-700 dark:hover:text-primary-400 transition-colors">{nombreMiembro(m)}</p>
                     <p className="text-xs text-muted-foreground truncate">{m.usuario.email}</p>
                   </div>
                 </button>
@@ -330,18 +331,18 @@ export default function EquiposPage() {
                 <Input type="email" {...register('email', { required: true })} placeholder="correo@renovacion.org" />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Nombre completo <span className="text-muted-foreground text-xs">(requerido si es usuario nuevo)</span></label>
-                <Input {...register('nombre')} placeholder="Ej: Juan Pérez" />
+                <label className="text-sm font-medium">Nombre corto * <span className="text-muted-foreground text-xs">(se usa en toda la plataforma)</span></label>
+                <Input {...register('nombreCorto', { required: true })} placeholder="Ej: Oscar" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Nombre completo <span className="text-muted-foreground text-xs">(opcional, solo informativo)</span></label>
+                <Input {...register('nombreCompleto')} placeholder="Ej: Oscar Armando Barillas" />
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium">Rol</label>
                 <select className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" {...register('rol')}>
                   {ROLES.map((r) => <option key={r} value={r}>{ROL_LABEL[r]}</option>)}
                 </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Nombre corto (enlace)</label>
-                <Input {...register('nombreCorto')} placeholder="Ej: ZUNIGA" />
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" className="flex-1" onClick={() => setShowInviteModal(false)}>Cancelar</Button>

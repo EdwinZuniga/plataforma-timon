@@ -20,6 +20,7 @@ import { PhoneActions } from '@/components/shared/PhoneActions'
 import { MapaUbicacion } from '@/components/shared/MapaUbicacion'
 import { enlaceGoogleMaps, enlaceWaze, coordenadasValidas } from '@/utils/ubicacion'
 import { ArrowLeft, Edit, MapPin, Navigation, Image as ImageIcon, ZoomIn, ZoomOut, Clock, Users, Plus, Trash2, Pencil, X, ShieldCheck, Wrench, Calendar } from 'lucide-react'
+import { nombreMiembro } from '@/utils/texto'
 
 function VisorImagen({ src, onClose }) {
   const [zoom, setZoom] = useState(1)
@@ -113,7 +114,6 @@ const rangoVisita = (v) => {
 }
 const hoyLocal = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' })
 const visitaVigente = (v) => (v.fechaFin || v.fecha).slice(0, 10) >= hoyLocal()
-const nombreMiembro = (m) => m.nombreCorto || m.usuario?.nombre || `Miembro ${m.id}`
 
 const CONSEJO_EMPTY = { nombre: '', telefono: '', periodo: '', nota: '' }
 const VISITA_EMPTY = { fecha: '', fechaFin: '', responsableId: '', apoyo: '', horario: '', notas: '' }
@@ -343,7 +343,7 @@ export default function ComunidadDetailPage() {
           <Card><CardContent className="py-3 px-4">
             <p className="text-xs text-muted-foreground">Enlace asignado</p>
             {data.enlace?.activo ? (
-              <p className="font-medium">{data.enlace.usuario?.nombre}</p>
+              <p className="font-medium">{nombreMiembro(data.enlace)}</p>
             ) : (
               <p className="font-medium text-muted-foreground">Sin enlace asignado</p>
             )}

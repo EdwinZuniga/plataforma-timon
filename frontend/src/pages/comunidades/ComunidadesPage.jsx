@@ -14,6 +14,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { Plus, Search, ChevronRight, UserX, List, Map as MapIcon } from 'lucide-react'
 import { ComunidadModal } from './ComunidadModal'
 import { coordenadasValidas } from '@/utils/ubicacion'
+import { nombreMiembro } from '@/utils/texto'
 
 const MapaComunidades = lazy(() => import('@/components/shared/MapaComunidades').then((m) => ({ default: m.MapaComunidades })))
 
@@ -68,7 +69,7 @@ export default function ComunidadesPage() {
     { value: 'sin', label: 'Sin enlace asignado' },
     ...miembros
       .filter((m) => m.activo)
-      .map((m) => ({ value: m.id, label: m.usuario.nombre })),
+      .map((m) => ({ value: m.id, label: nombreMiembro(m) })),
   ], [miembros])
 
   const total = data?.pagination?.total
@@ -165,7 +166,7 @@ export default function ComunidadesPage() {
                       <span>{c.departamento}</span>
                       <span>·</span>
                       {c.enlace?.activo ? (
-                        <span>{c.enlace.usuario?.nombre}</span>
+                        <span>{nombreMiembro(c.enlace)}</span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-500">
                           <UserX className="h-3.5 w-3.5" /> Sin enlace

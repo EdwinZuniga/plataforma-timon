@@ -17,6 +17,7 @@ import { AcuerdoModal } from '@/components/shared/AcuerdoModal'
 import { AcuerdoEstadoBoton } from '@/components/shared/AcuerdoEstadoBoton'
 import { estaVencido, fmtFechaLimite } from '@/utils/acuerdos'
 import { Badge } from '@/components/ui/badge'
+import { nombreMiembro } from '@/utils/texto'
 
 export default function ReunionDetailPage() {
   const { id } = useParams()
@@ -53,7 +54,7 @@ export default function ReunionDetailPage() {
 
   const miembrosActivos = miembros
     .filter((m) => m.activo)
-    .sort((a, b) => (a.usuario?.nombre || '').localeCompare(b.usuario?.nombre || ''))
+    .sort((a, b) => nombreMiembro(a).localeCompare(nombreMiembro(b)))
 
   const refrescarAcuerdos = () => {
     qc.invalidateQueries({ queryKey: ['reunion', id] })
@@ -195,7 +196,7 @@ export default function ReunionDetailPage() {
       {reunion.lugar && <p className="text-sm text-muted-foreground">📍 {reunion.lugar}</p>}
       {reunion.asistentes?.length > 0 && (
         <p className="text-sm">
-          👥 {reunion.asistentes.map((a) => a.miembro.usuario.nombre).join(', ')}
+          👥 {reunion.asistentes.map((a) => nombreMiembro(a.miembro)).join(', ')}
         </p>
       )}
       {reunion.asistentes?.length === 0 && reunion.participantes && (

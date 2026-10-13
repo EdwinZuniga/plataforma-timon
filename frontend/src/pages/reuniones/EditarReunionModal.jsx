@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { X, Check } from 'lucide-react'
 import { useConfirmarSalida } from '@/hooks/useConfirmarSalida'
+import { nombreMiembro } from '@/utils/texto'
 
 const toDateInput = (iso) => iso ? iso.split('T')[0] : ''
 
@@ -37,7 +38,7 @@ export function EditarReunionModal({ reunion, onClose, onSaved }) {
 
   const activosSorted = miembros
     .filter((m) => m.activo)
-    .sort((a, b) => (a.usuario?.nombre || '').localeCompare(b.usuario?.nombre || ''))
+    .sort((a, b) => nombreMiembro(a).localeCompare(nombreMiembro(b)))
 
   const toggleMiembro = (miembroId) => {
     setSelectedMiembros((prev) =>
@@ -128,8 +129,7 @@ export function EditarReunionModal({ reunion, onClose, onSaved }) {
                           {selected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{m.usuario?.nombre}</p>
-                          {m.nombreCorto && <p className="text-xs text-muted-foreground">{m.nombreCorto}</p>}
+                          <p className="text-sm font-medium truncate">{nombreMiembro(m)}</p>
                         </div>
                         <span className="text-xs text-muted-foreground shrink-0">{m.rol}</span>
                       </button>

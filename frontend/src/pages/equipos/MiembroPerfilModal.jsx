@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { PageSpinner } from '@/components/ui/spinner'
 import { formatCalendarDate } from '@/utils/dates'
 import { X, Users, BookOpen, Mic2, Wrench, MapPin, ChevronRight, Coins } from 'lucide-react'
+import { nombreMiembro } from '@/utils/texto'
 
 const MESES = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
@@ -92,7 +93,7 @@ export default function MiembroPerfilModal({ miembro, onClose }) {
   const ir = (to) => { onClose(); navigate(to) }
   const tallerRuta = (tallerId, edicionId) => `/talleres/${tallerId}/ediciones/${edicionId}`
 
-  const iniciales = miembro.usuario.nombre.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
+  const iniciales = nombreMiembro(miembro).split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
 
   const totalResponsabilidades = perfil
     ? (perfil.comunidades?.length ?? 0) +
@@ -116,13 +117,10 @@ export default function MiembroPerfilModal({ miembro, onClose }) {
               {iniciales}
             </div>
             <div>
-              <p className="font-semibold text-base leading-tight">{miembro.usuario.nombre}</p>
+              <p className="font-semibold text-base leading-tight">{nombreMiembro(miembro)}</p>
               <p className="text-xs text-muted-foreground">{miembro.usuario.email}</p>
               <div className="flex items-center gap-1.5 mt-1">
                 <Badge variant={ROL_BADGE[miembro.rol]}>{ROL_LABEL[miembro.rol]}</Badge>
-                {miembro.nombreCorto && (
-                  <span className="text-xs text-muted-foreground font-mono">{miembro.nombreCorto}</span>
-                )}
                 {!miembro.activo && <Badge variant="secondary">Inactivo</Badge>}
               </div>
             </div>
@@ -155,7 +153,7 @@ export default function MiembroPerfilModal({ miembro, onClose }) {
             <PageSpinner />
           ) : tab === 'general' ? (
             <div className="space-y-0.5">
-              <Dato label="Nombre completo">{perfil?.nombreCompleto || miembro.usuario.nombre}</Dato>
+              <Dato label="Nombre completo">{perfil?.nombreCompleto || nombreMiembro(miembro)}</Dato>
               <Dato label="Comunidad">
                 {perfil?.comunidadOrigen ? (
                   <Link

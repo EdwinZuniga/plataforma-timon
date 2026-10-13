@@ -40,9 +40,9 @@ export const listarMiembros = async (req, res, next) => {
 
 export const agregarMiembro = async (req, res, next) => {
   try {
-    const { email, rol = 'CONSULTOR', nombreCorto, nombre } = req.body
+    const { email, rol = 'CONSULTOR', nombreCorto, nombre, nombreCompleto } = req.body
     if (!email) return next({ status: 400, message: 'El email del usuario es requerido', code: 'DATOS_REQUERIDOS' })
-    const data = await svc.agregarMiembro(req.params.equipoId, email, rol, nombreCorto, nombre)
+    const data = await svc.agregarMiembro(req.params.equipoId, email, rol, nombreCorto, nombre, nombreCompleto)
     res.status(201).json({ success: true, data })
   } catch (err) { next(err) }
 }

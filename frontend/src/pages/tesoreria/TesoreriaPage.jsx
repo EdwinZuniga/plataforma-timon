@@ -16,6 +16,7 @@ import { useToast } from '@/components/ui/toast'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { Plus, X, Pencil, Trash2, TrendingUp, TrendingDown, Wallet } from 'lucide-react'
 import { cn } from '@/utils/cn'
+import { nombreMiembro } from '@/utils/texto'
 
 const MESES_CORTOS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 
@@ -292,7 +293,7 @@ function ListaMovimientos({ equipoId, caja, canEdit, anio }) {
                     {m.categoria && <Badge variant="secondary" className="shrink-0 text-xs">{m.categoria}</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {formatFechaLocal(m.fecha)} · {m.responsable?.usuario?.nombre}
+                    {formatFechaLocal(m.fecha)} · {nombreMiembro(m.responsable)}
                     {m.actividad && ` · ${m.actividad.nombre}`}
                   </p>
                   {m.descripcion && <p className="text-xs text-muted-foreground mt-0.5 truncate">{m.descripcion}</p>}
@@ -363,7 +364,7 @@ function ModalOfrenda({ miembros, montoPorSemana, onClose, onSave, loading }) {
               {...register('miembroId', { required: 'Requerido' })}>
               <option value="">Seleccionar...</option>
               {miembros.map((m) => (
-                <option key={m.id} value={m.id}>{m.usuario.nombre}</option>
+                <option key={m.id} value={m.id}>{nombreMiembro(m)}</option>
               ))}
             </select>
             {errors.miembroId && <p className="text-xs text-destructive">{errors.miembroId.message}</p>}
@@ -553,7 +554,7 @@ function TablaOfrendas({ equipoId, anio, miembros, canEdit, montoPorSemana }) {
               return (
                 <tr key={miembro.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
                   <td className="sticky left-0 z-10 bg-inherit px-3 py-1.5 border-r font-medium truncate max-w-[130px]"
-                    title={miembro.usuario.nombre}>
+                    title={nombreDisplay(miembro)}>
                     {nombreDisplay(miembro)}
                   </td>
                   {sabados.map((s) => {
@@ -620,7 +621,7 @@ function TablaOfrendas({ equipoId, anio, miembros, canEdit, montoPorSemana }) {
       {celdaTarget && celdaTarget.tipo === 'quitar' && (
         <ConfirmModal
           title="Quitar ofrenda"
-          description={`¿Quitar ofrenda de ${celdaTarget.miembro.usuario.nombre} del ${formatFechaUTC(celdaTarget.sabado)}?`}
+          description={`¿Quitar ofrenda de ${nombreDisplay(celdaTarget.miembro)} del ${formatFechaUTC(celdaTarget.sabado)}?`}
           confirmLabel="Quitar"
           onConfirm={confirmarCelda}
           onCancel={() => setCeldaTarget(null)}
@@ -629,7 +630,7 @@ function TablaOfrendas({ equipoId, anio, miembros, canEdit, montoPorSemana }) {
       {celdaTarget && celdaTarget.tipo === 'registrar' && (
         <ConfirmModal
           title="Registrar ofrenda"
-          description={`¿Registrar ofrenda de $${montoPorSemana.toFixed(2)} para ${celdaTarget.miembro.usuario.nombre} el ${formatFechaUTC(celdaTarget.sabado)}?`}
+          description={`¿Registrar ofrenda de $${montoPorSemana.toFixed(2)} para ${nombreDisplay(celdaTarget.miembro)} el ${formatFechaUTC(celdaTarget.sabado)}?`}
           confirmLabel="Registrar"
           variant="default"
           onConfirm={confirmarCelda}
