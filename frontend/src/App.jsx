@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { setAlMutar } from '@/api/client'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useThemeStore } from '@/stores/useThemeStore'
 import { syncStatusBar } from '@/utils/statusBar'
@@ -41,11 +42,15 @@ import CalendarioPage from '@/pages/calendario/CalendarioPage'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 2,
+      staleTime: 1000 * 30,
       retry: 1,
     },
   },
 })
+
+// Cualquier cambio exitoso en el servidor deja obsoletos los datos en pantalla:
+// se vuelven a pedir los que se están viendo y se marcan los demás.
+setAlMutar(() => queryClient.invalidateQueries())
 
 function AppRoutes() {
   const { initializeAuth } = useAuthStore()

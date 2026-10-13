@@ -19,8 +19,18 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Tras cualquier cambio exitoso (crear, editar, borrar) la app registra aquí
+// cómo refrescar los datos en pantalla, para no depender de que cada formulario
+// recuerde invalidar las consultas correctas.
+let alMutar = null
+export const setAlMutar = (fn) => { alMutar = fn }
+
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    const metodo = (res.config?.method || 'get').toLowerCase()
+    if (metodo !== 'get' && !res.config?.url?.includes('/auth/')) alMutar?.()
+    return res
+  },
   async (error) => {
     const original = error.config
 

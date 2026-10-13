@@ -31,15 +31,13 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Sin caché de /api: con NetworkFirst, si el servidor tardaba (Azure SQL
+        // despertando) se mostraban datos viejos guardados, sin importar los cambios.
+        // Además la caché no distinguía entre usuarios.
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 100, maxAgeSeconds: 24 * 60 * 60 },
-            },
+            handler: 'NetworkOnly',
           },
         ],
       },
