@@ -29,31 +29,45 @@ export const enlaceGoogleMaps = (lat, lng) =>
 export const enlaceWaze = (lat, lng) =>
   `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`
 
-// Reduce la imagen a un JPEG de máx. `maxLado` px y lo devuelve como data URL.
-// createImageBitmap respeta la orientación EXIF (fotos del celular); si el navegador
-// no puede decodificar el formato (p. ej. HEIC), se intenta con <img> y si no, se lanza error.
-export async function comprimirImagen(file, maxLado = 1024, calidad = 0.75) {
-  let fuente, ancho, alto, liberar = () => {}
+async function decodificar(file) {
   try {
-    fuente = await createImageBitmap(file, { imageOrientation: 'from-image' })
-    ancho = fuente.width
-    alto = fuente.height
-    liberar = () => fuente.close?.()
+    const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' })
+    return { fuente: bmp, ancho: bmp.width, alto: bmp.height, liberar: () => bmp.close?.() }
   } catch {
     const url = URL.createObjectURL(file)
     try {
-      fuente = await new Promise((resolve, reject) => {
-        const img = new Image()
-        img.onload = () => resolve(img)
-        img.onerror = () => reject(new Error('Formato de imagen no compatible'))
-        img.src = url
+      const img = await new Promise((resolve, reject) => {
+        const el = new Image()
+        el.onload = () => resolve(el)
+        el.onerror = () => reject(new Error('Formato de imagen no compatible'))
+        el.src = url
       })
+      return { fuente: img, ancho: img.naturalWidth, alto: img.naturalHeight, liberar: () => {} }
     } finally {
       URL.revokeObjectURL(url)
     }
-    ancho = fuente.naturalWidth
-    alto = fuente.naturalHeight
   }
+}
+
+// Reduce la imagen a un JPEG de máx. `maxLado` px y lo devuelve como data URL.
+// Si el navegador no decodifica el formato (HEIC/HEIF de iPhone o algunos Android),
+// se convierte primero a JPEG con heic2any, que se carga solo cuando hace falta.
+export async function comprimirImagen(file, maxLado = 1024, calidad = 0.75) {
+  let img
+  try {
+    img = await decodificar(file)
+  } catch (err) {
+    // El tipo MIME a veces viene vacío o con otra extensión, así que se intenta
+    // la conversión ante cualquier fallo y, si tampoco sirve, se informa el error original.
+    try {
+      const { default: heic2any } = await import('heic2any')
+      const convertido = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.8 })
+      img = await decodificar(Array.isArray(convertido) ? convertido[0] : convertido)
+    } catch {
+      throw err
+    }
+  }
+  const { fuente, ancho, alto, liberar } = img
   const escala = Math.min(1, maxLado / Math.max(ancho, alto))
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(ancho * escala)

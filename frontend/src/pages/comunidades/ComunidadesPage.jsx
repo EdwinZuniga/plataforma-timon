@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { lazy, Suspense, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { getComunidades } from '@/api/comunidades'
@@ -11,8 +11,11 @@ import { Combobox } from '@/components/ui/combobox'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageSpinner } from '@/components/ui/spinner'
 import { useDebounce } from '@/hooks/useDebounce'
-import { Plus, Search, ChevronRight, UserX } from 'lucide-react'
+import { Plus, Search, ChevronRight, UserX, List, Map as MapIcon } from 'lucide-react'
 import { ComunidadModal } from './ComunidadModal'
+import { coordenadasValidas } from '@/utils/ubicacion'
+
+const MapaComunidades = lazy(() => import('@/components/shared/MapaComunidades').then((m) => ({ default: m.MapaComunidades })))
 
 const ESTADO_BADGE = {
   ACTIVA: 'success',
@@ -32,6 +35,8 @@ export default function ComunidadesPage() {
   const [enlaceId, setEnlaceId] = useState('')
   const [page, setPage] = useState(1)
   const [showModal, setShowModal] = useState(false)
+  const [vista, setVista] = useState('lista')
+  const navigate = useNavigate()
   const debouncedQ = useDebounce(q, 300)
 
   const { data, isLoading, refetch } = useQuery({
@@ -41,6 +46,16 @@ export default function ComunidadesPage() {
     }).then((r) => r.data),
     enabled: !!equipoActual?.id,
   })
+
+  // El mapa necesita todas las comunidades del filtro, no solo la página actual
+  const { data: dataMapa, isLoading: cargandoMapa } = useQuery({
+    queryKey: ['comunidades-mapa', equipoActual?.id, debouncedQ, estado, enlaceId],
+    queryFn: () => getComunidades(equipoActual.id, {
+      q: debouncedQ, estado, limit: 500, enlaceId: enlaceId || undefined,
+    }).then((r) => r.data),
+    enabled: !!equipoActual?.id && vista === 'mapa',
+  })
+  const sinUbicacion = dataMapa?.data?.filter((c) => !coordenadasValidas(c.latitud, c.longitud)).length ?? 0
 
   const { data: miembros = [] } = useQuery({
     queryKey: ['miembros', equipoActual?.id],
@@ -69,9 +84,23 @@ export default function ComunidadesPage() {
             {hayFiltro ? ' coinciden con el filtro' : ' registradas'}
           </p>
         </div>
-        <Button onClick={() => setShowModal(true)} size="sm">
-          <Plus className="h-4 w-4" /> Nueva
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-md border border-input overflow-hidden">
+            {[['lista', List, 'Lista'], ['mapa', MapIcon, 'Mapa']].map(([v, Icon, label]) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setVista(v)}
+                className={`inline-flex items-center gap-1.5 px-3 h-9 text-sm ${vista === v ? 'bg-primary-700 text-white' : 'hover:bg-muted'}`}
+              >
+                <Icon className="h-4 w-4" /> {label}
+              </button>
+            ))}
+          </div>
+          <Button onClick={() => setShowModal(true)} size="sm">
+            <Plus className="h-4 w-4" /> Nueva
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-2 flex-wrap">
@@ -105,7 +134,23 @@ export default function ComunidadesPage() {
         />
       </div>
 
-      {isLoading ? <PageSpinner /> : (
+      {vista === 'mapa' && (
+        cargandoMapa ? <PageSpinner /> : (
+          <div className="space-y-2">
+            <Suspense fallback={<PageSpinner />}>
+              <MapaComunidades comunidades={dataMapa?.data ?? []} onAbrir={(id) => navigate(`/comunidades/${id}`)} />
+            </Suspense>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-green-600" />Activa</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-amber-600" />En proceso</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-gray-500" />Inactiva</span>
+              {sinUbicacion > 0 && <span>· {sinUbicacion} sin ubicación registrada</span>}
+            </div>
+          </div>
+        )
+      )}
+
+      {vista === 'lista' && (isLoading ? <PageSpinner /> : (
         <div className="space-y-2">
           {data?.data?.map((c) => (
             <Link key={c.id} to={`/comunidades/${c.id}`}>
@@ -140,9 +185,9 @@ export default function ComunidadesPage() {
             </div>
           )}
         </div>
-      )}
+      ))}
 
-      {data?.pagination && data.pagination.pages > 1 && (
+      {vista === 'lista' && data?.pagination && data.pagination.pages > 1 && (
         <div className="flex items-center justify-center gap-2 pt-2">
           <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Anterior</Button>
           <span className="text-sm text-muted-foreground">Página {page} de {data.pagination.pages}</span>
