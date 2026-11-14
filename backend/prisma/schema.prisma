@@ -76,18 +76,19 @@ model MiembroEquipo {
   comunidadOrigenId   Int?
   comunidadOrigen     Comunidad?           @relation("MiembroComunidadOrigen", fields: [comunidadOrigenId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  comunidades            Comunidad[]           @relation("ComunidadEnlace")
-  edicionesCoordinadas   EdicionTaller[]
-  equipoApoyoEdiciones   EquipoApoyoEdicion[]
-  temasMesExpuestos      TemaMes[]             @relation("TemaMesExpositor")
-  reunionesAsistidas     ReunionAsistente[]
-  serviciosAsignados     ServicioAsignado[]
-  permisos               PermisoUsuario[]
-  movimientosRegistrados MovimientoTesoreria[] @relation("MovimientoResponsable")
-  ofrendasSemanales      OfrendaSemanal[]
-  prestamosRegistrados   PrestamoArticulo[]    @relation("PrestamoResponsable")
-  visitasResponsable     Visita[]              @relation("VisitaResponsable")
-  asistenciasMiembro     AsistenciaMiembro[]
+  comunidades              Comunidad[]           @relation("ComunidadEnlace")
+  edicionesCoordinadas     EdicionTaller[]
+  inscripcionesSeguimiento Inscripcion[]         @relation("InscripcionSeguimiento")
+  equipoApoyoEdiciones     EquipoApoyoEdicion[]
+  temasMesExpuestos        TemaMes[]             @relation("TemaMesExpositor")
+  reunionesAsistidas       ReunionAsistente[]
+  serviciosAsignados       ServicioAsignado[]
+  permisos                 PermisoUsuario[]
+  movimientosRegistrados   MovimientoTesoreria[] @relation("MovimientoResponsable")
+  ofrendasSemanales        OfrendaSemanal[]
+  prestamosRegistrados     PrestamoArticulo[]    @relation("PrestamoResponsable")
+  visitasResponsable       Visita[]              @relation("VisitaResponsable")
+  asistenciasMiembro       AsistenciaMiembro[]
 
   @@unique([usuarioId, equipoId])
   @@map("MiembroEquipo")
@@ -264,15 +265,18 @@ model EdicionTaller {
 }
 
 model Inscripcion {
-  id              Int           @id @default(autoincrement())
-  hermanoId       Int
-  hermano         Hermano       @relation(fields: [hermanoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  edicionTallerId Int
-  edicionTaller   EdicionTaller @relation(fields: [edicionTallerId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  asistio         Boolean       @default(false)
-  aprobado        Boolean?
-  certificado     Boolean       @default(false)
-  createdAt       DateTime      @default(now())
+  id                   Int            @id @default(autoincrement())
+  hermanoId            Int
+  hermano              Hermano        @relation(fields: [hermanoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  edicionTallerId      Int
+  edicionTaller        EdicionTaller  @relation(fields: [edicionTallerId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  asistio              Boolean        @default(false)
+  aprobado             Boolean?
+  certificado          Boolean        @default(false)
+  // Miembro (coordinador o equipo de apoyo) que da seguimiento a este hermano en la edición
+  seguimientoMiembroId Int?
+  seguimientoMiembro   MiembroEquipo? @relation("InscripcionSeguimiento", fields: [seguimientoMiembroId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  createdAt            DateTime       @default(now())
 
   asistenciasMes  AsistenciaMes[]
   tareasEntrega   TareaEntrega[]

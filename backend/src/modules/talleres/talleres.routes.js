@@ -37,6 +37,24 @@ router.delete('/:id/ediciones/:edicionId/equipo-apoyo/:miembroId', requireAuth, 
   } catch (err) { next(err) }
 })
 
+router.put('/:id/ediciones/:edicionId/seguimiento', requireAuth, requireEquipo, requirePermiso('talleres', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
+  try {
+    const { asignaciones } = req.body
+    if (!Array.isArray(asignaciones)) {
+      return next({ status: 400, message: 'asignaciones debe ser un arreglo', code: 'DATOS_INVALIDOS' })
+    }
+    const limpias = asignaciones.map((a) => ({
+      inscripcionId: Number(a.inscripcionId),
+      miembroId: a.miembroId == null || a.miembroId === '' ? null : Number(a.miembroId),
+    }))
+    if (limpias.some((a) => !Number.isInteger(a.inscripcionId) || (a.miembroId !== null && !Number.isInteger(a.miembroId)))) {
+      return next({ status: 400, message: 'Datos de asignación inválidos', code: 'DATOS_INVALIDOS' })
+    }
+    const data = await svc.asignarSeguimiento(req.params.equipoId, req.params.edicionId, limpias)
+    res.json({ success: true, data })
+  } catch (err) { next(err) }
+})
+
 router.put('/:id/ediciones/:edicionId/temas/:mes/:anio', requireAuth, requireEquipo, requirePermiso('talleres', 'editar'), requireRolMinimo(['COORDINADOR', 'SECRETARIO']), async (req, res, next) => {
   try {
     const { titulo, expositorId, notas, documentoUrl } = req.body

@@ -86,7 +86,7 @@ export const obtenerEdicion = async (equipoId, tallerId, edicionId) => {
       },
       inscripciones: {
         include: {
-          hermano: { select: { id: true, nombre: true, apellido: true, comunidad: { select: { nombre: true } } } },
+          hermano: { select: { id: true, nombre: true, apellido: true, telefono: true, comunidad: { select: { nombre: true } } } },
           asistenciasMes: { orderBy: [{ anio: 'asc' }, { mes: 'asc' }] },
           tareasEntrega: { orderBy: [{ anio: 'asc' }, { mes: 'asc' }] },
           participaciones: { orderBy: [{ anio: 'asc' }, { mes: 'asc' }] },
@@ -309,4 +309,34 @@ export const estadisticas = async (equipoId) => {
     totalEdiciones: t.ediciones.length,
     totalInscritos: t.ediciones.reduce((acc, e) => acc + e._count.inscripciones, 0),
   }))
+}
+
+// Asigna (o desasigna con null) qué miembro da seguimiento a cada hermano inscrito.
+// Solo pueden dar seguimiento el coordinador de la edición y su equipo de apoyo.
+export const asignarSeguimiento = async (equipoId, edicionId, asignaciones) => {
+  const edicion = await prisma.edicionTaller.findFirst({
+    where: { id: edicionId, taller: { equipoId } },
+    include: { equipoApoyo: { select: { miembroId: true } }, inscripciones: { select: { id: true } } },
+  })
+  if (!edicion) throw { status: 404, message: 'Edición no encontrada', code: 'EDICION_NO_ENCONTRADA' }
+
+  const permitidos = new Set(edicion.equipoApoyo.map((a) => a.miembroId))
+  if (edicion.coordinadorId) permitidos.add(edicion.coordinadorId)
+  const inscripcionIds = new Set(edicion.inscripciones.map((i) => i.id))
+
+  for (const a of asignaciones) {
+    if (!inscripcionIds.has(a.inscripcionId)) {
+      throw { status: 400, message: 'Inscripción inválida para esta edición', code: 'INSCRIPCION_INVALIDA' }
+    }
+    if (a.miembroId != null && !permitidos.has(a.miembroId)) {
+      throw { status: 400, message: 'Solo el coordinador o el equipo de apoyo pueden dar seguimiento', code: 'MIEMBRO_NO_PERMITIDO' }
+    }
+  }
+
+  await prisma.$transaction(
+    asignaciones.map((a) =>
+      prisma.inscripcion.update({ where: { id: a.inscripcionId }, data: { seguimientoMiembroId: a.miembroId ?? null } })
+    )
+  )
+  return { actualizados: asignaciones.length }
 }

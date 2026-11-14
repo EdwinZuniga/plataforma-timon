@@ -29,6 +29,10 @@ export const addEquipoApoyo = (equipoId, tallerId, edicionId, data) =>
 export const removeEquipoApoyo = (equipoId, tallerId, edicionId, miembroId) =>
   api.delete(`${base(equipoId)}/${tallerId}/ediciones/${edicionId}/equipo-apoyo/${miembroId}`)
 
+// Seguimiento de hermanos: asignaciones = [{ inscripcionId, miembroId | null }]
+export const asignarSeguimiento = (equipoId, tallerId, edicionId, asignaciones) =>
+  api.put(`${base(equipoId)}/${tallerId}/ediciones/${edicionId}/seguimiento`, { asignaciones })
+
 // Tema del mes
 export const upsertTemaMes = (equipoId, tallerId, edicionId, mes, anio, data) =>
   api.put(`${base(equipoId)}/${tallerId}/ediciones/${edicionId}/temas/${mes}/${anio}`, data)

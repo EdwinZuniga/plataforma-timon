@@ -8,6 +8,7 @@ import {
   upsertAsistenciaMes,
   addEquipoApoyo,
   removeEquipoApoyo,
+  asignarSeguimiento,
   upsertTemaMes,
   upsertTareaEntrega,
   upsertParticipacionMes,
@@ -15,6 +16,8 @@ import {
 } from '@/api/talleres'
 import { getMiembros } from '@/api/equipos'
 import { getHermanos } from '@/api/hermanos'
+import { WhatsAppIcon } from '@/components/shared/PhoneActions'
+import { numeroWhatsApp } from '@/utils/phone'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,7 +25,7 @@ import { PageSpinner } from '@/components/ui/spinner'
 import { useToast } from '@/components/ui/toast'
 import {
   ArrowLeft, Users, User, MapPin, Check, Plus, X, Download,
-  BookOpen, FileText, ExternalLink, Pencil, ClipboardList,
+  BookOpen, FileText, ExternalLink, Pencil, ClipboardList, HeartHandshake,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { formatCalendarDate, getCalendarMonth } from '@/utils/dates'
@@ -82,6 +85,7 @@ export default function TallerEdicionPage() {
   const [showApoyoModal, setShowApoyoModal] = useState(false)
   const [showTemaModal, setShowTemaModal] = useState(null) // { mes, anio }
   const [showVincularModal, setShowVincularModal] = useState(false)
+  const [showSeguimientoModal, setShowSeguimientoModal] = useState(false)
   const [exportando, setExportando] = useState(false)
 
   const { data: edicion, isLoading } = useQuery({
@@ -238,6 +242,8 @@ export default function TallerEdicionPage() {
           tallerId={tallerId}
           equipoActual={equipoActual}
           onOpenModal={() => setShowApoyoModal(true)}
+          onOpenSeguimiento={() => setShowSeguimientoModal(true)}
+          sinHermanos={total === 0}
         />
       </div>
 
@@ -394,6 +400,18 @@ export default function TallerEdicionPage() {
         />
       )}
 
+      {/* Modal seguimiento */}
+      {showSeguimientoModal && (
+        <SeguimientoModal
+          edicion={edicion}
+          tallerId={tallerId}
+          equipoActual={equipoActual}
+          onClose={() => setShowSeguimientoModal(false)}
+          onSuccess={() => qc.invalidateQueries({ queryKey: ['edicion', edicionId] })}
+          toast={toast}
+        />
+      )}
+
       {/* Modal tema del mes */}
       {showTemaModal && (
         <TemaModal
@@ -425,7 +443,7 @@ export default function TallerEdicionPage() {
 
 // ─── EquipoApoyoSection ───────────────────────────────────────────────────────
 
-function EquipoApoyoSection({ edicion, tallerId, equipoActual, onOpenModal }) {
+function EquipoApoyoSection({ edicion, onOpenModal, onOpenSeguimiento, sinHermanos }) {
   const apoyo = edicion.equipoApoyo ?? []
 
   return (
@@ -453,6 +471,15 @@ function EquipoApoyoSection({ edicion, tallerId, equipoActual, onOpenModal }) {
       >
         <Pencil className="h-3 w-3" />
         Gestionar apoyo
+      </button>
+      <button
+        onClick={onOpenSeguimiento}
+        disabled={sinHermanos}
+        className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline disabled:opacity-40 disabled:no-underline"
+        title={sinHermanos ? 'Sin hermanos inscritos' : 'Seguimiento de hermanos'}
+      >
+        <HeartHandshake className="h-3 w-3" />
+        Seguimiento
       </button>
     </div>
   )
@@ -789,6 +816,180 @@ function ApoyoModal({ edicion, tallerId, equipoActual, onClose, onSuccess, toast
           <p className="text-sm text-muted-foreground text-center py-2">
             Sin miembros de apoyo asignados aún.
           </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── SeguimientoModal ─────────────────────────────────────────────────────────
+
+const primerPalabra = (t) => (t ?? '').trim().split(/\s+/)[0] ?? ''
+const nombreMiembro = (m) => m?.nombreCorto || m?.usuario?.nombre || 'Sin nombre'
+
+function SeguimientoModal({ edicion, tallerId, equipoActual, onClose, onSuccess, toast }) {
+  const inscripciones = edicion.inscripciones ?? []
+
+  // Pueden dar seguimiento: el coordinador y el equipo de apoyo de la edición
+  const candidatos = []
+  if (edicion.coordinador) candidatos.push(edicion.coordinador)
+  for (const a of edicion.equipoApoyo ?? []) {
+    if (!candidatos.some((c) => c.id === a.miembro.id)) candidatos.push(a.miembro)
+  }
+
+  const todosAsignados = inscripciones.every((i) => i.seguimientoMiembroId)
+  const [editando, setEditando] = useState(!todosAsignados)
+  const [draft, setDraft] = useState(() =>
+    Object.fromEntries(inscripciones.map((i) => [i.id, i.seguimientoMiembroId ? String(i.seguimientoMiembroId) : ''])),
+  )
+  const [loading, setLoading] = useState(false)
+
+  const sinAsignar = inscripciones.filter((i) => !draft[i.id]).length
+  const cambios = inscripciones.filter(
+    (i) => (draft[i.id] || '') !== (i.seguimientoMiembroId ? String(i.seguimientoMiembroId) : ''),
+  )
+
+  const repartir = () => {
+    if (candidatos.length === 0) return
+    let k = 0
+    setDraft((prev) => {
+      const next = { ...prev }
+      for (const i of inscripciones) {
+        if (!next[i.id]) next[i.id] = String(candidatos[k++ % candidatos.length].id)
+      }
+      return next
+    })
+  }
+
+  const onGuardar = async () => {
+    setLoading(true)
+    try {
+      await asignarSeguimiento(
+        equipoActual.id, tallerId, edicion.id,
+        cambios.map((i) => ({ inscripcionId: i.id, miembroId: draft[i.id] ? Number(draft[i.id]) : null })),
+      )
+      toast({ title: 'Seguimiento actualizado' })
+      onSuccess()
+      if (sinAsignar === 0) setEditando(false)
+    } catch (err) {
+      toast({ title: 'Error al guardar', description: err.response?.data?.error, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Vista de lista: agrupada por quien da el seguimiento
+  const grupos = candidatos
+    .map((c) => ({ miembro: c, items: inscripciones.filter((i) => i.seguimientoMiembroId === c.id) }))
+    .filter((g) => g.items.length > 0)
+  const huerfanos = inscripciones.filter(
+    (i) => i.seguimientoMiembroId && !candidatos.some((c) => c.id === i.seguimientoMiembroId),
+  )
+
+  const filaHermano = (ins) => {
+    const h = ins.hermano
+    const wa = numeroWhatsApp(h.telefono)
+    return (
+      <div key={ins.id} className="flex items-center gap-2 px-3 py-2.5 bg-card">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium truncate">{primerPalabra(h.nombre)} {primerPalabra(h.apellido)}</p>
+          <p className="text-xs text-muted-foreground">{h.telefono || 'Sin teléfono'}</p>
+        </div>
+        {wa && (
+          <a
+            href={`https://wa.me/${wa}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Escribir por WhatsApp"
+            className="shrink-0 p-1.5 rounded-full text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+          >
+            <WhatsAppIcon className="h-5 w-5" />
+          </a>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
+      <div className="bg-background rounded-2xl shadow-xl w-full max-w-md p-5 space-y-4 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-base">Seguimiento de hermanos</h2>
+          <button onClick={onClose} className="p-1 rounded text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {candidatos.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Primero asigna un coordinador o miembros del equipo de apoyo a esta edición.
+          </p>
+        ) : editando ? (
+          <>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">
+                {sinAsignar > 0 ? `${sinAsignar} sin asignar` : 'Todos asignados'}
+              </p>
+              {sinAsignar > 0 && candidatos.length > 1 && (
+                <button onClick={repartir} className="text-xs text-primary hover:underline">
+                  Repartir pendientes en partes iguales
+                </button>
+              )}
+            </div>
+            <div className="overflow-y-auto divide-y rounded-lg border">
+              {inscripciones.map((ins) => (
+                <div key={ins.id} className="flex items-center gap-2 px-3 py-2 bg-card">
+                  <p className="text-sm font-medium truncate flex-1 min-w-0">
+                    {primerPalabra(ins.hermano.nombre)} {primerPalabra(ins.hermano.apellido)}
+                  </p>
+                  <select
+                    value={draft[ins.id] ?? ''}
+                    onChange={(e) => setDraft((p) => ({ ...p, [ins.id]: e.target.value }))}
+                    className="h-9 w-40 shrink-0 rounded-md border border-input bg-background px-2 text-sm"
+                  >
+                    <option value="">Sin asignar</option>
+                    {candidatos.map((c) => (
+                      <option key={c.id} value={c.id}>{nombreMiembro(c)}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              {todosAsignados ? (
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setEditando(false)}>
+                  Volver a la lista
+                </Button>
+              ) : (
+                <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cerrar</Button>
+              )}
+              <Button className="flex-1" disabled={cambios.length === 0 || loading} onClick={onGuardar}>
+                {loading ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="overflow-y-auto space-y-3">
+              {grupos.map((g) => (
+                <div key={g.miembro.id} className="space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {nombreMiembro(g.miembro)} <span className="font-normal normal-case">· {g.items.length}</span>
+                  </p>
+                  <div className="divide-y rounded-lg border overflow-hidden">{g.items.map(filaHermano)}</div>
+                </div>
+              ))}
+              {huerfanos.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Otros</p>
+                  <div className="divide-y rounded-lg border overflow-hidden">{huerfanos.map(filaHermano)}</div>
+                </div>
+              )}
+            </div>
+            <Button variant="outline" onClick={() => setEditando(true)}>
+              <Pencil className="h-3.5 w-3.5 mr-1" /> Editar asignaciones
+            </Button>
+          </>
         )}
       </div>
     </div>
